@@ -1,0 +1,186 @@
+name: ASTREA - Generate first humanoid with Meshy 6
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_generation:
+        description: "Confirm that you want to spend up to 30 Meshy API credits"
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+jobs:
+  generate-humanoid:
+    if: inputs.confirm_generation == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check API key and available credits
+        id: preflight
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.MESHY_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${MESHY_API_KEY:-}" ]]; then
+            echo "::error::Le secret MESHY_API_KEY est absent."
+            exit 1
+          fi
+          response="$(curl --silent --show-error --fail \
+            --header "Authorization: Bearer ${MESHY_API_KEY}" \
+            https://api.meshy.ai/openapi/v1/balance)"
+          balance="$(jq -r '.balance // empty' <<< "$response")"
+          if [[ ! "$balance" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+            echo "::error::Impossible de lire le solde Meshy. Aucune génération lancée."
+            exit 1
+          fi
+          echo "Solde Meshy disponible : $balance crédits."
+          if (( $(awk "BEGIN {print ($balance < 30)}") )); then
+            echo "::error::Solde insuffisant : 30 crédits sont nécessaires au maximum (20 preview + 10 texture). Aucune génération lancée."
+            exit 1
+          fi
+          echo "Pré-vérification réussie. Budget maximal prévu : 30 crédits."
+
+      - name: Generate preview, texture and download model
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.MESHY_API_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p output/ASTREA_Humanoid_Meshy6
+
+          prompt='A single full-body humanoid medieval fantasy adventurer character, realistic human-like anatomy and natural human skin tone, neutral perfectly symmetrical T-pose with arms straight horizontally, feet shoulder-width apart, front-facing, adult proportions, approximately 1.75 meters tall. Dark fantasy visual direction, high-quality practical layered dark steel plate armor over worn brown-black leather, subtle engraved details, restrained weathering, sturdy boots and gloves, believable construction, clean readable silhouette suitable as a reusable base character for a fantasy MMORPG. No helmet, no mask, no weapon, no shield, no cape, no backpack, no extra objects, no base or pedestal, isolated character.'
+
+          preview_payload="$(jq -n --arg prompt "$prompt" '{
+            mode: "preview",
+            prompt: $prompt,
+            ai_model: "meshy-6",
+            model_type: "standard",
+            pose_mode: "t-pose",
+            should_remesh: true,
+            target_polycount: 30000,
+            target_formats: ["glb"]
+          }')"
+
+          echo "Création de la géométrie Meshy 6 (budget prévu : 20 crédits)..."
+          preview_response="$(curl --silent --show-error --fail-with-body \
+            --request POST \
+            --header "Authorization: Bearer ${MESHY_API_KEY}" \
+            --header "Content-Type: application/json" \
+            --data "$preview_payload" \
+            https://api.meshy.ai/openapi/v2/text-to-3d)"
+          preview_id="$(jq -r '.result // empty' <<< "$preview_response")"
+          if [[ -z "$preview_id" ]]; then
+            echo "::error::Meshy n'a pas retourné d'identifiant de tâche."
+            jq . <<< "$preview_response"
+            exit 1
+          fi
+          echo "Preview task ID : $preview_id"
+          echo "$preview_id" > output/ASTREA_Humanoid_Meshy6/preview_task_id.txt
+
+          preview_status=""
+          for attempt in $(seq 1 180); do
+            task="$(curl --silent --show-error --fail \
+              --header "Authorization: Bearer ${MESHY_API_KEY}" \
+              "https://api.meshy.ai/openapi/v2/text-to-3d/$preview_id")"
+            preview_status="$(jq -r '.status // "UNKNOWN"' <<< "$task")"
+            progress="$(jq -r '.progress // 0' <<< "$task")"
+            echo "Géométrie : $preview_status ($progress %)"
+            if [[ "$preview_status" == "SUCCEEDED" ]]; then
+              break
+            fi
+            if [[ "$preview_status" == "FAILED" || "$preview_status" == "CANCELED" || "$preview_status" == "EXPIRED" ]]; then
+              jq -r '.task_error.message // "Erreur Meshy sans détail"' <<< "$task"
+              exit 1
+            fi
+            sleep 10
+          done
+          if [[ "$preview_status" != "SUCCEEDED" ]]; then
+            echo "::error::Délai d'attente dépassé pendant la génération de la géométrie."
+            exit 1
+          fi
+
+          refine_payload="$(jq -n --arg id "$preview_id" '{
+            mode: "refine",
+            preview_task_id: $id,
+            ai_model: "meshy-6",
+            enable_pbr: true,
+            texture_resolution: "2k",
+            target_formats: ["glb"]
+          }')"
+          echo "Texturage PBR Meshy 6 (budget prévu : 10 crédits)..."
+          refine_response="$(curl --silent --show-error --fail-with-body \
+            --request POST \
+            --header "Authorization: Bearer ${MESHY_API_KEY}" \
+            --header "Content-Type: application/json" \
+            --data "$refine_payload" \
+            https://api.meshy.ai/openapi/v2/text-to-3d)"
+          refine_id="$(jq -r '.result // empty' <<< "$refine_response")"
+          if [[ -z "$refine_id" ]]; then
+            echo "::error::Meshy n'a pas retourné d'identifiant pour le texturage."
+            jq . <<< "$refine_response"
+            exit 1
+          fi
+          echo "Refine task ID : $refine_id"
+          echo "$refine_id" > output/ASTREA_Humanoid_Meshy6/refine_task_id.txt
+
+          refine_status=""
+          for attempt in $(seq 1 180); do
+            task="$(curl --silent --show-error --fail \
+              --header "Authorization: Bearer ${MESHY_API_KEY}" \
+              "https://api.meshy.ai/openapi/v2/text-to-3d/$refine_id")"
+            refine_status="$(jq -r '.status // "UNKNOWN"' <<< "$task")"
+            progress="$(jq -r '.progress // 0' <<< "$task")"
+            echo "Texturage : $refine_status ($progress %)"
+            if [[ "$refine_status" == "SUCCEEDED" ]]; then
+              break
+            fi
+            if [[ "$refine_status" == "FAILED" || "$refine_status" == "CANCELED" || "$refine_status" == "EXPIRED" ]]; then
+              jq -r '.task_error.message // "Erreur Meshy sans détail"' <<< "$task"
+              exit 1
+            fi
+            sleep 10
+          done
+          if [[ "$refine_status" != "SUCCEEDED" ]]; then
+            echo "::error::Délai d'attente dépassé pendant le texturage."
+            exit 1
+          fi
+
+          glb_url="$(jq -r '.model_urls.glb // empty' <<< "$task")"
+          thumbnail_url="$(jq -r '.thumbnail_url // empty' <<< "$task")"
+          if [[ -z "$glb_url" ]]; then
+            echo "::error::Le modèle GLB n'est pas présent dans la réponse Meshy."
+            exit 1
+          fi
+          curl --silent --show-error --fail --location "$glb_url" \
+            --output output/ASTREA_Humanoid_Meshy6/ASTREA_Humanoid_Meshy6.glb
+          if [[ -n "$thumbnail_url" ]]; then
+            curl --silent --show-error --fail --location "$thumbnail_url" \
+              --output output/ASTREA_Humanoid_Meshy6/preview.png || true
+          fi
+
+          {
+            echo "## ASTREA - premier modèle humanoïde"
+            echo "- Modèle : Meshy 6"
+            echo "- Géométrie : T-pose, cible 30 000 polygones"
+            echo "- Textures : PBR 2K"
+            echo "- Format téléchargé : GLB"
+            echo "- Preview task : $preview_id"
+            echo "- Refine task : $refine_id"
+            echo "- Crédits consommés (preview) : $(jq -r '.consumed_credits // "inconnu"' <<< "$preview_response")"
+            echo "- Crédits consommés (texture) : $(jq -r '.consumed_credits // "inconnu"' <<< "$refine_response")"
+          } | tee output/ASTREA_Humanoid_Meshy6/README.txt
+
+      - name: Upload generated 3D asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTREA-Humanoid-Meshy6
+          path: output/ASTREA_Humanoid_Meshy6/
+          if-no-files-found: error
+          retention-days: 30
