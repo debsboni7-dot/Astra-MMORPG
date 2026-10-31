@@ -75,7 +75,7 @@ jobs:
             --header "Content-Type: application/json" \
             --data "$preview_payload" \
             https://api.meshy.ai/openapi/v2/text-to-3d)"
-          preview_id="$(jq -r '.result // empty' <<< "$preview_task_json")"
+          preview_id="$(jq -r '.result // empty' <<< "$preview_response")"
           if [[ -z "$preview_id" ]]; then
             echo "::error::Meshy n'a pas retourné d'identifiant de tâche."
             jq . <<< "$preview_response"
@@ -122,7 +122,7 @@ jobs:
             --header "Content-Type: application/json" \
             --data "$refine_payload" \
             https://api.meshy.ai/openapi/v2/text-to-3d)"
-          refine_id="$(jq -r '.result // empty' <<< "$refine_task_json")"
+          refine_id="$(jq -r '.result // empty' <<< "$refine_response")"
           if [[ -z "$refine_id" ]]; then
             echo "::error::Meshy n'a pas retourné d'identifiant pour le texturage."
             jq . <<< "$refine_response"
