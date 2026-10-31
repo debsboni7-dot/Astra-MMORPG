@@ -1,0 +1,47 @@
+name: Meshy balance check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-balance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check Meshy API key and credit balance
+        shell: bash
+        env:
+          MESHY_API_KEY: ${{ secrets.MESHY_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${MESHY_API_KEY:-}" ]]; then
+            echo "MESHY_API_KEY is missing from GitHub Actions secrets." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "A MESHY_API_KEY secret is available to this workflow." | tee -a "$GITHUB_STEP_SUMMARY"
+
+          response="$(curl --silent --show-error --fail \
+            --header "Authorization: Bearer ${MESHY_API_KEY}" \
+            https://api.meshy.ai/openapi/v1/balance)"
+
+          balance="$(jq -r '.balance // "unknown"' <<< "$response")"
+          monthly="$(jq -r '.monthly_credits // "unknown"' <<< "$response")"
+          permanent="$(jq -r '.permanent_credits // "unknown"' <<< "$response")"
+          reset_ms="$(jq -r '.monthly_resets_at // empty' <<< "$response")"
+
+          {
+            echo ""
+            echo "## Meshy account balance"
+            echo "- **Total available:** $balance credits"
+            echo "- **Monthly credits remaining:** $monthly"
+            echo "- **Permanent credits:** $permanent"
+            if [[ -n "$reset_ms" ]]; then
+              reset_date="$(date -u -d "@$((reset_ms / 1000))" '+%Y-%m-%d %H:%M UTC')"
+              echo "- **Next monthly reset:** $reset_date"
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
