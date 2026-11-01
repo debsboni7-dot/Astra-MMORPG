@@ -89,3 +89,39 @@ export function updateHitRecovery(state, now) {
   }
   return { phase: state.phase, progress: state.phase === 'standing' ? 1 : 0, height: 0, grounded: state.phase === 'down' };
 }
+
+
+/** Diminishes repeated crowd-control effects on the same target to prevent stun-locks. */
+export function createControlDiminishingState() {
+  return { count: 0, lastAppliedAt: -Infinity };
+}
+
+export function applyControlDiminishing(state, reaction, now, {
+  windowMs = 4500, step = .18, maxReduction = .72, hardControlLimit = 3,
+} = {}) {
+  if (!state || !reaction) throw new Error('Control state and reaction are required.');
+  const time = finite(now);
+  if (time < state.lastAppliedAt || time - state.lastAppliedAt > Math.max(0, finite(windowMs, 4500))) state.count = 0;
+  const isControl = finite(reaction.staggerMs) > 0 && reaction.reaction !== 'flinch';
+  if (!isControl) return { ...reaction, controlCount: state.count, controlReduction: 0 };
+  state.count += 1;
+  state.lastAppliedAt = time;
+  const reduction = clamp((state.count - 1) * Math.max(0, finite(step, .18)), 0, clamp(maxReduction, 0, .9));
+  const adjusted = {
+    ...reaction,
+    staggerMs: Math.max(90, Math.round(finite(reaction.staggerMs) * (1 - reduction))),
+    knockback: Math.max(0, finite(reaction.knockback) * (1 - reduction)),
+    controlCount: state.count,
+    controlReduction: reduction,
+  };
+  if (state.count >= Math.max(2, Math.floor(finite(hardControlLimit, 3)))) {
+    if (adjusted.knockdown || adjusted.launch) {
+      adjusted.reaction = 'stagger';
+      adjusted.knockdown = false;
+      adjusted.launch = false;
+      adjusted.airborneMs = 0;
+      adjusted.launchHeight = 0;
+    }
+  }
+  return adjusted;
+}

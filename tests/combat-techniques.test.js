@@ -86,3 +86,30 @@ test('launched target waits through landing stun and get-up before standing', ()
   assert.equal(updateHitRecovery(state, 1100).phase, 'getting-up');
   assert.equal(updateHitRecovery(state, 1400).phase, 'standing');
 });
+
+
+test('repeated control effects diminish and hard control is downgraded to prevent stun-locks', async () => {
+  const { createControlDiminishingState, applyControlDiminishing } = await import('../prototype/src/combat/CombatTechniques.js');
+  const state = createControlDiminishingState();
+  const hit = { reaction: 'knockdown', staggerMs: 1000, knockback: 1, knockdown: true, launch: false };
+  const first = applyControlDiminishing(state, hit, 100);
+  const second = applyControlDiminishing(state, hit, 500);
+  const third = applyControlDiminishing(state, hit, 900);
+  assert.equal(first.staggerMs, 1000);
+  assert.equal(second.staggerMs, 820);
+  assert.equal(third.staggerMs, 640);
+  assert.equal(third.knockdown, false);
+  assert.equal(third.reaction, 'stagger');
+});
+
+test('control diminishing resets after its recovery window', async () => {
+  const { createControlDiminishingState, applyControlDiminishing } = await import('../prototype/src/combat/CombatTechniques.js');
+  const state = createControlDiminishingState();
+  const hit = { reaction: 'stagger', staggerMs: 500, knockback: .5, knockdown: false, launch: false };
+  applyControlDiminishing(state, hit, 0);
+  applyControlDiminishing(state, hit, 100);
+  const recovered = applyControlDiminishing(state, hit, 5000);
+  assert.equal(recovered.controlCount, 1);
+  assert.equal(recovered.controlReduction, 0);
+  assert.equal(recovered.staggerMs, 500);
+});
