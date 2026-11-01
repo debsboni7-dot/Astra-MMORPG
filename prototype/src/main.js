@@ -1,6 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js';
+import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAttack } from './combat/CombatRuntime.js';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
@@ -66,6 +67,10 @@ const QUATERNIUS_ITEMS=[
  qItem('ranger_f_pauldron','Ranger · Épaulières','accessory','female','Female_Ranger_Acc_Pauldrons')
 ];
 const WARDROBE_CATALOG=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,QUATERNIUS_ITEMS.filter(item=>item.slot===slot.id)]));
+let playerCombatant = createCombatant({ id: 'player', name: 'Joueur', physicalStrength: 10, fireMastery: 1, weaponMastery: 0 });
+let trainingDummyCombatant = null;
+let trainingDummyMesh = null;
+let combatUiTimer = 0;
 const state = {race:'human',gender:'male',category:'appearance',name:'',alias:'',screen:'menu',model:null,mixer:null,actions:{},currentAction:'idle',actionOneShot:false,zipCache:new Map(),loadToken:0,gameYaw:0,gamePos:new THREE.Vector3(0,0,0),keys:new Set(),drag:false,lastX:0,previewYaw:0,previewDistance:4.8,wardrobe:Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,''])),wardrobeObjects:{},wardrobeToken:0,wardrobeSlotTokens:{}};
 
 const scene = new THREE.Scene();
@@ -166,8 +171,80 @@ function restoreWardrobe(saved={}){
  resetWardrobe();for(const slot of WARDROBE_SLOTS){const id=saved?.[slot.id];if(id&&(WARDROBE_CATALOG[slot.id]||[]).some(item=>item.id===id))equipWardrobeItem(slot.id,id);}
 }
 
+
+function createTrainingDummy(){
+ if(trainingDummyMesh){world.remove(trainingDummyMesh);trainingDummyMesh=null;}
+ trainingDummyCombatant=createCombatant({id:'training-dummy',name:'Mannequin d’entraînement',maxHp:150,hp:150,physicalStrength:0,fireMastery:0});
+ const group=new THREE.Group();
+ const wood=new THREE.MeshStandardMaterial({color:0x8b5a35,roughness:.9});
+ const dark=new THREE.MeshStandardMaterial({color:0x493126,roughness:.95});
+ const body=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,1.15,8),wood);body.position.y=1.15;group.add(body);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.27,12,10),wood);head.position.y=1.92;group.add(head);
+ const crossbar=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,1.25,8),dark);crossbar.rotation.z=Math.PI/2;crossbar.position.y=1.42;group.add(crossbar);
+ const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,2.2,8),dark);post.position.y=.15;group.add(post);
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(.48,.55,.18,10),dark);base.position.y=-.04;group.add(base);
+ group.position.set(0,0,-2.8);group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(group);trainingDummyMesh=group;
+ updateCombatHud();
+}
+function ensureCombatHud(){
+ let panel=$('#combat-panel');
+ if(!panel){
+  panel=document.createElement('div');panel.id='combat-panel';
+  panel.style.cssText='position:absolute;right:18px;top:72px;width:min(280px,42vw);padding:12px;background:rgba(8,15,25,.88);border:1px solid rgba(92,174,225,.65);border-radius:10px;color:#edf6ff;font:12px/1.4 system-ui;z-index:5;backdrop-filter:blur(8px)';
+  panel.innerHTML='<div style="font-weight:800;letter-spacing:.12em;margin-bottom:8px">ENTRAÎNEMENT</div><div>JOUEUR · PV <span id="combat-player-hp">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 8px"><div id="combat-player-hp-bar" style="height:100%;width:100%;background:#55bd83"></div></div><div>ENDURANCE <span id="combat-player-stamina">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-player-stamina-bar" style="height:100%;width:100%;background:#56bfff"></div></div><div style="font-weight:700">MANNEQUIN · PV <span id="combat-target-hp">150 / 150</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-target-hp-bar" style="height:100%;width:100%;background:#e18a55"></div></div><div id="combat-message" style="min-height:32px;color:#b9d9f2;margin-bottom:8px">Approche-toi du mannequin pour attaquer.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button data-combat="attack">Attaque (J)</button><button data-combat="fire">Feu (K)</button><button data-combat="block">Parade (L)</button><button data-combat="dodge">Esquive (O)</button><button data-combat="reset" style="grid-column:1 / -1">Réinitialiser le mannequin</button></div>';
+  for(const button of panel.querySelectorAll('button')){button.style.cssText='padding:7px 5px;border:1px solid #42627c;border-radius:6px;background:#182b3c;color:#eff8ff;font-weight:650';button.addEventListener('click',()=>combatAction(button.dataset.combat));}
+  gameHud.append(panel);
+ }
+ panel.hidden=false;
+}
+function combatMessage(message){
+ const el=$('#combat-message');if(el)el.textContent=message;
+}
+function updateCombatHud(){
+ const update=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
+ const bar=(id,value,max)=>{const el=$(id);if(el)el.style.width=(max>0?Math.max(0,Math.min(100,value/max*100)):0)+'%';};
+ if(!playerCombatant||!trainingDummyCombatant)return;
+ update('#combat-player-hp',Math.ceil(playerCombatant.hp)+' / '+playerCombatant.maxHp);
+ update('#combat-player-stamina',Math.floor(playerCombatant.stamina)+' / '+playerCombatant.maxStamina);
+ update('#combat-target-hp',Math.ceil(trainingDummyCombatant.hp)+' / '+trainingDummyCombatant.maxHp);
+ bar('#combat-player-hp-bar',playerCombatant.hp,playerCombatant.maxHp);
+ bar('#combat-player-stamina-bar',playerCombatant.stamina,playerCombatant.maxStamina);
+ bar('#combat-target-hp-bar',trainingDummyCombatant.hp,trainingDummyCombatant.maxHp);
+}
+function performPlayerAttack(kind='physical'){
+ if(!state.model||!trainingDummyCombatant||trainingDummyCombatant.defeated){combatMessage('Le mannequin est hors service. Réinitialise-le.');return;}
+ const distance=state.model.position.distanceTo(trainingDummyMesh.position);
+ if(distance>3.35){combatMessage('Rapproche-toi du mannequin.');return;}
+ const attack=kind==='magic'
+  ? {id:'training-fire-bolt',kind:'magic',element:'fire',base:24,relevantPower:0,powerCoefficient:0,techniqueMultiplier:1,schoolMasteryMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:12}
+  : {id:'training-light-strike',kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,weaponPower:0,techniqueMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:0};
+ const result=executeAttack(playerCombatant,trainingDummyCombatant,attack,{});
+ if(!result.executed){combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
+ playAction(kind==='magic'?'charged_spell_cast':'attack',true);
+ combatMessage((kind==='magic'?'Sort de feu':'Attaque')+' : '+Math.round(result.damage)+' dégâts infligés.');
+ if(trainingDummyCombatant.defeated)combatMessage('Mannequin détruit ! Tu peux le réinitialiser.');
+ updateCombatHud();
+}
+function combatAction(action){
+ const now=performance.now();
+ if(action==='attack')performPlayerAttack('physical');
+ else if(action==='fire')performPlayerAttack('magic');
+ else if(action==='block'){
+  const result=beginBlock(playerCombatant,{now,staminaCost:4,durationMs:650,parryWindowMs:180});
+  if(result.started){playAction('block',true);combatMessage('Garde active : fenêtre de parade parfaite pendant 180 ms.');}
+  else combatMessage('Pas assez d’endurance pour bloquer.');
+ }else if(action==='dodge'){
+  const result=beginDodge(playerCombatant,{now,staminaCost:18,durationMs:420});
+  if(result.started){playAction('dodge_roll',true);combatMessage('Esquive : invulnérabilité temporaire.');}
+  else combatMessage('Pas assez d’endurance pour esquiver.');
+ }else if(action==='reset'){
+  createTrainingDummy();combatMessage('Mannequin réinitialisé.');
+ }
+ updateCombatHud();
+}
+
 function setStatus(text,good=false){$('#model-status').textContent=text;$('#model-status').style.color=good?'#77d8a0':'#f1c77a';}
-function setScreen(name){state.screen=name;menu.hidden=name!=='menu';creator.hidden=name!=='creator';gameHud.hidden=name!=='game';canvas.style.opacity=name==='menu'?'0.38':'1';if(name==='creator'){camera.position.set(0,1.45,4.7);camera.lookAt(0,1,0);}if(name==='game'){makeWorld();camera.position.set(0,3,7);}}
+function setScreen(name){state.screen=name;menu.hidden=name!=='menu';creator.hidden=name!=='creator';gameHud.hidden=name!=='game';canvas.style.opacity=name==='menu'?'0.38':'1';if(name==='creator'){camera.position.set(0,1.45,4.7);camera.lookAt(0,1,0);}if(name==='game'){makeWorld();createTrainingDummy();ensureCombatHud();camera.position.set(0,3,7);}}
 function createRaceButtons(){const root=$('#race-options');root.innerHTML='';for(const [id,label] of RACES){const b=document.createElement('button');b.className='race-choice'+(id===state.race?' selected':'');b.textContent=label;b.dataset.race=id;b.addEventListener('click',()=>{state.race=id;updateSelection();loadSelectedCharacter();});root.append(b);}}
 function updateSelection(){document.querySelectorAll('.race-choice').forEach(b=>b.classList.toggle('selected',b.dataset.race===state.race));document.querySelectorAll('[data-gender]').forEach(b=>b.classList.toggle('selected',b.dataset.gender===state.gender));$('#preview-name').textContent=`${RACES.find(x=>x[0]===state.race)[1].toUpperCase()} · ${state.gender==='male'?'MASCULIN':'FÉMININ'}`;}
 function archiveKey(){return `${state.race}_${state.gender}`;}
@@ -205,7 +282,7 @@ async function loadSelectedCharacter(){const token=++state.loadToken,key=archive
   buildWardrobeUI();playAction('idle');setStatus('MODÈLE CHARGÉ',true);$('#category-note').textContent=`Modèle ${RACES.find(x=>x[0]===state.race)[1]} ${state.gender==='male'?'masculin':'féminin'} chargé. Aperçu 3D réel.`;return true;
  }catch(err){console.error(err);if(token===state.loadToken){setStatus('ERREUR DE CHARGEMENT');$('#category-note').textContent=err.message;showError(`Impossible de charger le personnage ${key}.\n${err.message}`);}return false;}}
 function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning())return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;state.actionOneShot=oneShot;next.fadeIn(.16).play();if(previous&&previous!==next)previous.fadeOut(.16);state.currentAction=name;}
-async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
+async function saveCharacter(){playerCombatant=createCombatant({id:'player',name:state.name||'Joueur',physicalStrength:10,fireMastery:1,weaponMastery:0});state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
 function showError(message){errorBox.hidden=false;errorBox.textContent=message;setTimeout(()=>{errorBox.hidden=true;},9000);}
 
 createRaceButtons();updateSelection();buildWardrobeUI();
@@ -228,14 +305,14 @@ function visibleFocusables(){return state.screen==='menu'?[...document.querySele
 function moveFocus(direction){const list=visibleFocusables();if(!list.length)return;let index=list.indexOf(document.activeElement);if(index<0)index=0;index=(index+direction+list.length)%list.length;list[index].focus();}
 function backAction(){if(state.screen==='creator')setScreen('menu');else if(state.screen==='game'){setScreen('creator');loadSelectedCharacter();}}
 addEventListener('keydown',e=>{if(state.screen==='menu'&&['arrowup','arrowdown'].includes(e.key.toLowerCase())){e.preventDefault();moveFocus(e.key==='ArrowDown'?1:-1);}if(state.screen==='creator'&&['arrowup','arrowdown'].includes(e.key.toLowerCase())&&document.activeElement?.tagName!=='INPUT'){e.preventDefault();moveFocus(e.key==='ArrowDown'?1:-1);}if(e.key==='Escape'||e.key.toLowerCase()==='backspace'){if(state.screen!=='menu')backAction();}if(state.screen==='game'){const k=e.key.toLowerCase();if(k===' '||k==='space')triggerAction('jump');if(k==='j')triggerAction('attack');if(k==='k')triggerAction('charged_spell_cast');if(k==='l')triggerAction('block');if(k==='o')triggerAction('dodge_roll');}});
-let gamepadPrev={};function triggerAction(name){if(state.screen==='game'&&state.actions[name])playAction(name,true);}
+let gamepadPrev={};function triggerAction(name){if(state.screen!=='game')return;if(name==='attack'){performPlayerAttack('physical');return;}if(name==='charged_spell_cast'){performPlayerAttack('magic');return;}if(name==='block'){combatAction('block');return;}if(name==='dodge_roll'){combatAction('dodge');return;}if(state.actions[name])playAction(name,true);}
 function pollGamepad(){const pads=navigator.getGamepads?.()||[];const pad=[...pads].find(Boolean);if(!pad)return;const pressed=(i)=>!!pad.buttons[i]?.pressed;const edge=(key,down)=>{const was=!!gamepadPrev[key];gamepadPrev[key]=down;return down&&!was;};if(edge('up',pressed(12)))moveFocus(-1);if(edge('down',pressed(13)))moveFocus(1);if(edge('left',pressed(14))&&state.screen==='creator')cycleRace(-1);if(edge('right',pressed(15))&&state.screen==='creator')cycleRace(1);if(edge('cross',pressed(0))){if(state.screen==='game')triggerAction('jump');else document.activeElement?.click?.();}if(edge('circle',pressed(1))){if(state.screen==='game')triggerAction('dodge_roll');else backAction();}if(edge('square',pressed(2)))triggerAction('attack');if(edge('triangle',pressed(3)))triggerAction('charged_spell_cast');if(edge('l1',pressed(4))){if(state.screen==='creator')cycleCategory(-1);else triggerAction('block');}if(edge('r1',pressed(5))){if(state.screen==='creator')cycleCategory(1);else triggerAction('attack');}if(edge('r2',pressed(7)))triggerAction('charged_spell_cast');if(state.screen==='game'){const x=pad.axes?.[0]||0,y=pad.axes?.[1]||0;if(Math.abs(x)>.15||Math.abs(y)>.15){state.gamePadX=x;state.gamePadY=y;}else{state.gamePadX=0;state.gamePadY=0;}}}
 function cycleRace(dir){const i=RACES.findIndex(x=>x[0]===state.race);state.race=RACES[(i+dir+RACES.length)%RACES.length][0];updateSelection();loadSelectedCharacter();}
 function cycleCategory(dir){const buttons=[...document.querySelectorAll('.category')];const i=buttons.findIndex(x=>x.dataset.category===state.category);buttons[(i+dir+buttons.length)%buttons.length]?.click();}
 let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(state.screen==='game'&&e.pointerType==='mouse'){mouseDown=true;lastMouseX=e.clientX;}});addEventListener('pointerup',()=>mouseDown=false);addEventListener('pointermove',e=>{if(mouseDown&&state.screen==='game'){state.gameYaw-=(e.clientX-lastMouseX)*.006;lastMouseX=e.clientX;}});
 
 let lastTime=performance.now();let currentMode='';
-function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);
+function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
  if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
  if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0);const padForward=-(state.gamePadY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
  renderer.render(scene,camera);
