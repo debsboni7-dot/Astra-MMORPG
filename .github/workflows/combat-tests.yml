@@ -17,6 +17,6 @@ jobs:
         with:
           node-version: 22
       - name: Check browser prototype syntax
-        run: node --check prototype/src/main.js && node --check prototype/src/combat/CombatEngine.js && node --check prototype/src/combat/CombatRuntime.js && node --check prototype/src/combat/EnemyAI.js
+        run: node --check prototype/src/main.js && node --check prototype/src/combat/CombatEngine.js && node --check prototype/src/combat/CombatRuntime.js && node --check prototype/src/combat/EnemyAI.js && node --check server/index.js && node --check server/auth/AuthService.js && node --check server/db/PostgresRepository.js && node --check server/http/createAstreaHttpServer.js && node --check server/progression/WeaponProgressionService.js && node --check server/characters/CharacterService.js
       - name: Run combat engine and runtime tests
         run: node --test tests/*.test.js
