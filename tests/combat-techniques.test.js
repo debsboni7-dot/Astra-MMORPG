@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createComboState, advanceCombo, resetCombo, resolveHitReaction } from '../prototype/src/combat/CombatTechniques.js';
+import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery } from '../prototype/src/combat/CombatTechniques.js';
 
 test('combo advances through three timed hits and marks the finisher', () => {
   const combo = createComboState({ maxStage: 3, inputWindowMs: 700 });
@@ -61,4 +61,28 @@ test('non-knockdown reactions do not force a grounded recovery', async () => {
   const recovery = createHitRecoveryState();
   beginHitRecovery(recovery, { knockdown: false, staggerMs: 300 }, 500);
   assert.equal(updateHitRecovery(recovery, 600).phase, 'standing');
+});
+
+
+test('launcher sends a target airborne and then into grounded recovery', () => {
+  const reaction = resolveHitReaction({ impact: 80, targetPoise: 40, targetMass: 1, attackType: 'launcher' });
+  assert.equal(reaction.reaction, 'launch');
+  const state = createHitRecoveryState({ getUpDurationMs: 400 });
+  beginHitRecovery(state, reaction, 1000);
+  const apex = updateHitRecovery(state, 1360);
+  assert.equal(apex.phase, 'airborne');
+  assert.ok(apex.height > 1.2);
+  const landing = updateHitRecovery(state, 1720);
+  assert.equal(landing.phase, 'down');
+  assert.equal(landing.height, 0);
+  assert.equal(landing.grounded, true);
+});
+
+test('launched target waits through landing stun and get-up before standing', () => {
+  const state = createHitRecoveryState({ getUpDurationMs: 300 });
+  beginHitRecovery(state, { launch: true, airborneMs: 500, launchHeight: 1, staggerMs: 600 }, 0);
+  assert.equal(updateHitRecovery(state, 500).phase, 'down');
+  assert.equal(updateHitRecovery(state, 1099).phase, 'down');
+  assert.equal(updateHitRecovery(state, 1100).phase, 'getting-up');
+  assert.equal(updateHitRecovery(state, 1400).phase, 'standing');
 });

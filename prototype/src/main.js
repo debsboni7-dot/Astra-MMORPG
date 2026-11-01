@@ -261,14 +261,14 @@ function performPlayerAttack(kind='physical'){
  const combo=kind==='magic'?null:advanceCombo(comboState,combatClockMs);
  const attack=kind==='magic'
   ? {id:'training-fire-bolt',kind:'magic',element:'fire',base:24,relevantPower:0,powerCoefficient:0,techniqueMultiplier:1,schoolMasteryMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:12}
-  : {id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,weaponPower:0,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':'light'};
+  : {id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,weaponPower:0,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':combo.stage===2?'launcher':'light'};
  const result=executeAttack(playerCombatant,target,attack,{now:combatClockMs});
  if(!result.executed){if(kind!=='magic'){resetCombo(comboState);comboTargetId=null;}combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
  playAction(kind==='magic'?'charged_spell_cast':'attack',true);
  let reaction=null;
  if(kind==='physical'){if(combo.finisher)comboTargetId=null;else if(combo.stage===1)comboTargetId=target.id;}
  if(targetIsEnemy&&result.executed){reaction=resolveHitReaction({impact:attack.impact??result.damage,targetPoise:enemyCombatant.poise,targetMass:enemyCombatant.mass,controlResistance:enemyCombatant.controlResistance,attackType:attack.attackType||'magic'});staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+reaction.staggerMs;enemyKnockdownUntil=reaction.knockdown?enemyStaggerUntil:0;
-  if(reaction.knockdown){beginHitRecovery(enemyRecovery,reaction,combatClockMs);enemyMesh.position.y=-.55;}
+  if(reaction.knockdown||reaction.launch){beginHitRecovery(enemyRecovery,reaction,combatClockMs);enemyMesh.position.y=reaction.launch?0:-.55;}
   if(reaction.knockback>0){const dx=enemyMesh.position.x-state.model.position.x,dz=enemyMesh.position.z-state.model.position.z,len=Math.hypot(dx,dz)||1;const displacement=reaction.knockback*(attack.attackType==='finisher'?1:.22);enemyMesh.position.x+=dx/len*displacement;enemyMesh.position.z+=dz/len*displacement;}
   if(reaction.knockdown)enemyMesh.rotation.x=-Math.PI/2;
  }
@@ -302,12 +302,13 @@ function updateEnemyEncounter(dt,now){
  const dx=state.model.position.x-enemyMesh.position.x,dz=state.model.position.z-enemyMesh.position.z;
  const distance=Math.hypot(dx,dz);
  const recoveryPose=updateHitRecovery(enemyRecovery,now);
- const recovering=recoveryPose.phase==='down'||recoveryPose.phase==='getting-up';
+ const recovering=recoveryPose.phase==='airborne'||recoveryPose.phase==='down'||recoveryPose.phase==='getting-up';
  const result=updateEnemyAI(enemyAI,{deltaSeconds:dt,distance,defeated:enemyCombatant.defeated,staggered:now<enemyStaggerUntil||recovering});
  if(result.canMove&&distance>enemyAI.attackRange*.88){const step=Math.min(distance-enemyAI.attackRange*.88,2.15*dt);enemyMesh.position.x+=dx/(distance||1)*step;enemyMesh.position.z+=dz/(distance||1)*step;}
  if(distance>.08)enemyMesh.rotation.y=Math.atan2(dx,dz);
  if(enemyMesh&&enemyCombatant&&!enemyCombatant.defeated){
-  if(recoveryPose.phase==='down'){enemyMesh.rotation.x=-Math.PI/2;enemyMesh.position.y=-.55;}
+  if(recoveryPose.phase==='airborne'){enemyMesh.rotation.x=-.18;enemyMesh.position.y=recoveryPose.height;}
+  else if(recoveryPose.phase==='down'){enemyMesh.rotation.x=-Math.PI/2;enemyMesh.position.y=-.55;}
   else if(recoveryPose.phase==='getting-up'){enemyMesh.rotation.x=-Math.PI/2*(1-recoveryPose.progress);enemyMesh.position.y=-.55*(1-recoveryPose.progress);}
   else if(recoveryPose.phase==='standing'){enemyMesh.rotation.x=0;enemyMesh.position.y=0;}
  }

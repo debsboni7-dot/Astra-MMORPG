@@ -41,11 +41,12 @@ export function resolveHitReaction({ impact = 0, targetPoise = 40, targetMass = 
   const resistance = clamp(controlResistance, 0, .95);
   const effectiveForce = force * (1 - resistance) / Math.sqrt(mass);
   const ratio = effectiveForce / poise;
-  if (ratio < .28) return { reaction: 'flinch', staggerMs: 100, knockback: 0, knockdown: false, ratio };
-  if (ratio < .72) return { reaction: 'stagger', staggerMs: 260 + ratio * 180, knockback: .12 + ratio * .22, knockdown: false, ratio };
-  if (ratio < 1.35) return { reaction: 'knockback', staggerMs: 480 + ratio * 120, knockback: .45 + ratio * .45, knockdown: false, ratio };
+  if (ratio < .28) return { reaction: 'flinch', staggerMs: 100, knockback: 0, knockdown: false, launch: false, ratio };
+  if (attackType === 'launcher' && ratio >= .72) return { reaction: 'launch', staggerMs: 520, knockback: .58, knockdown: false, launch: true, airborneMs: 720, launchHeight: 1.25, ratio };
+  if (ratio < .72) return { reaction: 'stagger', staggerMs: 260 + ratio * 180, knockback: .12 + ratio * .22, knockdown: false, launch: false, ratio };
+  if (ratio < 1.35) return { reaction: 'knockback', staggerMs: 480 + ratio * 120, knockback: .45 + ratio * .45, knockdown: false, launch: false, ratio };
   const heavy = attackType === 'heavy' || attackType === 'finisher' || ratio >= 1.8;
-  return { reaction: heavy ? 'knockdown' : 'knockback', staggerMs: heavy ? 1050 : 650, knockback: heavy ? 1.35 : 1, knockdown: heavy, ratio };
+  return { reaction: heavy ? 'knockdown' : 'knockback', staggerMs: heavy ? 1050 : 650, knockback: heavy ? 1.35 : 1, knockdown: heavy, launch: false, ratio };
 }
 
 
@@ -55,26 +56,36 @@ export function createHitRecoveryState({ getUpDurationMs = 650 } = {}) {
 }
 
 export function beginHitRecovery(state, reaction, now, { getUpDurationMs = state.getUpDurationMs } = {}) {
-  if (!state || !reaction?.knockdown) return state;
+  if (!state || (!reaction?.knockdown && !reaction?.launch)) return state;
   const time = finite(now);
-  state.phase = 'down';
   state.startedAt = time;
-  state.recoverAt = time + Math.max(0, finite(reaction.staggerMs));
   state.getUpDurationMs = Math.max(1, finite(getUpDurationMs, 650));
+  if (reaction.launch) {
+    state.phase = 'airborne';
+    state.airborneDurationMs = Math.max(1, finite(reaction.airborneMs, 720));
+    state.launchHeight = Math.max(.1, finite(reaction.launchHeight, 1.25));
+    state.recoverAt = time + state.airborneDurationMs + Math.max(0, finite(reaction.staggerMs));
+  } else {
+    state.phase = 'down';
+    state.recoverAt = time + Math.max(0, finite(reaction.staggerMs));
+  }
   return state;
 }
 
 export function updateHitRecovery(state, now) {
   if (!state) throw new Error('A hit recovery state is required.');
   const time = finite(now);
-  if (state.phase === 'down' && time >= state.recoverAt) {
-    state.phase = 'getting-up';
-    state.startedAt = time;
+  if (state.phase === 'airborne') {
+    const progress = clamp((time - state.startedAt) / state.airborneDurationMs, 0, 1);
+    const height = Math.sin(Math.PI * progress) * state.launchHeight;
+    if (progress >= 1) { state.phase = 'down'; state.startedAt = time; }
+    return { phase: progress >= 1 ? 'down' : 'airborne', progress, height: progress >= 1 ? 0 : height, grounded: progress >= 1 };
   }
+  if (state.phase === 'down' && time >= state.recoverAt) { state.phase = 'getting-up'; state.startedAt = time; }
   if (state.phase === 'getting-up') {
     const progress = clamp((time - state.startedAt) / state.getUpDurationMs, 0, 1);
     if (progress >= 1) state.phase = 'standing';
-    return { phase: state.phase, progress, grounded: progress < 1 };
+    return { phase: state.phase, progress, height: 0, grounded: progress < 1 };
   }
-  return { phase: state.phase, progress: state.phase === 'standing' ? 1 : 0, grounded: state.phase === 'down' };
+  return { phase: state.phase, progress: state.phase === 'standing' ? 1 : 0, height: 0, grounded: state.phase === 'down' };
 }

@@ -22,7 +22,7 @@ Voir `prototype/src/combat/CombatEngine.js` pour les fonctions pures : calculs p
 - Workflow GitHub Actions : `.github/workflows/combat-tests.yml`.
 - Banc de test navigateur : ouvrir `prototype/combat-tests.html` depuis un serveur HTTP local ou après déploiement.
 
-Les 44 tests automatisés couvrent les calculs physiques et magiques, les limites de résistance, les coups critiques, la qualité d'exécution, les boucliers, les soins, les effets périodiques, la purification, les modificateurs, l'absorption du feu, les prérequis d'armes, la résolution d'attaque, les transitions de l'IA, les fenêtres de télégraphie, la récupération, l'interruption et la défaite. Deux tests supplémentaires couvrent la séquence de mise à terre et de relevée : maintien au sol pendant l'étourdissement, animation de relevée progressive, puis retour à l'état debout. Ils utilisent des données artificielles destinées à vérifier les invariants, pas à fixer l'équilibrage final.
+Les 46 tests automatisés couvrent les calculs physiques et magiques, les limites de résistance, les coups critiques, la qualité d'exécution, les boucliers, les soins, les effets périodiques, la purification, les modificateurs, l'absorption du feu, les prérequis d'armes, la résolution d'attaque, les transitions de l'IA, les fenêtres de télégraphie, la récupération, l'interruption et la défaite. Les tests de réaction couvrent aussi le lancement aérien : trajectoire ascendante et descendante, atterrissage, maintien au sol, puis relevée progressive. Ils utilisent des données artificielles destinées à vérifier les invariants, pas à fixer l'équilibrage final.
 
 ## À faire avant intégration en production
 - Brancher les attributs officiels complets une fois leur liste et leurs règles confirmées.
@@ -47,7 +47,7 @@ IA ennemie actuelle :
 - Le pillard passe par approche, télégraphie, attaque, récupération, étourdissement et défaite.
 - Un anneau rouge au sol annonce son attaque ; il peut interrompre sa télégraphie s'il est frappé.
 - Le joueur peut éviter l'attaque par esquive, la réduire en garde ou l'annuler avec une parade parfaite, qui ouvre une fenêtre de contre-attaque manuelle.
-- Les attaques du joueur ciblent la cible la plus proche à portée ; les attaques sur le pillard l'interrompent temporairement. Une mise à terre le maintient au sol pendant sa durée de contrôle, puis une phase de relevée progressive le rend à nouveau mobile.
+- Les attaques du joueur ciblent la cible la plus proche à portée ; les attaques sur le pillard l'interrompent temporairement. Une mise à terre le maintient au sol pendant sa durée de contrôle, puis une phase de relevée progressive le rend à nouveau mobile. Le deuxième coup du combo agit comme un lanceur : la cible suit une courte trajectoire aérienne, retombe, reste vulnérable au sol, puis se relève.
 
 Limites connues de cette intégration :
 - Le mannequin reste une cible d'entraînement immobile ; le pillard est un prototype d'IA simple, sans tactiques de groupe ni adaptation.
