@@ -15,6 +15,7 @@ L'identifiant du compte doit provenir de la session authentifiée, jamais du cor
 - `unlockSkill` vérifie niveau d'école, points disponibles et prérequis avant de sauvegarder.
 - `grantPointsFromServerEvent` doit être appelé uniquement par le système de progression de confiance, avec un identifiant d'événement serveur.
 - `recordSuccessfulCast` est appelé après validation et résolution du sort par le serveur. Il n'accepte aucun montant d'XP venant du client.
+- Les identifiants d'événements déjà traités sont conservés dans un journal borné afin qu'une répétition réseau ne donne pas deux fois les mêmes points, XP ou maîtrises. L'adaptateur transactionnel doit sérialiser les modifications d'un personnage.
 - `getSnapshot` et `getTree` lisent les données du personnage après vérification de propriété.
 
 ## Limite actuelle
