@@ -107,10 +107,29 @@ const world=new THREE.Group();scene.add(world);
 let worldGround=null;
 function makeWorld(){
   world.clear();
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x26372f,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.05;world.add(floor);
-  const path=new THREE.Mesh(new THREE.PlaneGeometry(3.5,70),new THREE.MeshStandardMaterial({color:0x6b6250,roughness:1}));path.rotation.x=-Math.PI/2;path.position.set(0,-.035,-12);world.add(path);
-  const trunkMat=new THREE.MeshStandardMaterial({color:0x55402d}),leafMat=new THREE.MeshStandardMaterial({color:0x294a37});
-  for(const [x,z] of [[-7,-7],[7,-8],[-9,5],[9,4],[-4,10],[5,10],[-12,-18],[12,-20]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.26,1.8,7),trunkMat);trunk.position.set(x,.9,z);world.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.15,2.7,7),leafMat);crown.position.set(x,2.7,z);world.add(crown);}
+  const mat=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
+  const grass=mat(0x344331),stone=mat(0x746b59),plaster=mat(0xb9a17a),timber=mat(0x493321),roof=mat(0x493b32),dark=mat(0x292b2a),leaf=mat(0x294532);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(150,150),grass);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;world.add(floor);
+  // Grande voie pavée, inspirée du village médiéval fourni.
+  const road=new THREE.Mesh(new THREE.PlaneGeometry(5.5,100),stone);road.rotation.x=-Math.PI/2;road.position.set(0,-.035,-16);world.add(road);
+  for(let z=-48;z<28;z+=2.1)for(let x=-2.35;x<2.4;x+=1.05){const p=new THREE.Mesh(new THREE.BoxGeometry(.94,.07,1.85),mat((Math.random()>.5?0x817866:0x665d50)));p.position.set(x,-.015,z+(Math.random()-.5)*.12);world.add(p);}
+  function house(x,z,scale=1){
+    const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(scale);world.add(g);
+    const base=new THREE.Mesh(new THREE.BoxGeometry(5,.35,4.2),dark);base.position.y=.18;g.add(base);
+    const body=new THREE.Mesh(new THREE.BoxGeometry(4.7,3.1,4),plaster);body.position.y=1.85;g.add(body);
+    for(const side of [-1,1]){const beam=new THREE.Mesh(new THREE.BoxGeometry(.16,3.3,.18),timber);beam.position.set(side*2.25,1.85,2.04);g.add(beam);}
+    for(const y of [.55,3.15]){const beam=new THREE.Mesh(new THREE.BoxGeometry(4.65,.16,.18),timber);beam.position.set(0,y,2.04);g.add(beam);}
+    const r1=new THREE.Mesh(new THREE.BoxGeometry(5.5,.22,3.1),roof);r1.position.set(0,3.65,-.8);r1.rotation.x=-.48;g.add(r1);
+    const r2=r1.clone();r2.position.z=1.15;r2.rotation.x=.48;g.add(r2);
+    const door=new THREE.Mesh(new THREE.BoxGeometry(1.05,2.15,.12),timber);door.position.set(0,1.1,2.12);g.add(door);
+    for(const wx of [-1.45,1.45]){const win=new THREE.Mesh(new THREE.BoxGeometry(.75,.9,.14),dark);win.position.set(wx,2.1,2.13);g.add(win);const cross=new THREE.Mesh(new THREE.BoxGeometry(.08,1,.18),timber);cross.position.set(wx,2.1,2.22);g.add(cross);}
+    const chimney=new THREE.Mesh(new THREE.BoxGeometry(.55,1.45,.55),stone);chimney.position.set(1.45,4.1,-1.2);g.add(chimney);
+  }
+  house(-9,-13,1.1);house(9,-23,1.05);house(-10,8,.9);house(11,13,1.15);
+  const trunkMat=mat(0x55402d),leafMat=leaf;
+  for(const [x,z] of [[-18,-7],[18,-8],[-20,5],[20,4],[-16,19],[17,26],[-23,-30],[23,-38]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.2,.3,2.2,8),trunkMat);trunk.position.set(x,1.1,z);world.add(trunk);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.65,1),leafMat);crown.position.set(x,3,z);world.add(crown);}
+  for(const [x,z] of [[-5,-5],[5,-16],[-5,5],[5,2]]){const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.85,12),timber);barrel.position.set(x,.42,z);world.add(barrel);const hoop=new THREE.Mesh(new THREE.TorusGeometry(.4,.035,6,16),dark);hoop.rotation.x=Math.PI/2;hoop.position.set(x,.2,z);world.add(hoop);}
+  const well=new THREE.Group();well.position.set(5,0,-4);world.add(well);const ring=new THREE.Mesh(new THREE.CylinderGeometry(1,.95,.75,12),stone);ring.position.y=.38;well.add(ring);const roofCap=new THREE.Mesh(new THREE.ConeGeometry(1.15,.8,4),roof);roofCap.position.y=2.2;roofCap.rotation.y=Math.PI/4;well.add(roofCap);
 }
 
 function buildWardrobeUI(){
@@ -416,7 +435,7 @@ canvas.addEventListener('pointerup',()=>state.drag=false);canvas.addEventListene
 canvas.addEventListener('wheel',e=>{if(state.screen==='creator'){e.preventDefault();state.previewDistance=THREE.MathUtils.clamp(state.previewDistance+e.deltaY*.004,3.0,7.5);}}, {passive:false});
 addEventListener('keydown',e=>{state.keys.add(e.key.toLowerCase());if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault();if(e.key==='Enter'&&state.screen==='menu')$('#new-game-btn').click();if(e.key==='Escape'&&state.screen==='creator')setScreen('menu');});
 addEventListener('keyup',e=>state.keys.delete(e.key.toLowerCase()));
-addEventListener('blur',()=>{state.keys.clear();state.gamePadX=0;state.gamePadY=0;state.drag=false;mouseDown=false;});
+addEventListener('blur',()=>{state.keys.clear();state.gamePadX=0;state.gamePadY=0;state.touchX=0;state.touchY=0;state.drag=false;mouseDown=false;});
 function visibleFocusables(){return state.screen==='menu'?[...document.querySelectorAll('#main-menu .ps-option')]:state.screen==='creator'?[...document.querySelectorAll('#creator button:not([disabled]),#creator input:not([disabled]),#creator select:not([disabled])')].filter(el=>el.offsetParent!==null):[];}
 function moveFocus(direction){const list=visibleFocusables();if(!list.length)return;let index=list.indexOf(document.activeElement);if(index<0)index=0;index=(index+direction+list.length)%list.length;list[index].focus();}
 function backAction(){if(state.screen==='creator')setScreen('menu');else if(state.screen==='game'){setScreen('creator');loadSelectedCharacter();}}
@@ -427,10 +446,20 @@ function cycleRace(dir){const i=RACES.findIndex(x=>x[0]===state.race);state.race
 function cycleCategory(dir){const buttons=[...document.querySelectorAll('.category')];const i=buttons.findIndex(x=>x.dataset.category===state.category);buttons[(i+dir+buttons.length)%buttons.length]?.click();}
 let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(state.screen==='game'&&e.pointerType==='mouse'){mouseDown=true;lastMouseX=e.clientX;}});addEventListener('pointerup',()=>mouseDown=false);addEventListener('pointermove',e=>{if(mouseDown&&state.screen==='game'){state.gameYaw-=(e.clientX-lastMouseX)*.006;lastMouseX=e.clientX;}});
 
+
+ // Commandes tactiles : joystick gauche et actions à droite.
+ const stickRoot=$('#move-stick'),stickKnob=$('#stick-knob');let stickPointer=null;
+ function updateStick(e){const r=stickRoot.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,limit=r.width*.34,len=Math.hypot(dx,dy)||1,k=Math.min(1,limit/len);state.touchX=dx*k/limit;state.touchY=dy*k/limit;stickKnob.style.transform=`translate(${dx*k}px,${dy*k}px)`;}
+ stickRoot.addEventListener('pointerdown',e=>{if(state.screen!=='game')return;stickPointer=e.pointerId;stickRoot.setPointerCapture(e.pointerId);updateStick(e);e.preventDefault();});
+ stickRoot.addEventListener('pointermove',e=>{if(e.pointerId===stickPointer)updateStick(e);});
+ function releaseStick(e){if(stickPointer===null||e.pointerId!==stickPointer)return;stickPointer=null;state.touchX=state.touchY=0;stickKnob.style.transform='translate(0,0)';}
+ stickRoot.addEventListener('pointerup',releaseStick);stickRoot.addEventListener('pointercancel',releaseStick);
+ document.querySelectorAll('.touch-actions [data-action]').forEach(button=>{button.addEventListener('pointerdown',e=>{e.preventDefault();triggerAction(button.dataset.action);});});
+
 let lastTime=performance.now();let currentMode='';
 function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);regenerateStamina(enemyCombatant,dt,true);combatClockMs+=dt*1000;updateEnemyEncounter(dt,combatClockMs);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
  if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
- if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0);const padForward=-(state.gamePadY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
+ if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0)+(state.touchX||0);const padForward=-(state.gamePadY||0)-(state.touchY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
  renderer.render(scene,camera);
 }
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
