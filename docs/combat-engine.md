@@ -80,3 +80,10 @@ Le module `WeaponProgression.js` définit une première courbe de jeu : chaque c
 Le rang suivant coûte 12 XP au rang 0, puis le seuil augmente de 2 XP par rang. Le rang 100 demande 11 100 XP cumulés. Les catégories ne partagent pas leur expérience. Les prérequis de force physique et de maîtrise restent indépendants : atteindre la maîtrise requise ne remplace jamais la force nécessaire pour manier l'arme.
 
 Huit techniques par catégorie se débloquent automatiquement aux rangs 3, 8, 15, 25, 40, 60, 80 et 100. Chaque technique possède sa propre maîtrise, qui progresse à chaque utilisation valide : paliers cumulés à 3, 8, 15, 25 et 40 utilisations. Chaque rang de technique augmente ses dégâts de 2 % et réduit son coût d'endurance de 2 %, avec un plafond de 10 % pour chacun. Une technique verrouillée ne peut pas être exécutée. Cette courbe est un premier équilibrage jouable destiné à être mesuré puis ajusté.
+
+
+## Interface de progression en combat
+
+Le HUD d'entraînement expose maintenant deux listes déroulantes distinctes : choix de la catégorie d'arme équipée et choix de la technique. Les techniques verrouillées restent visibles avec leur rang requis, mais ne peuvent pas être sélectionnées. Le panneau affiche l'expérience de maîtrise, l'expérience restante avant le rang suivant et, pour une technique choisie, son rang individuel et ses utilisations restantes.
+
+Les commandes de progression sont empilées sur une seule colonne et occupent toute la largeur disponible. Le panneau conserve son défilement vertical sur les petits écrans ; les contrôles utilisent une largeur minimale nulle et une largeur maximale de 100 %, sans positionnement superposé. Le changement de catégorie équipe une arme d'entraînement correspondante. Le choix d'une technique déverrouillée l'applique à la prochaine attaque physique. Les attaques magiques restent séparées de la maîtrise des armes.
