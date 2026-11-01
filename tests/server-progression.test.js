@@ -71,3 +71,18 @@ test('legacy progression is bounded and unknown fields are discarded', () => {
   assert.equal(clean.weaponUses, 0);
   assert.equal(clean.isAdmin, undefined);
 });
+
+test('individual technique mastery persists independently after category mastery is capped', async () => {
+  const repository = repositoryFixture();
+  repository.character.weaponProgression.weaponMasteries.sword = 100;
+  repository.character.weaponProgression.weaponMasteryXpByCategory.sword = 11100;
+  const service = createWeaponProgressionService(repository);
+  const result = await service.recordSuccessfulAttack({
+    accountId: 'account-1', characterId: 'character-1', category: 'sword',
+    attackType: 'light', techniqueId: 'quick_slash',
+  });
+  assert.equal(result.result.awarded, 0);
+  assert.equal(result.result.technique.recorded, true);
+  assert.equal(repository.character.weaponProgression.weaponTechniqueXp.quick_slash, 1);
+  assert.equal(repository.character.weaponProgression.weaponUses, 1);
+});
