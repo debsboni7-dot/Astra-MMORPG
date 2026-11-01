@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 const MAX_BODY_BYTES = 16 * 1024;
 function send(response, status, body) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
-  response.end(JSON.stringify(body));
+  response.end(status === 204 ? undefined : JSON.stringify(body));
 }
 async function readJson(request) {
   let raw = '';
