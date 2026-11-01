@@ -1,0 +1,20 @@
+name: Combat engine tests
+
+on:
+  push:
+    branches: [feature/combat-engine-core]
+  pull_request:
+    branches: [main]
+
+jobs:
+  combat-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run combat engine tests
+        run: node --test tests/combat-engine.test.js
