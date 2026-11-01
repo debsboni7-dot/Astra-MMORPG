@@ -11,14 +11,18 @@ Noyau technique initial, isolé du prototype 3D. Les formules et coefficients de
 - Les soins sont plafonnés aux PV maximums.
 - Les réapplications de brûlure/gel peuvent prolonger la durée sans empiler l'intensité.
 - Les buffs de même statistique/groupe ne s'additionnent pas : la valeur absolue la plus forte prévaut.
-- L'absorption/intensification d'une attaque hostile est réservée au feu et exige une maîtrise du feu strictement supérieure à celle de l'attaquant.
+- L'absorption/intensification d'une attaque hostile est réservée au feu et exige une maîtrise du feu strictement supérieure à celle de l'attaquant. La fonction actuelle vérifie l'éligibilité et retourne une décision ; le futur contrôleur de combat devra annuler explicitement les dégâts entrants et appliquer les bonus.
 - L'immunité doit être représentée explicitement, jamais par une résistance approximativement infinie.
 
 ## API
 Voir `prototype/src/combat/CombatEngine.js` pour les fonctions pures : calculs physiques/magiques, application de dégâts, soins, boucliers, effets temporaires, purification, modificateurs, absorption de feu, contrôle des prérequis d'armes et résolution d'attaque.
 
 ## Vérification
-Ouvrir `prototype/combat-tests.html` dans un navigateur moderne. Les tests utilisent des données artificielles destinées à vérifier les invariants, pas à fixer l'équilibrage final.
+- Tests automatisés Node.js : `node --test tests/combat-engine.test.js`.
+- Workflow GitHub Actions : `.github/workflows/combat-tests.yml`.
+- Banc de test navigateur : ouvrir `prototype/combat-tests.html` depuis un serveur HTTP local ou après déploiement.
+
+Les 19 tests automatisés couvrent les calculs physiques et magiques, les limites de résistance, les coups critiques, la qualité d'exécution, les boucliers, les soins, les effets périodiques, la purification, les modificateurs, l'absorption du feu, les prérequis d'armes et la résolution d'attaque. Ils utilisent des données artificielles destinées à vérifier les invariants, pas à fixer l'équilibrage final.
 
 ## À faire avant intégration en production
 - Brancher les attributs officiels complets une fois leur liste et leurs règles confirmées.
