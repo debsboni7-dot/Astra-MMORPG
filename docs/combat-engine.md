@@ -71,3 +71,12 @@ Le runtime permet maintenant d'équiper/déséquiper une arme physique avec une 
 ## Correctifs d'interface et de navigation
 
 Le panneau de combat utilise une grille à deux colonnes avec des largeurs minimales explicites, des boutons qui peuvent revenir à la ligne et un défilement interne lorsque la hauteur disponible est faible. Sa largeur tient compte des marges de l'écran sur mobile afin d'éviter tout débordement horizontal ou superposition des commandes. La navigation clavier/manette inclut désormais les listes déroulantes de personnalisation ; les flèches haut/bas restent disponibles pour choisir leurs options. La perte de focus de la fenêtre libère les touches de déplacement afin d'éviter un mouvement bloqué après un changement d'application.
+
+
+## Progression de maîtrise des armes — première courbe jouable
+
+Le module `WeaponProgression.js` définit une première courbe de jeu : chaque catégorie (épée, hache, marteau, arme d'hast) progresse indépendamment sur 100 rangs. Chaque attaque exécutée avec une arme donne de l'expérience à sa catégorie : légère 1 XP, lourde 1,5 XP, chargée 1,75 XP, finisher 2 XP, spéciale 2,25 XP et aérienne 1,5 XP. Une attaque refusée ne donne aucun gain.
+
+Le rang suivant coûte 12 XP au rang 0, puis le seuil augmente de 2 XP par rang. Le rang 100 demande 11 100 XP cumulés. Les catégories ne partagent pas leur expérience. Les prérequis de force physique et de maîtrise restent indépendants : atteindre la maîtrise requise ne remplace jamais la force nécessaire pour manier l'arme.
+
+Huit techniques par catégorie se débloquent automatiquement aux rangs 3, 8, 15, 25, 40, 60, 80 et 100. Chaque technique possède sa propre maîtrise, qui progresse à chaque utilisation valide : paliers cumulés à 3, 8, 15, 25 et 40 utilisations. Chaque rang de technique augmente ses dégâts de 2 % et réduit son coût d'endurance de 2 %, avec un plafond de 10 % pour chacun. Une technique verrouillée ne peut pas être exécutée. Cette courbe est un premier équilibrage jouable destiné à être mesuré puis ajusté.
