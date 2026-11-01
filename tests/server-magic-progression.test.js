@@ -39,19 +39,25 @@ test('skill unlock validates points and saves the character progression', async 
   assert.equal(result.reason, 'school-level');
 });
 
-test('server-confirmed cast records mastery only for an unlocked skill', async () => {
+test('trusted progression events unlock a skill and confirmed casts improve its mastery', async () => {
   const { service } = fixture();
-  const grant = await service.grantPointsFromServerEvent({
-    accountId: 'account-1', characterId: 'char-1', amount: 1, eventId: 'level-reward-2',
+  await service.grantPointsFromServerEvent({
+    accountId: 'account-1', characterId: 'char-1', amount: 1, eventId: 'points-reward-1',
   });
-  assert.equal(grant.granted, 1);
-  // The school level is intentionally still zero; a cast cannot bypass the level/unlock gate.
-  const result = await service.recordSuccessfulCast({
+  await service.grantSchoolXpFromServerEvent({
+    accountId: 'account-1', characterId: 'char-1', school: 'fire', amount: 20, eventId: 'fire-xp-reward-1',
+  });
+  const unlocked = await service.unlockSkill({
+    accountId: 'account-1', characterId: 'char-1', school: 'fire', branch: 'offense', index: 0,
+  });
+  assert.equal(unlocked.unlocked, true);
+  const cast = await service.recordSuccessfulCast({
     accountId: 'account-1', characterId: 'char-1', school: 'fire',
     skillId: 'fire:offense:1', castEventId: 'cast-1',
   });
-  assert.equal(result.recorded, false);
-  assert.equal(result.reason, 'skill-locked-or-unknown');
+  assert.equal(cast.recorded, true);
+  assert.equal(cast.masteryXp, 1);
+  assert.equal(cast.schoolXp, 21);
 });
 
 test('ownership is checked before progression can be read or changed', async () => {
