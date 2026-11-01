@@ -41,13 +41,15 @@ export function createPostgresRepository(pool) {
       try {
         await client.query('BEGIN');
         const { rows } = await client.query(
-          'SELECT id,account_id AS "accountId",weapon_progression AS "weaponProgression" FROM characters WHERE id=$1 AND account_id=$2 FOR UPDATE',
+          'SELECT id,account_id AS "accountId",weapon_progression AS "weaponProgression",magic_progression AS "magicProgression" FROM characters WHERE id=$1 AND account_id=$2 FOR UPDATE',
           [characterId, accountId],
         );
         if (!rows[0]) throw Object.assign(new Error('Personnage introuvable ou non autorisé'), { code: 'CHARACTER_NOT_FOUND' });
         const character = rows[0];
-        const saveProgression = async progression => {
-          await client.query('UPDATE characters SET weapon_progression=$1::jsonb WHERE id=$2', [JSON.stringify(progression), characterId]);
+        const saveProgression = async (progression, kind = 'weapon') => {
+          const column = kind === 'magic' ? 'magic_progression' : kind === 'weapon' ? 'weapon_progression' : null;
+          if (!column) throw new TypeError('Unknown progression storage kind');
+          await client.query(`UPDATE characters SET ${column}=$1::jsonb WHERE id=$2`, [JSON.stringify(progression), characterId]);
         };
         const result = await callback(character, saveProgression);
         await client.query('COMMIT');
