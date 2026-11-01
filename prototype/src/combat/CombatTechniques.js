@@ -47,3 +47,34 @@ export function resolveHitReaction({ impact = 0, targetPoise = 40, targetMass = 
   const heavy = attackType === 'heavy' || attackType === 'finisher' || ratio >= 1.8;
   return { reaction: heavy ? 'knockdown' : 'knockback', staggerMs: heavy ? 1050 : 650, knockback: heavy ? 1.35 : 1, knockdown: heavy, ratio };
 }
+
+
+/** Tracks the grounded and get-up phases after a knockdown. */
+export function createHitRecoveryState({ getUpDurationMs = 650 } = {}) {
+  return { phase: 'standing', startedAt: 0, recoverAt: 0, getUpDurationMs: Math.max(1, finite(getUpDurationMs, 650)) };
+}
+
+export function beginHitRecovery(state, reaction, now, { getUpDurationMs = state.getUpDurationMs } = {}) {
+  if (!state || !reaction?.knockdown) return state;
+  const time = finite(now);
+  state.phase = 'down';
+  state.startedAt = time;
+  state.recoverAt = time + Math.max(0, finite(reaction.staggerMs));
+  state.getUpDurationMs = Math.max(1, finite(getUpDurationMs, 650));
+  return state;
+}
+
+export function updateHitRecovery(state, now) {
+  if (!state) throw new Error('A hit recovery state is required.');
+  const time = finite(now);
+  if (state.phase === 'down' && time >= state.recoverAt) {
+    state.phase = 'getting-up';
+    state.startedAt = time;
+  }
+  if (state.phase === 'getting-up') {
+    const progress = clamp((time - state.startedAt) / state.getUpDurationMs, 0, 1);
+    if (progress >= 1) state.phase = 'standing';
+    return { phase: state.phase, progress, grounded: progress < 1 };
+  }
+  return { phase: state.phase, progress: state.phase === 'standing' ? 1 : 0, grounded: state.phase === 'down' };
+}

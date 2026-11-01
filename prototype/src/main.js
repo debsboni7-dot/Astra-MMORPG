@@ -3,7 +3,7 @@ import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js';
 import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAttack, resolveIncomingAttack } from './combat/CombatRuntime.js';
 import { createEnemyAI, updateEnemyAI, staggerEnemyAI } from './combat/EnemyAI.js';
-import { createComboState, advanceCombo, resetCombo, resolveHitReaction } from './combat/CombatTechniques.js';
+import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery } from './combat/CombatTechniques.js';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
@@ -78,6 +78,7 @@ let enemyTelegraph = null;
 let enemyAI = null;
 let enemyStaggerUntil = 0;
 let enemyKnockdownUntil = 0;
+let enemyRecovery = createHitRecoveryState();
 let comboState = createComboState();
 let comboTargetId = null;
 let enemyBaseY = 0;
@@ -117,8 +118,7 @@ function buildWardrobeUI(){
   const compatible=(WARDROBE_CATALOG[slot.id]||[]).filter(item=>(!item.races||item.races.includes(state.race))&&(!item.genders||item.genders.includes(state.gender)));
   const none=document.createElement('option');none.value='';none.textContent=compatible.length?'Aucun':'Aucun élément disponible';select.append(none);
   for(const item of compatible){const option=document.createElement('option');option.value=item.id;option.textContent=item.label;select.append(option);}
-  select.value=state.wardrobe[slot.id]||'';select.disabled=compatible.length===0;select.addEventListener('change',()=>equipWardrobeItem(slot.id,select.value));
-  label.append(title,select);root.append(label);available+=compatible.length;
+  select.value=state.wardrobe[slot.id]||'';select.disabled=compatible.length===0;select.addEventListener('change',()=>equipWardrobeItem(slot.id,select.value));  label.append(title,select);root.append(label);available+=compatible.length;
  }
  const presets=$('#wardrobe-presets');presets.innerHTML='';
  if(state.race==='human'){
@@ -203,7 +203,7 @@ function createTrainingEnemy(){
  enemyCombatant=createCombatant({id:'forest-raider',name:'Pillard des ruines',maxHp:120,hp:120,physicalStrength:7});
  enemyAI=createEnemyAI({id:'forest-raider',attackRange:1.8,telegraphMs:850,recoveryMs:1050,attackCooldownMs:350});
  enemyCombatant.poise=42;enemyCombatant.mass=1.25;enemyCombatant.controlResistance=.08;
- enemyStaggerUntil=0;enemyKnockdownUntil=0;enemyBaseY=0;resetCombo(comboState);comboTargetId=null;
+ enemyStaggerUntil=0;enemyKnockdownUntil=0;enemyRecovery=createHitRecoveryState();enemyBaseY=0;resetCombo(comboState);comboTargetId=null;
  const group=new THREE.Group();
  const armor=new THREE.MeshStandardMaterial({color:0x344b4a,roughness:.78,metalness:.15});
  const leather=new THREE.MeshStandardMaterial({color:0x573b2c,roughness:.95});
@@ -237,8 +237,7 @@ function combatMessage(message){
 }
 function updateCombatHud(){
  const update=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
- const bar=(id,value,max)=>{const el=$(id);if(el)el.style.width=(max>0?Math.max(0,Math.min(100,value/max*100)):0)+'%';};
- if(!playerCombatant||!trainingDummyCombatant)return;
+ const bar=(id,value,max)=>{const el=$(id);if(el)el.style.width=(max>0?Math.max(0,Math.min(100,value/max*100)):0)+'%';}; if(!playerCombatant||!trainingDummyCombatant)return;
  update('#combat-player-hp',Math.ceil(playerCombatant.hp)+' / '+playerCombatant.maxHp);
  update('#combat-player-stamina',Math.floor(playerCombatant.stamina)+' / '+playerCombatant.maxStamina);
  update('#combat-target-hp',Math.ceil(trainingDummyCombatant.hp)+' / '+trainingDummyCombatant.maxHp);
@@ -269,6 +268,7 @@ function performPlayerAttack(kind='physical'){
  let reaction=null;
  if(kind==='physical'){if(combo.finisher)comboTargetId=null;else if(combo.stage===1)comboTargetId=target.id;}
  if(targetIsEnemy&&result.executed){reaction=resolveHitReaction({impact:attack.impact??result.damage,targetPoise:enemyCombatant.poise,targetMass:enemyCombatant.mass,controlResistance:enemyCombatant.controlResistance,attackType:attack.attackType||'magic'});staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+reaction.staggerMs;enemyKnockdownUntil=reaction.knockdown?enemyStaggerUntil:0;
+  if(reaction.knockdown){beginHitRecovery(enemyRecovery,reaction,combatClockMs);enemyMesh.position.y=-.55;}
   if(reaction.knockback>0){const dx=enemyMesh.position.x-state.model.position.x,dz=enemyMesh.position.z-state.model.position.z,len=Math.hypot(dx,dz)||1;const displacement=reaction.knockback*(attack.attackType==='finisher'?1:.22);enemyMesh.position.x+=dx/len*displacement;enemyMesh.position.z+=dz/len*displacement;}
   if(reaction.knockdown)enemyMesh.rotation.x=-Math.PI/2;
  }
@@ -301,10 +301,16 @@ function updateEnemyEncounter(dt,now){
  if(!enemyAI||!enemyMesh||!enemyCombatant||!state.model||playerCombatant.defeated)return;
  const dx=state.model.position.x-enemyMesh.position.x,dz=state.model.position.z-enemyMesh.position.z;
  const distance=Math.hypot(dx,dz);
- const result=updateEnemyAI(enemyAI,{deltaSeconds:dt,distance,defeated:enemyCombatant.defeated,staggered:now<enemyStaggerUntil});
+ const recoveryPose=updateHitRecovery(enemyRecovery,now);
+ const recovering=recoveryPose.phase==='down'||recoveryPose.phase==='getting-up';
+ const result=updateEnemyAI(enemyAI,{deltaSeconds:dt,distance,defeated:enemyCombatant.defeated,staggered:now<enemyStaggerUntil||recovering});
  if(result.canMove&&distance>enemyAI.attackRange*.88){const step=Math.min(distance-enemyAI.attackRange*.88,2.15*dt);enemyMesh.position.x+=dx/(distance||1)*step;enemyMesh.position.z+=dz/(distance||1)*step;}
  if(distance>.08)enemyMesh.rotation.y=Math.atan2(dx,dz);
- if(enemyMesh&&enemyCombatant&&!enemyCombatant.defeated&&now>=enemyKnockdownUntil&&enemyMesh.rotation.x<0){enemyMesh.rotation.x=Math.min(0,enemyMesh.rotation.x+dt*4.5);}
+ if(enemyMesh&&enemyCombatant&&!enemyCombatant.defeated){
+  if(recoveryPose.phase==='down'){enemyMesh.rotation.x=-Math.PI/2;enemyMesh.position.y=-.55;}
+  else if(recoveryPose.phase==='getting-up'){enemyMesh.rotation.x=-Math.PI/2*(1-recoveryPose.progress);enemyMesh.position.y=-.55*(1-recoveryPose.progress);}
+  else if(recoveryPose.phase==='standing'){enemyMesh.rotation.x=0;enemyMesh.position.y=0;}
+ }
  if(enemyTelegraph){enemyTelegraph.visible=result.telegraph;enemyTelegraph.material.opacity=result.telegraph?.55+.3*Math.sin(now*.025):.0;}
  if(result.attack&&distance<=enemyAI.attackRange+.35){
   const hit=resolveIncomingAttack(enemyCombatant,playerCombatant,{kind:'physical',base:12,strength:5,strengthCoefficient:.2,weaponPower:0,techniqueMultiplier:1,executionQuality:1,criticalChance:0},{now,rng:Math.random});
@@ -314,7 +320,7 @@ function updateEnemyEncounter(dt,now){
   else if(hit.hit){playAction('hit_reaction',true);combatMessage('Le pillard te frappe : '+Math.round(hit.hpLost)+' dégâts.');}
   if(playerCombatant.defeated)combatMessage('Tu es vaincu. Réinitialise le combat pour recommencer.');
  }
- if(enemyCombatant.defeated){enemyAI.state='defeated';enemyMesh.rotation.x=-Math.PI/2;enemyMesh.position.y=-.55;if(enemyTelegraph)enemyTelegraph.visible=false;}
+ if(enemyCombatant.defeated){enemyAI.state='defeated';enemyRecovery.phase='defeated';enemyMesh.rotation.x=-Math.PI/2;enemyMesh.position.y=-.55;if(enemyTelegraph)enemyTelegraph.visible=false;}
 }
 
 function setStatus(text,good=false){$('#model-status').textContent=text;$('#model-status').style.color=good?'#77d8a0':'#f1c77a';}
@@ -358,7 +364,6 @@ async function loadSelectedCharacter(){const token=++state.loadToken,key=archive
 function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning())return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;state.actionOneShot=oneShot;next.fadeIn(.16).play();if(previous&&previous!==next)previous.fadeOut(.16);state.currentAction=name;}
 async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
 function showError(message){errorBox.hidden=false;errorBox.textContent=message;setTimeout(()=>{errorBox.hidden=true;},9000);}
-
 createRaceButtons();updateSelection();buildWardrobeUI();
 $('#race-options').addEventListener('click',()=>{});
 document.querySelectorAll('[data-gender]').forEach(b=>b.addEventListener('click',()=>{state.gender=b.dataset.gender;updateSelection();loadSelectedCharacter();}));

@@ -44,3 +44,21 @@ test('small impact causes a flinch without knockback', () => {
   assert.equal(result.reaction, 'flinch');
   assert.equal(result.knockback, 0);
 });
+
+
+test('knockdown recovery stays grounded until its stun ends, then stands up over time', async () => {
+  const { createHitRecoveryState, beginHitRecovery, updateHitRecovery } = await import('../prototype/src/combat/CombatTechniques.js');
+  const recovery = createHitRecoveryState({ getUpDurationMs: 500 });
+  beginHitRecovery(recovery, { knockdown: true, staggerMs: 900 }, 1000);
+  assert.deepEqual(updateHitRecovery(recovery, 1500), { phase: 'down', progress: 0, grounded: true });
+  assert.deepEqual(updateHitRecovery(recovery, 1900), { phase: 'getting-up', progress: 0, grounded: true });
+  assert.deepEqual(updateHitRecovery(recovery, 2150), { phase: 'getting-up', progress: 0.5, grounded: true });
+  assert.deepEqual(updateHitRecovery(recovery, 2400), { phase: 'standing', progress: 1, grounded: false });
+});
+
+test('non-knockdown reactions do not force a grounded recovery', async () => {
+  const { createHitRecoveryState, beginHitRecovery, updateHitRecovery } = await import('../prototype/src/combat/CombatTechniques.js');
+  const recovery = createHitRecoveryState();
+  beginHitRecovery(recovery, { knockdown: false, staggerMs: 300 }, 500);
+  assert.equal(updateHitRecovery(recovery, 600).phase, 'standing');
+});
