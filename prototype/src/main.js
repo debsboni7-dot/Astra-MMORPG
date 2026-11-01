@@ -1,44 +1,26 @@
-OW---
-name: Combat engine tests
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js';
+import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAttack, resolveIncomingAttack } from './combat/CombatRuntime.js';
+import { createEnemyAI, updateEnemyAI, staggerEnemyAI } from './combat/EnemyAI.js';
 
-on:
-  push:
-    branches: [feature/combat-engine-core]
-  pull_request:
-    branches: [main]
-
-jobs:
-  combat-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Check browser prototype syntax
-        run: node --check prototype/src/main.js && node --check prototype/src/combat/CombatEngine.js && node --check prototype/src/combat/CombatRuntime.js && node --check prototype/src/combat/EnemyAI.js
-      - name: Run combat engine and runtime tests
-        run: node --test tests/*.test.js
-
----DOC---
-# ASTREA — Combat Engine 0.1
-
-## Statut
-Noyau technique initial, isolé du prototype 3D. Les formules et coefficients de ce module sont configurables et provisoires. Aucun coefficient de balance n'est déclaré officiellement validé.
-
-## Principes invariants
-- Les attributs physiques ne sont pas déduits automatiquement du niveau du personnage.
-- Une arme exige simultanément la force physique et la maîtrise de catégorie nécessaires.
-- La défense réduit les dégâts avec rendement décroissant ; les résistances élémentaires sont calculées séparément.
-- Les boucliers absorbent les dégâts ; les altérations sont résolues séparément.
-- Les soins sont plafonnés aux PV maximums.
-- Les réapplications de brûlure/gel peuvent prolonger la durée sans empiler l'intensité.
-- Les buffs de même statistique/groupe ne s'additionnent pas : la valeur absolue la plus forte prévaut.
-- L'absorption/intensification d'une attaque hostile est réservée au feu et exige une maîtrise du feu strictement supérieure à celle de l'attaquant. La fonction actuelle vérifie l'éligibilité et retourne une décision ; le futur contrôleur de combat devra annuler explicitement les dégâts entrants et appliquer les bonus.
-- L'immunité doit être représentée explicitement, jamais par une résistance approximativement infinie.
-
+const $ = (s) => document.querySelector(s);
+const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
+const menu = $('#main-menu'), creator = $('#creator'), gameHud = $('#game-hud');
+const loader = new GLTFLoader();
+const QUATERNIUS_ARCHIVE_URL = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/8f0a48d9-0075-4ea9-af70-2324e2bf69b4.zip';
+let quaterniusZipPromise = null;
+let wardrobeAssetLoads = 0;
+let pauseRenderForWardrobe = false;
+const ZIP_URLS = {
+  human_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/502efa24-3e80-4e06-8a16-04f4083184c3.zip',
+  human_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/8f991f9b-2ec3-4ae8-a9a9-9447d3c005aa.zip',
+  elf_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/57f10f79-0cd9-4f11-98ed-372a8b4a061d.zip',
+  elf_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/bfd35628-e06b-4fac-9b2d-2a6161ab1c54.zip',
+  dwarf_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/82d04fb6-9198-4690-a92c-8c4fc3b566a0.zip',
+  dwarf_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/7824e835-0f7e-44a8-8d29-115bd6356ca4.zip',
+  demon_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/b232dc06-5866-4992-bc5f-bfe37629906f.zip',
+  demon_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8B
 …[1 chars truncated — re-run with head/grep/tail for full output]…
 enemyAI.attackRange*.88,2.15*dt);enemyMesh.position.x+=dx/(distance||1)*step;enemyMesh.position.z+=dz/(distance||1)*step;}
  if(distance>.08)enemyMesh.rotation.y=Math.atan2(dx,dz);
