@@ -1,6 +1,6 @@
 # ASTREA MMORPG
 
-ASTREA est un projet de MMORPG fantasy en développement. Ce dépôt rassemble le prototype web jouable, les systèmes de jeu en construction, les ressources artistiques et la documentation.
+ASTREA est un projet de MMORPG fantasy en développement. Ce dépôt rassemble le prototype web jouable, les systèmes de jeu en construction, les ressources artistiques, la documentation et une première fondation backend.
 
 ## Jouer dans le navigateur
 
@@ -8,18 +8,22 @@ Le prototype est prévu pour être publié sur **GitHub Pages** : aucune install
 
 - Application : `prototype/`
 - Guide du prototype : [`prototype/README.md`](prototype/README.md)
-- Suivi du projet : `docs/`
+- Documentation technique : [`docs/`](docs/)
 
-## Contenu actuellement présent
+## Systèmes présents dans la branche de développement
 
-- Créateur de personnage avec les sept races et les deux sexes.
-- Quatorze modèles 3D de personnages avec animations, chargés depuis l'hébergement des ressources.
-- Interface de garde-robe avec sept emplacements et 20 pièces modulaires Quaternius Standard, actuellement proposées aux personnages humains.
-- Prototype Three.js avec déplacement de base, caméra, clavier et manette.
+- Créateur de personnage et garde-robe du prototype.
+- Prototype Three.js avec déplacement et caméra.
+- Moteur de combat initial : dégâts physiques et magiques, défenses, effets, IA ennemie et techniques d'armes.
+- Progression de maîtrise des quatre catégories d'armes physiques.
+- Socle de progression magique pour 16 écoles, avec 75 emplacements par école, prérequis, points, maîtrise individuelle et sauvegarde JSONB.
+- Première fondation backend Node.js/PostgreSQL : comptes, sessions, personnages, dépôt PostgreSQL et routes de progression des armes et de magie.
 
 ## État du projet
 
-ASTREA n'est pas encore un MMORPG en production : le prototype ne dispose pas encore d'un serveur multijoueur, de comptes, d'une sauvegarde en ligne, d'un monde complet ni de systèmes de combat et de progression finalisés. Les limites connues et les vérifications restantes sont détaillées dans [`prototype/README.md`](prototype/README.md).
+ASTREA n'est **pas encore un MMORPG en production**. La fondation backend et les services de progression sont en place dans la branche de développement, mais l'hébergement, la base PostgreSQL réelle, le serveur de combat temps réel, la synchronisation multijoueur, le client connecté et le monde complet restent à intégrer et à valider.
+
+Les 1 200 emplacements magiques ont une structure de progression commune ; les fiches d'effet détaillées de chaque sort (dégâts, portée, coût, durée, recharge, contres et interactions) restent à définir et équilibrer avant leur activation dans les combats.
 
 ## Licence des ressources
 
