@@ -20,9 +20,274 @@ const ZIP_URLS = {
   dwarf_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/82d04fb6-9198-4690-a92c-8c4fc3b566a0.zip',
   dwarf_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/7824e835-0f7e-44a8-8d29-115bd6356ca4.zip',
   demon_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/b232dc06-5866-4992-bc5f-bfe37629906f.zip',
-  demon_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8B
-…[1 chars truncated — re-run with head/grep/tail for full output]…
-enemyAI.attackRange*.88,2.15*dt);enemyMesh.position.x+=dx/(distance||1)*step;enemyMesh.position.z+=dz/(distance||1)*step;}
+  demon_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/bf2f2bd5-903a-4677-b829-6b0ae146d953.zip',
+  angel_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/e83af76b-cc86-4bb8-b1de-d54bdd71b2d0.zip',
+  angel_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/0e7fb12e-03b9-4df1-87e9-81cb3138f4b0.zip',
+  orc_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/285adf12-e8db-4e6a-b598-b6a9383bd428.zip',
+  orc_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/9b614d2e-153f-40ea-81ed-cad7c3a2a690.zip',
+  draconoid_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/3fb4c6bd-3a63-4680-85a0-a9beef8778a4.zip',
+  draconoid_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/cdcf056f-2f2c-47ba-97ea-68769cdb1475.zip'
+};
+const RACES = [
+  ['human','Humain'],['elf','Elfe'],['dwarf','Nain'],['demon','Démon'],['angel','Ange'],['orc','Orc'],['draconoid','Dragonoïde']
+];
+const WARDROBE_SLOTS = [
+  {id:'hair',label:'Cheveux / coiffure'},
+  {id:'head',label:'Tête / casque'},
+  {id:'torso',label:'Torse'},
+  {id:'legs',label:'Jambes'},
+  {id:'boots',label:'Bottes'},
+  {id:'arms',label:'Bras / manches'},
+  {id:'accessory',label:'Accessoires'}
+];
+// Catalogue Quaternius Standard : 20 pièces séparées (4 Peasant + 6 Ranger, par sexe).
+// Les pièces sont d'abord proposées aux humains : l'ajustement sur les six autres races
+// nécessite une validation visuelle morphologique avant d'élargir leur compatibilité.
+const Q='assets/quaternius/Modular Parts/';
+const qItem=(id,label,slot,gender,filename)=>({id,label,slot,url:Q+filename+'.gltf',races:['human'],genders:[gender],source:'Quaternius Modular Character Outfits - Fantasy Standard'});
+const QUATERNIUS_ITEMS=[
+ qItem('peasant_m_body','Peasant · Torse','torso','male','Male_Peasant_Body'),
+ qItem('peasant_m_arms','Peasant · Bras et manches','arms','male','Male_Peasant_Arms'),
+ qItem('peasant_m_legs','Peasant · Jambes','legs','male','Male_Peasant_Legs'),
+ qItem('peasant_m_feet','Peasant · Pieds','boots','male','Male_Peasant_Feet'),
+ qItem('ranger_m_body','Ranger · Torse et ceinture','torso','male','Male_Ranger_Body'),
+ qItem('ranger_m_arms','Ranger · Bras et brassards','arms','male','Male_Ranger_Arms'),
+ qItem('ranger_m_legs','Ranger · Jambes','legs','male','Male_Ranger_Legs'),
+ qItem('ranger_m_feet','Ranger · Bottes','boots','male','Male_Ranger_Feet_Boots'),
+ qItem('ranger_m_hood','Ranger · Capuche','head','male','Male_Ranger_Head_Hood'),
+ qItem('ranger_m_pauldron','Ranger · Épaulière','accessory','male','Male_Ranger_Acc_Pauldron'),
+ qItem('peasant_f_body','Peasant · Torse','torso','female','Female_Peasant_Body'),
+ qItem('peasant_f_arms','Peasant · Bras et manches','arms','female','Female_Peasant_Arms'),
+ qItem('peasant_f_legs','Peasant · Jambes','legs','female','Female_Peasant_Legs'),
+ qItem('peasant_f_feet','Peasant · Pieds','boots','female','Female_Peasant_Feet'),
+ qItem('ranger_f_body','Ranger · Torse et ceinture','torso','female','Female_Ranger_Body'),
+ qItem('ranger_f_arms','Ranger · Bras et brassards','arms','female','Female_Ranger_Arms'),
+ qItem('ranger_f_legs','Ranger · Jambes','legs','female','Female_Ranger_Legs'),
+ qItem('ranger_f_feet','Ranger · Bottes','boots','female','Female_Ranger_Feet'),
+ qItem('ranger_f_hood','Ranger · Capuche','head','female','Female_Ranger_Head_Hood'),
+ qItem('ranger_f_pauldron','Ranger · Épaulières','accessory','female','Female_Ranger_Acc_Pauldrons')
+];
+const WARDROBE_CATALOG=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,QUATERNIUS_ITEMS.filter(item=>item.slot===slot.id)]));
+let playerCombatant = createCombatant({ id: 'player', name: 'Joueur', physicalStrength: 10, fireMastery: 1, weaponMastery: 0 });
+let trainingDummyCombatant = null;
+let trainingDummyMesh = null;
+let enemyCombatant = null;
+let enemyMesh = null;
+let enemyTelegraph = null;
+let enemyAI = null;
+let enemyStaggerUntil = 0;
+let combatUiTimer = 0;
+let combatClockMs = 0;
+const state = {race:'human',gender:'male',category:'appearance',name:'',alias:'',screen:'menu',model:null,mixer:null,actions:{},currentAction:'idle',actionOneShot:false,zipCache:new Map(),loadToken:0,gameYaw:0,gamePos:new THREE.Vector3(0,0,0),keys:new Set(),drag:false,lastX:0,previewYaw:0,previewDistance:4.8,wardrobe:Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,''])),wardrobeObjects:{},wardrobeToken:0,wardrobeSlotTokens:{}};
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111c2a);
+scene.fog = new THREE.Fog(0x111c2a, 14, 48);
+const camera = new THREE.PerspectiveCamera(38,1,.1,100); camera.position.set(0,1.45,4.7);
+const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7)); renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
+scene.add(new THREE.HemisphereLight(0xcfe8ff,0x25202a,2.0));
+const keyLight=new THREE.DirectionalLight(0xffe3c0,3.2);keyLight.position.set(-3,6,4);scene.add(keyLight);
+const rimLight=new THREE.DirectionalLight(0x5abfff,2.2);rimLight.position.set(4,3,-4);scene.add(rimLight);
+const ground=new THREE.Mesh(new THREE.CircleGeometry(2.4,64),new THREE.MeshStandardMaterial({color:0x172638,roughness:.88,metalness:.18}));ground.rotation.x=-Math.PI/2;ground.position.y=-.025;scene.add(ground);
+const ring=new THREE.Mesh(new THREE.RingGeometry(2.38,2.42,80),new THREE.MeshBasicMaterial({color:0x56bfff,transparent:true,opacity:.5,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=-.012;scene.add(ring);
+const grid=new THREE.GridHelper(30,30,0x2b4964,0x1b3045);grid.position.y=-.04;scene.add(grid);
+const world=new THREE.Group();scene.add(world);
+let worldGround=null;
+function makeWorld(){
+  world.clear();
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x26372f,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.05;world.add(floor);
+  const path=new THREE.Mesh(new THREE.PlaneGeometry(3.5,70),new THREE.MeshStandardMaterial({color:0x6b6250,roughness:1}));path.rotation.x=-Math.PI/2;path.position.set(0,-.035,-12);world.add(path);
+  const trunkMat=new THREE.MeshStandardMaterial({color:0x55402d}),leafMat=new THREE.MeshStandardMaterial({color:0x294a37});
+  for(const [x,z] of [[-7,-7],[7,-8],[-9,5],[9,4],[-4,10],[5,10],[-12,-18],[12,-20]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.26,1.8,7),trunkMat);trunk.position.set(x,.9,z);world.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.15,2.7,7),leafMat);crown.position.set(x,2.7,z);world.add(crown);}
+}
+
+function buildWardrobeUI(){
+ const root=$('#wardrobe-slots');root.innerHTML='';let available=0;
+ for(const slot of WARDROBE_SLOTS){
+  const label=document.createElement('label');label.className='wardrobe-row';label.htmlFor='wardrobe-'+slot.id;
+  const title=document.createElement('span');title.textContent=slot.label;
+  const select=document.createElement('select');select.id='wardrobe-'+slot.id;select.dataset.slot=slot.id;
+  const compatible=(WARDROBE_CATALOG[slot.id]||[]).filter(item=>(!item.races||item.races.includes(state.race))&&(!item.genders||item.genders.includes(state.gender)));
+  const none=document.createElement('option');none.value='';none.textContent=compatible.length?'Aucun':'Aucun élément disponible';select.append(none);
+  for(const item of compatible){const option=document.createElement('option');option.value=item.id;option.textContent=item.label;select.append(option);}
+  select.value=state.wardrobe[slot.id]||'';select.disabled=compatible.length===0;select.addEventListener('change',()=>equipWardrobeItem(slot.id,select.value));
+  label.append(title,select);root.append(label);available+=compatible.length;
+ }
+ const presets=$('#wardrobe-presets');presets.innerHTML='';
+ if(state.race==='human'){
+  for(const [id,labelText] of [['peasant','Tenue Peasant'],['ranger','Tenue Ranger']]){
+   const button=document.createElement('button');button.type='button';button.className='wardrobe-preset';button.textContent=labelText;button.addEventListener('click',()=>applyWardrobePreset(id));presets.append(button);
+  }
+ }
+ $('#wardrobe-status').textContent=available?available+' pièce(s) disponibles · 4 tenues complètes reconstituables.':'Pack Quaternius : 20 pièces. Disponibles pour les humains ; adaptation des autres races à valider.';
+}
+async function applyWardrobePreset(preset){
+ const prefix=preset+'_'+(state.gender==='male'?'m':'f')+'_';
+ const suffixes={torso:'body',arms:'arms',legs:'legs',boots:'feet',head:'hood',accessory:'pauldron'};
+ const included=preset==='peasant'?['torso','arms','legs','boots']:['torso','arms','legs','boots','head','accessory'];
+ const values=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,'']));
+ for(const slot of included){const id=prefix+suffixes[slot];if((WARDROBE_CATALOG[slot]||[]).some(item=>item.id===id))values[slot]=id;}
+ state.wardrobe={...values};buildWardrobeUI();
+ await Promise.all(WARDROBE_SLOTS.map(slot=>equipWardrobeItem(slot.id,values[slot.id])));
+ $('#wardrobe-status').textContent=(preset==='peasant'?'Peasant':'Ranger')+' équipé(e) · tu peux modifier chaque emplacement.';
+}
+function removeWardrobeItem(slot){
+ const object=state.wardrobeObjects[slot];if(!object)return;state.model?.remove(object);
+ object.traverse?.(node=>{if(node.isMesh){node.geometry?.dispose();if(Array.isArray(node.material))node.material.forEach(m=>m.dispose());else node.material?.dispose();}});
+ delete state.wardrobeObjects[slot];
+}
+async function equipWardrobeItem(slot,itemId){
+ const token=(state.wardrobeSlotTokens[slot]||0)+1;state.wardrobeSlotTokens[slot]=token;const resetToken=state.wardrobeToken;
+ state.wardrobe[slot]=itemId;removeWardrobeItem(slot);if(!itemId||!state.model)return;
+ const item=(WARDROBE_CATALOG[slot]||[]).find(entry=>entry.id===itemId);if(!item)return;
+ $('#wardrobe-status').textContent='Chargement : '+item.label+'…';
+ try{
+  const gltf=await loadQuaterniusGLTF(item.url);if(resetToken!==state.wardrobeToken||token!==state.wardrobeSlotTokens[slot]||!state.model)return;
+  const garment=SkeletonUtils.clone(gltf.scene);let attached=0;const baseBones=new Map();
+  state.model.updateMatrixWorld(true);
+  state.model.traverse(node=>{if(node.isBone)baseBones.set(node.name,node);});
+  const boneAliases={root:'Hips',pelvis:'Hips',spine_01:'Spine',spine_02:'Spine01',spine_03:'Spine02',neck_01:'neck',Head:'Head',clavicle_l:'LeftShoulder',upperarm_l:'LeftArm',lowerarm_l:'LeftForeArm',hand_l:'LeftHand',clavicle_r:'RightShoulder',upperarm_r:'RightArm',lowerarm_r:'RightForeArm',hand_r:'RightHand',thigh_l:'LeftUpLeg',calf_l:'LeftLeg',foot_l:'LeftFoot',ball_l:'LeftToeBase',ball_leaf_l:'LeftToeBase',thigh_r:'RightUpLeg',calf_r:'RightLeg',foot_r:'RightFoot',ball_r:'RightToeBase',ball_leaf_r:'RightToeBase'};
+  const mappedBone=(bone)=>baseBones.get(bone.name)||baseBones.get(boneAliases[bone.name])||baseBones.get(bone.name.endsWith('_l')?'LeftHand':bone.name.endsWith('_r')?'RightHand':'Hips');
+  // Les doigts Quaternius sont rabattus sur les mains ASTREA, qui ne possèdent pas de phalanges.
+  garment.traverse(node=>{
+   if(!node.isSkinnedMesh)return;
+   const mapped=node.skeleton.bones.map(mappedBone);
+   if(mapped.some(bone=>!bone))throw new Error('Squelette ASTREA incomplet : impossible de mapper les os.');
+   const skeleton=new THREE.Skeleton(mapped);skeleton.calculateInverses();node.bind(skeleton,node.bindMatrix);
+   node.frustumCulled=false;node.castShadow=true;node.receiveShadow=true;node.userData.wardrobeSlot=slot;attached++;
+  });
+  if(!attached)throw new Error('Le fichier doit contenir au moins un mesh skinné.');
+  // Ajuste la hauteur du vêtement à celle du personnage sans modifier l'échelle du personnage.
+  const bodyBounds=new THREE.Box3().setFromObject(state.model);const bodyHeight=bodyBounds.getSize(new THREE.Vector3()).y/(state.model.scale.y||1);
+  const garmentBounds=new THREE.Box3().setFromObject(garment);const garmentHeight=garmentBounds.getSize(new THREE.Vector3()).y||bodyHeight;
+  const fit=THREE.MathUtils.clamp(bodyHeight/garmentHeight,.65,1.45);garment.scale.setScalar(fit);
+  garment.name='wardrobe_'+slot+'_'+item.id;state.model.add(garment);state.wardrobeObjects[slot]=garment;
+  $('#wardrobe-status').textContent=item.label+' équipé.';
+ }catch(error){
+  console.error(error);state.wardrobe[slot]='';const select=$('#wardrobe-'+slot);if(select)select.value='';
+  $('#wardrobe-status').textContent='Pièce non compatible : '+error.message;showError('Impossible d’équiper '+item.label+'. Vérifie le GLB et son squelette.');
+ }
+}
+function resetWardrobe(){
+ state.wardrobeToken++;state.wardrobeSlotTokens={};for(const slot of WARDROBE_SLOTS)removeWardrobeItem(slot.id);
+ state.wardrobe=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,'']));buildWardrobeUI();
+}
+function restoreWardrobe(saved={}){
+ resetWardrobe();for(const slot of WARDROBE_SLOTS){const id=saved?.[slot.id];if(id&&(WARDROBE_CATALOG[slot.id]||[]).some(item=>item.id===id))equipWardrobeItem(slot.id,id);}
+}
+
+
+function createTrainingDummy(){
+ if(trainingDummyMesh){world.remove(trainingDummyMesh);trainingDummyMesh=null;}
+ trainingDummyCombatant=createCombatant({id:'training-dummy',name:'Mannequin d’entraînement',maxHp:150,hp:150,physicalStrength:0,fireMastery:0});
+ const group=new THREE.Group();
+ const wood=new THREE.MeshStandardMaterial({color:0x8b5a35,roughness:.9});
+ const dark=new THREE.MeshStandardMaterial({color:0x493126,roughness:.95});
+ const body=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,1.15,8),wood);body.position.y=1.15;group.add(body);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.27,12,10),wood);head.position.y=1.92;group.add(head);
+ const crossbar=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,1.25,8),dark);crossbar.rotation.z=Math.PI/2;crossbar.position.y=1.42;group.add(crossbar);
+ const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,2.2,8),dark);post.position.y=.15;group.add(post);
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(.48,.55,.18,10),dark);base.position.y=-.04;group.add(base);
+ group.position.set(0,0,-2.8);group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(group);trainingDummyMesh=group;
+ updateCombatHud();
+}
+function createTrainingEnemy(){
+ if(enemyMesh)world.remove(enemyMesh);
+ enemyCombatant=createCombatant({id:'forest-raider',name:'Pillard des ruines',maxHp:120,hp:120,physicalStrength:7});
+ enemyAI=createEnemyAI({id:'forest-raider',attackRange:1.8,telegraphMs:850,recoveryMs:1050,attackCooldownMs:350});
+ enemyStaggerUntil=0;
+ const group=new THREE.Group();
+ const armor=new THREE.MeshStandardMaterial({color:0x344b4a,roughness:.78,metalness:.15});
+ const leather=new THREE.MeshStandardMaterial({color:0x573b2c,roughness:.95});
+ const skin=new THREE.MeshStandardMaterial({color:0x8e6650,roughness:.9});
+ const eye=new THREE.MeshStandardMaterial({color:0xff553e,emissive:0x9b1b0b,emissiveIntensity:1.6});
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.62,4,8),armor);torso.position.y=1.15;group.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.27,12,10),skin);head.position.y=1.82;group.add(head);
+ const hood=new THREE.Mesh(new THREE.ConeGeometry(.32,.38,8),leather);hood.position.y=2.12;group.add(hood);
+ const armL=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.52,3,6),leather);armL.position.set(-.43,1.2,0);armL.rotation.z=-.3;group.add(armL);
+ const armR=armL.clone();armR.position.x=.43;armR.rotation.z=.3;group.add(armR);
+ const legL=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.55,3,6),leather);legL.position.set(-.18,.43,0);group.add(legL);
+ const legR=legL.clone();legR.position.x=.18;group.add(legR);
+ for(const x of [-.105,.105]){const e=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),eye);e.position.set(x,1.84,.235);group.add(e);}
+ group.position.set(1.7,0,-6.2);group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(group);enemyMesh=group;
+ enemyTelegraph=new THREE.Mesh(new THREE.RingGeometry(.62,.78,40),new THREE.MeshBasicMaterial({color:0xff553e,transparent:true,opacity:.85,side:THREE.DoubleSide}));enemyTelegraph.rotation.x=-Math.PI/2;enemyTelegraph.position.y=.025;enemyTelegraph.visible=false;group.add(enemyTelegraph);
+ updateCombatHud();
+}
+function ensureCombatHud(){
+ let panel=$('#combat-panel');
+ if(!panel){
+  panel=document.createElement('div');panel.id='combat-panel';
+  panel.style.cssText='position:absolute;right:18px;top:72px;width:min(280px,calc(100vw - 24px));padding:12px;pointer-events:auto;background:rgba(8,15,25,.88);border:1px solid rgba(92,174,225,.65);border-radius:10px;color:#edf6ff;font:12px/1.4 system-ui;z-index:5;backdrop-filter:blur(8px)';
+  panel.innerHTML='<div style="font-weight:800;letter-spacing:.12em;margin-bottom:8px">ENTRAÎNEMENT</div><div>JOUEUR · PV <span id="combat-player-hp">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 8px"><div id="combat-player-hp-bar" style="height:100%;width:100%;background:#55bd83"></div></div><div>ENDURANCE <span id="combat-player-stamina">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-player-stamina-bar" style="height:100%;width:100%;background:#56bfff"></div></div><div style="font-weight:700">MANNEQUIN · PV <span id="combat-target-hp">150 / 150</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-target-hp-bar" style="height:100%;width:100%;background:#e18a55"></div></div><div style="font-weight:700">PILLARD · PV <span id="combat-enemy-hp">120 / 120</span> · <span id="combat-enemy-state">APPROACH</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-enemy-hp-bar" style="height:100%;width:100%;background:#e65d4d"></div></div><div id="combat-message" style="min-height:32px;color:#b9d9f2;margin-bottom:8px">Le pillard approche. Prépare-toi à esquiver ou à parer.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button data-combat="attack">Attaque (J)</button><button data-combat="fire">Feu (K)</button><button data-combat="block">Parade (L)</button><button data-combat="dodge">Esquive (O)</button><button data-combat="reset" style="grid-column:1 / -1">Réinitialiser le mannequin</button></div>';
+  for(const button of panel.querySelectorAll('button')){button.style.cssText='padding:7px 5px;border:1px solid #42627c;border-radius:6px;background:#182b3c;color:#eff8ff;font-weight:650';button.addEventListener('click',()=>combatAction(button.dataset.combat));}
+  gameHud.append(panel);
+ }
+ panel.hidden=false;
+}
+function combatMessage(message){
+ const el=$('#combat-message');if(el)el.textContent=message;
+}
+function updateCombatHud(){
+ const update=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
+ const bar=(id,value,max)=>{const el=$(id);if(el)el.style.width=(max>0?Math.max(0,Math.min(100,value/max*100)):0)+'%';};
+ if(!playerCombatant||!trainingDummyCombatant)return;
+ update('#combat-player-hp',Math.ceil(playerCombatant.hp)+' / '+playerCombatant.maxHp);
+ update('#combat-player-stamina',Math.floor(playerCombatant.stamina)+' / '+playerCombatant.maxStamina);
+ update('#combat-target-hp',Math.ceil(trainingDummyCombatant.hp)+' / '+trainingDummyCombatant.maxHp);
+ if(enemyCombatant){update('#combat-enemy-hp',Math.ceil(enemyCombatant.hp)+' / '+enemyCombatant.maxHp);update('#combat-enemy-state',(enemyAI?.state||'approach').toUpperCase());}
+ bar('#combat-player-hp-bar',playerCombatant.hp,playerCombatant.maxHp);
+ bar('#combat-player-stamina-bar',playerCombatant.stamina,playerCombatant.maxStamina);
+ bar('#combat-target-hp-bar',trainingDummyCombatant.hp,trainingDummyCombatant.maxHp);
+ if(enemyCombatant)bar('#combat-enemy-hp-bar',enemyCombatant.hp,enemyCombatant.maxHp);
+}
+function performPlayerAttack(kind='physical'){
+ if(!state.model){combatMessage('Personnage indisponible.');return;}
+ const dummyDistance=trainingDummyMesh?state.model.position.distanceTo(trainingDummyMesh.position):Infinity;
+ const enemyDistance=enemyMesh&&enemyCombatant&&!enemyCombatant.defeated?state.model.position.distanceTo(enemyMesh.position):Infinity;
+ const targetIsEnemy=enemyDistance<dummyDistance;
+ const target=targetIsEnemy?enemyCombatant:trainingDummyCombatant;
+ const targetMesh=targetIsEnemy?enemyMesh:trainingDummyMesh;
+ const distance=targetMesh?state.model.position.distanceTo(targetMesh.position):Infinity;
+ if(!target||target.defeated){combatMessage('Aucune cible disponible.');return;}
+ if(distance>3.35){combatMessage('Rapproche-toi de la cible.');return;}
+ const attack=kind==='magic'
+  ? {id:'training-fire-bolt',kind:'magic',element:'fire',base:24,relevantPower:0,powerCoefficient:0,techniqueMultiplier:1,schoolMasteryMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:12}
+  : {id:'training-light-strike',kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,weaponPower:0,techniqueMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:0};
+ const result=executeAttack(playerCombatant,target,attack,{now:combatClockMs});
+ if(!result.executed){combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
+ playAction(kind==='magic'?'charged_spell_cast':'attack',true);
+ if(targetIsEnemy&&result.executed){staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+420;}
+ combatMessage((kind==='magic'?'Sort de feu':'Attaque')+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
+ if(target.defeated)combatMessage(targetIsEnemy?'Pillard vaincu !':'Mannequin détruit ! Tu peux le réinitialiser.');
+ updateCombatHud();
+}
+function combatAction(action){
+ const now=combatClockMs;
+ if(action==='attack')performPlayerAttack('physical');
+ else if(action==='fire')performPlayerAttack('magic');
+ else if(action==='block'){
+  const result=beginBlock(playerCombatant,{now,staminaCost:4,durationMs:650,parryWindowMs:180});
+  if(result.started){playAction('block',true);combatMessage('Garde active : fenêtre de parade parfaite pendant 180 ms.');}
+  else combatMessage('Pas assez d’endurance pour bloquer.');
+ }else if(action==='dodge'){
+  const result=beginDodge(playerCombatant,{now,staminaCost:18,durationMs:420});
+  if(result.started){playAction('dodge_roll',true);combatMessage('Esquive : invulnérabilité temporaire.');}
+  else combatMessage('Pas assez d’endurance pour esquiver.');
+ }else if(action==='reset'){
+  playerCombatant=createCombatant({id:'player',name:state.name||'Joueur',physicalStrength:10,fireMastery:1,weaponMastery:0});
+  createTrainingDummy();createTrainingEnemy();combatMessage('Combat réinitialisé : PV, endurance et ennemis restaurés.');
+ }
+ updateCombatHud();
+}
+
+function updateEnemyEncounter(dt,now){
+ if(!enemyAI||!enemyMesh||!enemyCombatant||!state.model||playerCombatant.defeated)return;
+ const dx=state.model.position.x-enemyMesh.position.x,dz=state.model.position.z-enemyMesh.position.z;
+ const distance=Math.hypot(dx,dz);
+ const result=updateEnemyAI(enemyAI,{deltaSeconds:dt,distance,defeated:enemyCombatant.defeated,staggered:now<enemyStaggerUntil});
+ if(result.canMove&&distance>enemyAI.attackRange*.88){const step=Math.min(distance-enemyAI.attackRange*.88,2.15*dt);enemyMesh.position.x+=dx/(distance||1)*step;enemyMesh.position.z+=dz/(distance||1)*step;}
  if(distance>.08)enemyMesh.rotation.y=Math.atan2(dx,dz);
  if(enemyTelegraph){enemyTelegraph.visible=result.telegraph;enemyTelegraph.material.opacity=result.telegraph?.55+.3*Math.sin(now*.025):.0;}
  if(result.attack&&distance<=enemyAI.attackRange+.35){
