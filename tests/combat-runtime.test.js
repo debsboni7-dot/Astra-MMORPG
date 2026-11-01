@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombatant, regenerateStamina, beginBlock, beginDodge, resolveIncomingAttack, executeAttack, equipWeapon } from '../prototype/src/combat/CombatRuntime.js';
+import { createCombatant, regenerateStamina, beginBlock, beginDodge, resolveIncomingAttack, executeAttack, equipWeapon, getWeaponProgression } from '../prototype/src/combat/CombatRuntime.js';
 
 test('combatants have bounded HP and stamina resources', () => {
   const c = createCombatant({ hp: 140, maxHp: 100, stamina: -5, maxStamina: 80 });
@@ -104,4 +104,68 @@ test('unequipping a weapon restores unarmed attack and invalid definitions are r
   equipWeapon(player, { id: 'sword', category: 'sword', requiredStrength: 1, requiredMastery: 1 });
   assert.equal(equipWeapon(player, null).equipped, true);
   assert.equal(player.weapon, null);
+});
+
+test('weapon mastery grows through valid use and higher ranks need more experience', () => {
+  const player = createCombatant({ physicalStrength: 50, stamina: 1000 });
+  const enemy = createCombatant({ hp: 100000 });
+  equipWeapon(player, { id: 'training-sword', category: 'sword', power: 1, requiredStrength: 1, requiredMastery: 0 });
+  for (let i = 0; i < 12; i++) {
+    const result = executeAttack(player, enemy, { id: 'practice-' + i, kind: 'physical', base: 1, staminaCost: 0, attackType: 'light' }, { rng: () => 1 });
+    assert.equal(result.executed, true);
+  }
+  assert.equal(player.weaponMasteries.sword, 1);
+  assert.equal(player.weaponUsesByCategory.sword, 12);
+  assert.equal(getWeaponProgression(player, 'sword').mastery.xpRemaining, 14);
+});
+
+test('heavy attacks grant more weapon mastery than light attacks', () => {
+  const player = createCombatant({ physicalStrength: 50 });
+  const enemy = createCombatant({ hp: 1000 });
+  equipWeapon(player, { id: 'training-axe', category: 'axe', power: 1, requiredStrength: 1, requiredMastery: 0 });
+  const result = executeAttack(player, enemy, { id: 'heavy', kind: 'physical', base: 1, staminaCost: 0, attackType: 'heavy' }, { rng: () => 1 });
+  assert.equal(result.weaponProgression.awarded, 1.5);
+});
+
+test('category mastery automatically unlocks techniques at milestones', () => {
+  const player = createCombatant({ weaponMasteries: { sword: 2 }, weaponMasteryXpByCategory: { sword: 42 } });
+  const progression = getWeaponProgression(player, 'sword');
+  assert.equal(progression.mastery.level, 3);
+  assert.equal(progression.techniques[0].unlocked, true);
+  assert.equal(progression.techniques[1].unlocked, false);
+});
+
+test('locked techniques are rejected and unlocked techniques gain separate mastery', () => {
+  const player = createCombatant({ physicalStrength: 50, weaponMasteries: { sword: 3 } });
+  const enemy = createCombatant({ hp: 1000 });
+  equipWeapon(player, { id: 'starter-sword', category: 'sword', power: 1, requiredStrength: 1, requiredMastery: 0 });
+  const locked = executeAttack(player, enemy, { id: 'locked', kind: 'physical', base: 1, staminaCost: 0, techniqueId: 'riposte' }, { rng: () => 1 });
+  assert.equal(locked.executed, false);
+  assert.equal(locked.reason, 'technique-locked');
+  for (let i = 0; i < 3; i++) {
+    const result = executeAttack(player, enemy, { id: 'quick-' + i, kind: 'physical', base: 1, staminaCost: 0, techniqueId: 'quick_slash' }, { rng: () => 1 });
+    assert.equal(result.executed, true);
+  }
+  assert.equal(player.weaponTechniqueXp.quick_slash, 3);
+  assert.equal(getWeaponProgression(player, 'sword').techniques[0].techniqueMasteryLevel, 1);
+});
+
+test('technique mastery improves damage and reduces stamina cost with a ten percent cap', () => {
+  const player = createCombatant({ physicalStrength: 50, weaponMasteries: { sword: 3 }, weaponTechniqueXp: { quick_slash: 40 }, stamina: 100 });
+  const enemy = createCombatant({ hp: 1000 });
+  equipWeapon(player, { id: 'starter-sword', category: 'sword', power: 1, requiredStrength: 1, requiredMastery: 0 });
+  const result = executeAttack(player, enemy, { id: 'mastered', kind: 'physical', base: 10, staminaCost: 10, techniqueId: 'quick_slash' }, { rng: () => 1 });
+  assert.equal(result.rawDamage, 11);
+  assert.equal(result.staminaSpent, 9);
+  assert.equal(player.weaponTechniqueXp.quick_slash, 41);
+});
+
+test('failed attacks do not grant weapon mastery', () => {
+  const player = createCombatant({ physicalStrength: 50, stamina: 0 });
+  const enemy = createCombatant({ hp: 100 });
+  equipWeapon(player, { id: 'sword', category: 'sword', power: 1, requiredStrength: 1, requiredMastery: 0 });
+  const result = executeAttack(player, enemy, { id: 'costly', kind: 'physical', base: 1, staminaCost: 10 }, { rng: () => 1 });
+  assert.equal(result.reason, 'insufficient-stamina');
+  assert.equal(player.weaponMasteryXpByCategory.sword, undefined);
+  assert.equal(player.weaponUses, 0);
 });
