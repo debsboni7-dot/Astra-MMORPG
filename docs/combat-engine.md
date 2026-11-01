@@ -22,7 +22,7 @@ Voir `prototype/src/combat/CombatEngine.js` pour les fonctions pures : calculs p
 - Workflow GitHub Actions : `.github/workflows/combat-tests.yml`.
 - Banc de test navigateur : ouvrir `prototype/combat-tests.html` depuis un serveur HTTP local ou après déploiement.
 
-Les 36 tests automatisés couvrent les calculs physiques et magiques, les limites de résistance, les coups critiques, la qualité d'exécution, les boucliers, les soins, les effets périodiques, la purification, les modificateurs, l'absorption du feu, les prérequis d'armes, la résolution d'attaque, les transitions de l'IA, les fenêtres de télégraphie, la récupération, l'interruption et la défaite. Ils utilisent des données artificielles destinées à vérifier les invariants, pas à fixer l'équilibrage final.
+Les 42 tests automatisés couvrent les calculs physiques et magiques, les limites de résistance, les coups critiques, la qualité d'exécution, les boucliers, les soins, les effets périodiques, la purification, les modificateurs, l'absorption du feu, les prérequis d'armes, la résolution d'attaque, les transitions de l'IA, les fenêtres de télégraphie, la récupération, l'interruption et la défaite. Ils utilisent des données artificielles destinées à vérifier les invariants, pas à fixer l'équilibrage final.
 
 ## À faire avant intégration en production
 - Brancher les attributs officiels complets une fois leur liste et leurs règles confirmées.
@@ -54,5 +54,5 @@ Limites connues de cette intégration :
 - Les valeurs de dégâts, coûts d'endurance, durées, statistiques de démonstration et distances sont provisoires.
 - Le joueur de démonstration commence avec des statistiques simplifiées ; la fiche de personnage et la progression réelle ne sont pas encore branchées.
 - Les contrôles du joueur sont raccordés aux animations disponibles ; les mouvements d'attaque du pillard restent représentés par la télégraphie et la résolution des dégâts, sans animation dédiée.
-- Une passe Chromium headless a validé WebGL, le chargement du modèle, le passage créateur → jeu, l'apparition du HUD, l'attaque ennemie, l'esquive et la parade/contre-attaque, sans erreur JavaScript dans la console. Les captures ont été générées, mais la revue esthétique image par image reste à faire.
+- Une passe Chromium headless a validé WebGL, le chargement du modèle, le passage créateur → jeu, l'apparition du HUD, les trois coups du combo sur une même cible, le finisher avec mise à terre, ainsi que l'attaque ennemie, l'esquive et la parade/contre-attaque, sans erreur JavaScript dans la console. Les captures ont été générées, mais la revue esthétique image par image reste à faire.
 - Les tests CI valident la syntaxe JavaScript et les fonctions du moteur/runtime/IA ; ils ne certifient pas la qualité visuelle finale ni les animations dédiées.
