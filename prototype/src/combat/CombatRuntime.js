@@ -1,0 +1,132 @@
+import * as Engine from './CombatEngine.js';
+
+const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+const clamp = (value, min, max) => Math.min(max, Math.max(min, number(value)));
+
+export function createCombatant(config = {}) {
+  const maxHp = Math.max(1, number(config.maxHp, 100));
+  const maxStamina = Math.max(0, number(config.maxStamina, 100));
+  return {
+    id: config.id || `combatant-${Math.random().toString(36).slice(2)}`,
+    name: config.name || 'Combattant',
+    hp: clamp(config.hp ?? maxHp, 0, maxHp), maxHp,
+    stamina: clamp(config.stamina ?? maxStamina, 0, maxStamina), maxStamina,
+    staminaRegenCombat: Math.max(0, number(config.staminaRegenCombat, 8)),
+    staminaRegenRest: Math.max(0, number(config.staminaRegenRest, 18)),
+    physicalStrength: Math.max(0, number(config.physicalStrength, 10)),
+    fireMastery: Math.max(0, number(config.fireMastery, 0)),
+    weapon: config.weapon || null,
+    weaponMastery: Math.max(0, number(config.weaponMastery, 0)),
+    weaponUses: 0,
+    shields: config.shields || [],
+    statusEffects: config.statusEffects || [],
+    modifiers: config.modifiers || [],
+    defenseState: { blockingUntil: 0, parryUntil: 0, dodgingUntil: 0, counterUntil: 0 },
+    cooldowns: Object.create(null),
+    defeated: false,
+  };
+}
+
+export function regenerateStamina(combatant, deltaSeconds, inCombat = true) {
+  const regen = inCombat ? combatant.staminaRegenCombat : combatant.staminaRegenRest;
+  const before = combatant.stamina;
+  combatant.stamina = clamp(before + Math.max(0, number(deltaSeconds)) * regen, 0, combatant.maxStamina);
+  return { restored: combatant.stamina - before, stamina: combatant.stamina };
+}
+
+export function spendStamina(combatant, amount) {
+  const cost = Math.max(0, number(amount));
+  if (combatant.stamina < cost) return { paid: false, cost, stamina: combatant.stamina };
+  combatant.stamina -= cost;
+  return { paid: true, cost, stamina: combatant.stamina };
+}
+
+export function beginBlock(combatant, { now = Date.now(), durationMs = 600, staminaCost = 4, parryWindowMs = 180 } = {}) {
+  const payment = spendStamina(combatant, staminaCost);
+  if (!payment.paid) return { started: false, reason: 'insufficient-stamina' };
+  combatant.defenseState.blockingUntil = now + Math.max(0, durationMs);
+  combatant.defenseState.parryUntil = now + Math.max(0, parryWindowMs);
+  return { started: true, blockingUntil: combatant.defenseState.blockingUntil, parryUntil: combatant.defenseState.parryUntil };
+}
+
+export function beginDodge(combatant, { now = Date.now(), durationMs = 420, staminaCost = 18 } = {}) {
+  const payment = spendStamina(combatant, staminaCost);
+  if (!payment.paid) return { started: false, reason: 'insufficient-stamina' };
+  combatant.defenseState.dodgingUntil = now + Math.max(0, durationMs);
+  return { started: true, dodgingUntil: combatant.defenseState.dodgingUntil };
+}
+
+export function openCounterWindow(combatant, now, durationMs = 900) {
+  combatant.defenseState.counterUntil = now + Math.max(0, durationMs);
+}
+
+export function resolveIncomingAttack(attacker, target, attack, {
+  now = Date.now(), balance = {}, blockDamageMultiplier = 0.35, firePhysicalBonus = 0, fireBuffDurationMs = 4000, rng = Math.random,
+} = {}) {
+  if (target.defeated || target.hp <= 0) return { hit: false, reason: 'target-defeated' };
+
+  if (attack.element === 'fire') {
+    const absorption = Engine.absorbAndIntensifyHostileAttack({
+      element: 'fire', defenderFireMastery: target.fireMastery, attackerFireMastery: attacker.fireMastery,
+      incomingDamage: attack.base, physicalStatBonus: firePhysicalBonus,
+    });
+    if (absorption.absorbed) {
+      if (firePhysicalBonus > 0) Engine.applyModifier(target, {
+        id: 'fire-intensification', stat: 'physicalStrength', category: 'buff',
+        value: firePhysicalBonus, durationMs: fireBuffDurationMs,
+      }, now);
+      return { hit: false, absorbed: true, absorption, hpLost: 0, hpRemaining: target.hp };
+    }
+  }
+
+  const defense = target.defenseState || {};
+  if (defense.dodgingUntil > now) return { hit: false, dodged: true, hpLost: 0, hpRemaining: target.hp };
+  if (defense.parryUntil > now) {
+    defense.parryUntil = 0;
+    defense.blockingUntil = 0;
+    openCounterWindow(target, now);
+    return { hit: false, parried: true, counterWindowUntil: defense.counterUntil, hpLost: 0, hpRemaining: target.hp };
+  }
+
+  let result;
+  if (attack.kind === 'physical') {
+    result = Engine.calculatePhysicalDamage({ ...attack, defense: target.defense, armor: target.armor, balance, rng });
+  } else if (attack.kind === 'magic') {
+    result = Engine.calculateMagicDamage({ ...attack, defense: target.magicDefense, resistance: target.resistances?.[attack.element] ?? attack.resistance ?? 0, balance, rng });
+  } else {
+    throw new Error(`Unsupported attack kind: ${attack.kind}`);
+  }
+  const blocking = defense.blockingUntil > now;
+  const damage = result.damage * (blocking ? clamp(blockDamageMultiplier, 0, 1) : 1);
+  const applied = Engine.applyDamage(target, damage, {
+    shields: target.shields || [], element: attack.element,
+    damageType: attack.kind === 'physical' ? 'physical' : 'magic',
+  });
+  if (target.hp <= 0) target.defeated = true;
+  return { ...result, ...applied, hit: true, blocked: blocking, damageAfterBlock: damage };
+}
+
+export function executeAttack(attacker, target, attack, {
+  now = Date.now(), balance = {}, rng = Math.random,
+} = {}) {
+  if (!attacker || !target || !attack) throw new Error('attacker, target and attack are required.');
+  if (attacker.defeated || attacker.hp <= 0) return { executed: false, reason: 'attacker-defeated' };
+  if (target.defeated || target.hp <= 0) return { executed: false, reason: 'target-defeated' };
+  if (attacker.cooldowns[attack.id] > now) return { executed: false, reason: 'cooldown' };
+  if (attacker.defenseState.counterUntil > 0 && attacker.defenseState.counterUntil <= now) attacker.defenseState.counterUntil = 0;
+  if (attack.counterOnly && attacker.defenseState.counterUntil <= now) return { executed: false, reason: 'counter-window-closed' };
+  if (attack.weapon) {
+    const requirement = Engine.canUseWeapon({
+      physicalStrength: attacker.physicalStrength, requiredStrength: attack.weapon.requiredStrength,
+      weaponMastery: attacker.weaponMastery, requiredMastery: attack.weapon.requiredMastery,
+    });
+    if (!requirement.canUse) return { executed: false, reason: 'weapon-requirements', requirement };
+  }
+  const payment = spendStamina(attacker, attack.staminaCost || 0);
+  if (!payment.paid) return { executed: false, reason: 'insufficient-stamina' };
+  const result = Engine.resolveAttack({ attacker, target, attack, balance, rng });
+  attacker.weaponUses += attack.weapon ? 1 : 0;
+  attacker.defenseState.counterUntil = 0;
+  if (target.hp <= 0) target.defeated = true;
+  return { executed: true, ...result, staminaSpent: payment.cost };
+}
