@@ -92,8 +92,8 @@ const state = {race:'human',gender:'male',category:'appearance',name:'',alias:''
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x111c2a);
-scene.fog = new THREE.Fog(0x111c2a, 14, 48);
-const camera = new THREE.PerspectiveCamera(38,1,.1,100); camera.position.set(0,1.45,4.7);
+scene.fog = new THREE.Fog(0x111c2a, 90, 420);
+const camera = new THREE.PerspectiveCamera(38,1,.1,700); camera.position.set(0,1.45,4.7);
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7)); renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
@@ -142,15 +142,15 @@ function makeSurfaceTexture(base, accent, kind='grain'){
 function makeWorld(){
   world.clear();
   const mat=(color,roughness=1,map=null,extra={})=>new THREE.MeshStandardMaterial({color,roughness,map,...extra});
-  const grassMap=makeSurfaceTexture('#344331','#708052','grain');grassMap.repeat.set(18,18);
+  const grassMap=makeSurfaceTexture('#344331','#708052','grain');grassMap.repeat.set(76,76);
   const stoneMap=makeSurfaceTexture('#756b5a','#c0b39a','stone');stoneMap.repeat.set(3,28);
   const plasterMap=makeSurfaceTexture('#b9a17a','#f0d9ac','plaster');plasterMap.repeat.set(2,2);
   const woodMap=makeSurfaceTexture('#493321','#b17a45','wood');woodMap.repeat.set(2,2);
   const roofMap=makeSurfaceTexture('#493b32','#9b7050','roof');roofMap.repeat.set(3,3);
   const grass=mat(0xffffff,1,grassMap),stone=mat(0xffffff,.94,stoneMap),plaster=mat(0xffffff,.92,plasterMap),timber=mat(0xffffff,.84,woodMap),roof=mat(0xffffff,.95,roofMap),dark=mat(0x292b2a,.95),leaf=mat(0x294532,.98);
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(150,150),grass);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;world.add(floor);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(640,640),grass);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;world.add(floor);
   // Grande voie pavée, inspirée du village médiéval fourni.
-  const road=new THREE.Mesh(new THREE.PlaneGeometry(5.5,100),stone);road.rotation.x=-Math.PI/2;road.position.set(0,-.035,-16);world.add(road);
+  const road=new THREE.Mesh(new THREE.PlaneGeometry(6.2,440),stone);road.rotation.x=-Math.PI/2;road.position.set(0,-.035,-10);world.add(road);
   for(let z=-48;z<28;z+=2.1)for(let x=-2.35;x<2.4;x+=1.05){const p=new THREE.Mesh(new THREE.BoxGeometry(.94,.07,1.85),mat((Math.random()>.5?0x817866:0x665d50)));p.position.set(x,-.015,z+(Math.random()-.5)*.12);world.add(p);}
   function house(x,z,scale=1){
     const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(scale);world.add(g);
@@ -167,6 +167,31 @@ function makeWorld(){
   house(-9,-13,1.1);house(9,-23,1.05);house(-10,8,.9);house(11,13,1.15);
   const trunkMat=mat(0x55402d),leafMat=leaf;
   for(const [x,z] of [[-18,-7],[18,-8],[-20,5],[20,4],[-16,19],[17,26],[-23,-30],[23,-38]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.2,.3,2.2,8),trunkMat);trunk.position.set(x,1.1,z);world.add(trunk);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.65,1),leafMat);crown.position.set(x,3,z);world.add(crown);}
+  // Forêt étendue inspirée du monde original fourni : clairières autour du village,
+  // bosquets, rochers et grande rivière traversant la région.
+  {
+    const trunkGeo=new THREE.CylinderGeometry(.18,.28,2.5,7);
+    const crownGeo=new THREE.IcosahedronGeometry(1.35,1);
+    const trunkMat2=mat(0x55402d),crownMat2=mat(0x294532,.98);
+    const count=360,trunks=new THREE.InstancedMesh(trunkGeo,trunkMat2,count),crowns=new THREE.InstancedMesh(crownGeo,crownMat2,count);
+    const dummy=new THREE.Object3D();let placed=0,tries=0;
+    while(placed<count&&tries++<count*8){
+      const a=Math.random()*Math.PI*2,r=42+Math.random()*255,x=Math.cos(a)*r,z=Math.sin(a)*r;
+      if(Math.hypot(x,z)<40||Math.abs(x)<8||Math.abs(x-(46+Math.sin(z*.035)*7))<13)continue;
+      const scale=.72+Math.random()*1.25;
+      dummy.position.set(x,1.25*scale,z);dummy.rotation.set(0,Math.random()*Math.PI*2,0);dummy.scale.set(scale,scale,scale);dummy.updateMatrix();trunks.setMatrixAt(placed,dummy.matrix);
+      dummy.position.set(x,3.05*scale,z);dummy.scale.set(scale*1.35,scale*1.55,scale*1.35);dummy.updateMatrix();crowns.setMatrixAt(placed,dummy.matrix);placed++;
+    }
+    trunks.count=crowns.count=placed;trunks.castShadow=crowns.castShadow=true;trunks.receiveShadow=crowns.receiveShadow=true;world.add(trunks,crowns);
+    const rockGeo=new THREE.IcosahedronGeometry(.8,0),rockMat=mat(0x77796f,.98),rocks=new THREE.InstancedMesh(rockGeo,rockMat,110);
+    for(let i=0;i<110;i++){const a=Math.random()*Math.PI*2,r=35+Math.random()*265,x=Math.cos(a)*r,z=Math.sin(a)*r,sc=.5+Math.random()*1.8;dummy.position.set(x,sc*.35,z);dummy.rotation.set(Math.random(),Math.random()*Math.PI,Math.random());dummy.scale.set(sc,sc*.65,sc*1.15);dummy.updateMatrix();rocks.setMatrixAt(i,dummy.matrix);}
+    rocks.castShadow=true;world.add(rocks);
+    const waterMat=new THREE.MeshStandardMaterial({color:0x315f70,roughness:.18,metalness:.12,transparent:true,opacity:.86});
+    for(let z=-250;z<250;z+=10){const x=46+Math.sin(z*.035)*7;const stream=new THREE.Mesh(new THREE.PlaneGeometry(9.5,11),waterMat);stream.rotation.x=-Math.PI/2;stream.rotation.z=Math.sin(z*.035)*.035;stream.position.set(x,-.13,z);world.add(stream);}
+    const bridge=new THREE.Group();bridge.position.set(46,.12,0);bridge.rotation.y=Math.PI/2;world.add(bridge);
+    for(let i=0;i<9;i++){const plank=new THREE.Mesh(new THREE.BoxGeometry(1.8,.16,1.05),timber);plank.position.set((i-4)*1.05,0,0);bridge.add(plank);}
+    for(const side of [-1,1]){const rail=new THREE.Mesh(new THREE.BoxGeometry(1.8,.16,.14),timber);rail.position.set(side*.82,.55,0);bridge.add(rail);}
+  }
   for(const [x,z] of [[-5,-5],[5,-16],[-5,5],[5,2]]){const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.85,12),timber);barrel.position.set(x,.42,z);world.add(barrel);const hoop=new THREE.Mesh(new THREE.TorusGeometry(.4,.035,6,16),dark);hoop.rotation.x=Math.PI/2;hoop.position.set(x,.2,z);world.add(hoop);}
   const well=new THREE.Group();well.position.set(5,0,-4);world.add(well);const ring=new THREE.Mesh(new THREE.CylinderGeometry(1,.95,.75,12),stone);ring.position.y=.38;well.add(ring);const roofCap=new THREE.Mesh(new THREE.ConeGeometry(1.15,.8,4),roof);roofCap.position.y=2.2;roofCap.rotation.y=Math.PI/4;well.add(roofCap);
   // Lanternes chaudes, halos et poussières lumineuses pour donner de la vie au village.
@@ -477,7 +502,7 @@ async function loadSelectedCharacter(){const token=++state.loadToken,key=archive
   buildWardrobeUI();playAction('idle');setStatus('MODÈLE CHARGÉ',true);$('#category-note').textContent=`Modèle ${RACES.find(x=>x[0]===state.race)[1]} ${state.gender==='male'?'masculin':'féminin'} chargé. Aperçu 3D réel.`;return true;
  }catch(err){console.error(err);if(token===state.loadToken){setStatus('ERREUR DE CHARGEMENT');$('#category-note').textContent=err.message;showError(`Impossible de charger le personnage ${key}.\n${err.message}`);}return false;}}
 function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning())return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;state.actionOneShot=oneShot;next.fadeIn(.16).play();if(previous&&previous!==next)previous.fadeOut(.16);state.currentAction=name;}
-async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
+async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=Math.PI;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
 function showError(message){errorBox.hidden=false;errorBox.textContent=message;setTimeout(()=>{errorBox.hidden=true;},9000);}
 createRaceButtons();updateSelection();buildWardrobeUI();
 $('#race-options').addEventListener('click',()=>{});
@@ -487,7 +512,7 @@ $('#new-game-btn').addEventListener('click',()=>{setScreen('creator');loadSelect
 $('#continue-btn').addEventListener('click',async()=>{const saved=localStorage.getItem('astrea-character');if(!saved){$('#new-game-btn').click();return;}try{const data=JSON.parse(saved);state.race=data.race;state.gender=data.gender;state.name=data.name;state.alias=data.alias;updateSelection();$('#character-name').value=state.name;$('#player-alias').value=state.alias;$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;const loaded=await loadSelectedCharacter();if(!loaded)return;restoreWardrobe(data.wardrobe||{});setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}catch(err){showError('La sauvegarde du personnage est illisible.');console.error(err);}});
 $('#back-menu').addEventListener('click',()=>setScreen('menu'));
 $('#create-character').addEventListener('click',saveCharacter);
-$('#back-creator').addEventListener('click',()=>{setScreen('creator');loadSelectedCharacter();});
+
 
 canvas.addEventListener('pointerdown',e=>{if(state.screen==='creator'){state.drag=true;state.lastX=e.clientX;canvas.setPointerCapture(e.pointerId);}});
 canvas.addEventListener('pointermove',e=>{if(state.drag&&state.model){state.previewYaw+=(e.clientX-state.lastX)*.009;state.model.rotation.y=state.previewYaw;state.lastX=e.clientX;}});
@@ -519,7 +544,7 @@ let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(st
 let lastTime=performance.now();let currentMode='';
 function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);regenerateStamina(enemyCombatant,dt,true);combatClockMs+=dt*1000;updateEnemyEncounter(dt,combatClockMs);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
  if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
- if(world.userData.updateVFX)world.userData.updateVFX(now,dt);updateCombatVfx(dt);if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0)+(state.touchX||0);const padForward=-(state.gamePadY||0)-(state.touchY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
+ if(world.userData.updateVFX)world.userData.updateVFX(now,dt);updateCombatVfx(dt);if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0)+(state.touchX||0);const padForward=-(state.gamePadY||0)-(state.touchY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len)+Math.PI;if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
  renderer.render(scene,camera);
 }
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
