@@ -51,8 +51,12 @@ export function createMagicProgressionService(repository) {
     async grantPointsFromServerEvent({ accountId, characterId, amount, eventId }) {
       if (!eventId || typeof eventId !== 'string') throw new Error('A trusted progression event id is required.');
       return transact(accountId, characterId, async progression => {
+        const key = `points:${eventId}`;
+        if (progression.processedEvents.includes(key)) return { granted: 0, duplicate: true, persist: false };
         const result = grantMagicSkillPoints(progression, amount);
         Object.assign(progression, result.progression);
+        progression.processedEvents.push(key);
+        progression.processedEvents = progression.processedEvents.slice(-1000);
         return { granted: result.granted, unspentSkillPoints: result.unspentSkillPoints, eventId };
       });
     },
@@ -61,9 +65,13 @@ export function createMagicProgressionService(repository) {
     async grantSchoolXpFromServerEvent({ accountId, characterId, school, amount, eventId }) {
       if (!eventId || typeof eventId !== 'string') throw new Error('A trusted progression event id is required.');
       return transact(accountId, characterId, async progression => {
+        const key = `school-xp:${eventId}`;
+        if (progression.processedEvents.includes(key)) return { granted: 0, duplicate: true, persist: false };
         const result = grantMagicSchoolXp(progression, school, amount);
         if (result.reason) return { granted: 0, reason: result.reason, persist: false };
         Object.assign(progression, result.progression);
+        progression.processedEvents.push(key);
+        progression.processedEvents = progression.processedEvents.slice(-1000);
         return { granted: result.granted, school: result.school, schoolXp: result.schoolXp, schoolLevel: result.schoolLevel, eventId };
       });
     },
@@ -75,12 +83,17 @@ export function createMagicProgressionService(repository) {
     async recordSuccessfulCast({ accountId, characterId, school, skillId, castEventId }) {
       if (!castEventId || typeof castEventId !== 'string') throw new Error('A trusted cast event id is required.');
       return transact(accountId, characterId, async progression => {
+        const key = `cast:${castEventId}`;
+        if (progression.processedEvents.includes(key)) return { recorded: false, reason: 'duplicate-event', persist: false };
         const result = recordMagicSkillUse(progression, school, skillId);
         if (!result.recorded) return { recorded: false, reason: result.reason, persist: false };
         Object.assign(progression, result.progression);
+        progression.processedEvents.push(key);
+        progression.processedEvents = progression.processedEvents.slice(-1000);
         return {
           recorded: true, school: result.school, skillId: result.skill,
-          schoolLevel: result.schoolLevel, masteryXp: result.masteryXp, castEventId,
+          schoolXp: result.schoolXp, schoolLevel: result.schoolLevel,
+          masteryXp: result.masteryXp, castEventId,
         };
       });
     },
