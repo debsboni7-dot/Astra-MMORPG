@@ -6,21 +6,22 @@ import {
 const clone = value => structuredClone(value);
 
 export function createMagicProgressionService(repository) {
-  if (!repository || typeof repository.withCharacterTransaction !== 'function' ||
-      typeof repository.saveMagicProgression !== 'function') {
-    throw new Error('Magic progression repository requires withCharacterTransaction and saveMagicProgression.');
+  if (!repository || typeof repository.withCharacterTransaction !== 'function') {
+    throw new Error('Magic progression repository requires withCharacterTransaction.');
   }
 
   async function transact(accountId, characterId, operation) {
     if (!accountId || !characterId) throw new Error('Authenticated account and character are required.');
-    return repository.withCharacterTransaction(accountId, characterId, async character => {
+    return repository.withCharacterTransaction(accountId, characterId, async (character, saveProgression) => {
       if (!character || character.accountId !== accountId || character.id !== characterId) {
         throw new Error('Character ownership validation failed.');
       }
       const progression = sanitizeMagicProgression(character.magicProgression || createMagicProgression());
       const result = await operation(progression);
       if (result.persist !== false) {
-        await repository.saveMagicProgression(characterId, progression);
+        if (typeof saveProgression === 'function') await saveProgression(progression, 'magic');
+        else if (typeof repository.saveMagicProgression === 'function') await repository.saveMagicProgression(characterId, progression);
+        else throw new TypeError('Transactional magic progression writer is required');
       }
       return { ...result, progression: clone(progression) };
     });
