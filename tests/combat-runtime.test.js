@@ -93,6 +93,7 @@ test('equipped weapon supplies power, category and per-category usage tracking',
   const result = executeAttack(player, enemy, { id: 'hammer-hit', kind: 'physical', base: 10, strength: 0, staminaCost: 0 }, { rng: () => 1 });
   assert.equal(result.executed, true);
   assert.equal(result.rawDamage, 25);
+  assert.equal(result.weaponCategory, 'hammer');
   assert.equal(player.weaponUses, 1);
   assert.equal(player.weaponUsesByCategory.hammer, 1);
 });

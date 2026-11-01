@@ -164,5 +164,5 @@ export function executeAttack(attacker, target, attack, {
   }
   attacker.defenseState.counterUntil = 0;
   if (target.hp <= 0) target.defeated = true;
-  return { executed: true, ...result, staminaSpent: payment.cost };
+  return { executed: true, ...result, weaponCategory: effectiveAttack.weaponCategory || null, staminaSpent: payment.cost };
 }
