@@ -31,33 +31,11 @@ export function createPostgresRepository(pool) {
           [characterId, accountId],
         );
         if (!rows[0]) throw Object.assign(new Error('Personnage introuvable ou non autorisé'), { code: 'CHARACTER_NOT_FOUND' });
-        const result = await callback(rows[0]);
-        await client.query('COMMIT');
-        return result;
-      } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-      } finally {
-        client.release();
-      }
-    },
-    async saveWeaponProgression(characterId, progression) {
-      // Called only inside withCharacterTransaction; transaction-scoped client is supplied below instead.
-      throw new Error('Use the transaction-bound progression writer');
-    },
-    async withCharacterProgressionTransaction(accountId, characterId, callback) {
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        const { rows } = await client.query(
-          'SELECT id,account_id AS "accountId",weapon_progression AS "weaponProgression" FROM characters WHERE id=$1 AND account_id=$2 FOR UPDATE',
-          [characterId, accountId],
-        );
-        if (!rows[0]) throw Object.assign(new Error('Personnage introuvable ou non autorisé'), { code: 'CHARACTER_NOT_FOUND' });
         const character = rows[0];
-        const result = await callback(character, async progression => {
+        const saveProgression = async progression => {
           await client.query('UPDATE characters SET weapon_progression=$1::jsonb WHERE id=$2', [JSON.stringify(progression), characterId]);
-        });
+        };
+        const result = await callback(character, saveProgression);
         await client.query('COMMIT');
         return result;
       } catch (error) {
