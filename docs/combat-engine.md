@@ -18,11 +18,11 @@ Noyau technique initial, isolé du prototype 3D. Les formules et coefficients de
 Voir `prototype/src/combat/CombatEngine.js` pour les fonctions pures : calculs physiques/magiques, application de dégâts, soins, boucliers, effets temporaires, purification, modificateurs, absorption de feu, contrôle des prérequis d'armes et résolution d'attaque.
 
 ## Vérification
-- Tests automatisés Node.js : `node --test tests/*.test.js` (36 tests couvrant le moteur, le runtime et l’IA ennemie).
+- Tests automatisés Node.js : `node --test tests/*.test.js` (moteur, runtime, techniques et IA ennemie).
 - Workflow GitHub Actions : `.github/workflows/combat-tests.yml`.
 - Banc de test navigateur : ouvrir `prototype/combat-tests.html` depuis un serveur HTTP local ou après déploiement.
 
-Les 48 tests automatisés couvrent les calculs physiques et magiques, les limites de résistance, les coups critiques, la qualité d'exécution, les boucliers, les soins, les effets périodiques, la purification, les modificateurs, l'absorption du feu, les prérequis d'armes, la résolution d'attaque, les transitions de l'IA, les fenêtres de télégraphie, la récupération, l'interruption et la défaite. Les tests de réaction couvrent aussi la diminution des contrôles répétés afin d'éviter les stun-locks, ainsi que le lancement aérien : trajectoire ascendante et descendante, atterrissage, maintien au sol, puis relevée progressive. Ils utilisent des données artificielles destinées à vérifier les invariants, pas à fixer l'équilibrage final.
+La suite de tests automatisés couvre les calculs physiques et magiques, les limites de résistance, les coups critiques, la qualité d'exécution, les boucliers, les soins, les effets périodiques, la purification, les modificateurs, l'absorption du feu, les prérequis d'armes, la résolution d'attaque, les transitions de l'IA, les fenêtres de télégraphie, la récupération, l'interruption et la défaite. Les tests de réaction couvrent aussi la diminution des contrôles répétés afin d'éviter les stun-locks, ainsi que le lancement aérien : trajectoire ascendante et descendante, atterrissage, maintien au sol, puis relevée progressive. Ils utilisent des données artificielles destinées à vérifier les invariants, pas à fixer l'équilibrage final.
 
 ## À faire avant intégration en production
 - Brancher les attributs officiels complets une fois leur liste et leurs règles confirmées.
@@ -66,3 +66,8 @@ Le module expose `applyWeaponHitProfile` pour différencier les réactions aprè
 ## Équipement d'arme raccordé au runtime
 
 Le runtime permet maintenant d'équiper/déséquiper une arme physique avec une catégorie validée (épée, hache, marteau, arme d'hast). L'équipement est refusé si la force physique ou la maîtrise de cette catégorie est insuffisante ; un refus conserve l'arme précédemment équipée. Une attaque utilise automatiquement la puissance et la catégorie de l'arme équipée, sauf surcharge explicite de l'attaque. Les utilisations sont comptabilisées au total et par catégorie pour préparer la progression de maîtrise. Aucun gain numérique de maîtrise n'est attribué automatiquement : la courbe de progression et les seuils restent à définir officiellement.
+
+
+## Correctifs d'interface et de navigation
+
+Le panneau de combat utilise une grille à deux colonnes avec des largeurs minimales explicites, des boutons qui peuvent revenir à la ligne et un défilement interne lorsque la hauteur disponible est faible. Sa largeur tient compte des marges de l'écran sur mobile afin d'éviter tout débordement horizontal ou superposition des commandes. La navigation clavier/manette inclut désormais les listes déroulantes de personnalisation ; les flèches haut/bas restent disponibles pour choisir leurs options. La perte de focus de la fenêtre libère les touches de déplacement afin d'éviter un mouvement bloqué après un changement d'application.
