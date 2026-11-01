@@ -20,8 +20,8 @@ function bearer(request) {
   return match?.[1] || null;
 }
 
-export function createAstreaHttpServer({ authService, progressionService }) {
-  if (!authService || !progressionService) throw new TypeError('Auth and progression services are required');
+export function createAstreaHttpServer({ authService, characterService, progressionService }) {
+  if (!authService || !characterService || !progressionService) throw new TypeError('Auth, character and progression services are required');
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url, 'http://localhost');
@@ -32,6 +32,18 @@ export function createAstreaHttpServer({ authService, progressionService }) {
       if (request.method === 'POST' && url.pathname === '/v1/auth/login') {
         const session = await authService.login(await readJson(request));
         return send(response, 200, session);
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/characters') {
+        const account = await authService.authenticate(bearer(request));
+        if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
+        return send(response, 200, { characters: await characterService.list(account.id) });
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/characters') {
+        const account = await authService.authenticate(bearer(request));
+        if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
+        const body = await readJson(request);
+        const character = await characterService.create(account.id, body.displayName);
+        return send(response, 201, { character });
       }
       if (request.method === 'POST' && url.pathname === '/v1/auth/logout') {
         await authService.logout(bearer(request));
