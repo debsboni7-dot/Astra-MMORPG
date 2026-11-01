@@ -102,7 +102,7 @@ export function applyStatus(target, incoming, now = Date.now()) {
   const duration = Math.max(0, finite(incoming.durationMs));
   const intensity = Math.max(0, finite(incoming.intensity, 1));
   if (!current) {
-    const effect = { ...incoming, intensity, expiresAt: now + duration, appliedAt: now };
+    const effect = { ...incoming, intensity, expiresAt: now + duration, appliedAt: now, nextTickAt: now + Math.max(1, finite(incoming.tickIntervalMs, 1000)) };
     target.statusEffects.push(effect);
     return { applied: true, effect, refreshed: false };
   }
@@ -154,8 +154,8 @@ export function purifyStatuses(target, { ids = null, categories = null, maxCount
 export function applyModifier(target, modifier, now = Date.now()) {
   if (!modifier?.id || !modifier?.stat) throw new Error('Modifier requires id and stat.');
   target.modifiers ||= [];
-  const group = modifier.stackingGroup || modifier.stat;
-  const same = target.modifiers.filter(item => (item.stackingGroup || item.stat) === group && item.stat === modifier.stat);
+  const group = modifier.stackingGroup || (modifier.category ? modifier.category + ':' + modifier.stat : modifier.stat);
+  const same = target.modifiers.filter(item => (item.stackingGroup || (item.category ? item.category + ':' + item.stat : item.stat)) === group && item.stat === modifier.stat);
   const candidate = { ...modifier, expiresAt: now + Math.max(0, finite(modifier.durationMs)) };
   if (!same.length) {
     target.modifiers.push(candidate);
