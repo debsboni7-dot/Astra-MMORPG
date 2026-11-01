@@ -1,4 +1,5 @@
 import * as Engine from './CombatEngine.js';
+import { awardWeaponMastery, getWeaponProgression, getWeaponTechniqueList, recordWeaponTechniqueUse } from './WeaponProgression.js';
 
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, number(value)));
@@ -18,7 +19,9 @@ export function createCombatant(config = {}) {
     weapon: config.weapon || null,
     weaponMastery: Math.max(0, number(config.weaponMastery, 0)),
     weaponMasteries: { ...(config.weaponMasteries || {}) },
-    weaponUses: 0,
+    weaponMasteryXpByCategory: { ...(config.weaponMasteryXpByCategory || {}) },
+    weaponTechniqueXp: { ...(config.weaponTechniqueXp || {}) },
+    weaponUses: Math.max(0, number(config.weaponUses, 0)),
     weaponUsesByCategory: { ...(config.weaponUsesByCategory || {}) },
     shields: config.shields || [],
     statusEffects: config.statusEffects || [],
@@ -150,19 +153,32 @@ export function executeAttack(attacker, target, attack, {
     });
     if (!requirement.canUse) return { executed: false, reason: 'weapon-requirements', requirement };
   }
-  const payment = spendStamina(attacker, attack.staminaCost || 0);
+  const category = weapon?.category || null;
+  const technique = category && attack.techniqueId
+    ? getWeaponTechniqueList(category, attacker.weaponMasteries?.[category] || attacker.weaponMastery, attacker.weaponTechniqueXp || {}).find(item => item.id === attack.techniqueId)
+    : null;
+  if (attack.techniqueId && (!technique || !technique.unlocked)) return { executed: false, reason: 'technique-locked', requiredMastery: technique?.requiredMastery ?? null };
+  const staminaCost = Math.max(0, number(attack.staminaCost) * (technique?.staminaCostMultiplier || 1));
+  const payment = spendStamina(attacker, staminaCost);
   if (!payment.paid) return { executed: false, reason: 'insufficient-stamina' };
   const effectiveAttack = weapon ? {
     ...attack,
     weaponPower: attack.weaponPower ?? weapon.power ?? 0,
     weaponCategory: attack.weaponCategory || weapon.category,
+    techniqueMultiplier: number(attack.techniqueMultiplier, 1) * (technique?.powerMultiplier || 1),
   } : attack;
   const result = Engine.resolveAttack({ attacker, target, attack: effectiveAttack, balance, rng });
+  let weaponProgression = null;
+  let techniqueProgression = null;
   if (weapon) {
     attacker.weaponUses += 1;
-    attacker.weaponUsesByCategory[weapon.category] = (attacker.weaponUsesByCategory[weapon.category] || 0) + 1;
+    attacker.weaponUsesByCategory[category] = (attacker.weaponUsesByCategory[category] || 0) + 1;
+    weaponProgression = awardWeaponMastery(attacker, category, attack.attackType || 'light', attack.masteryXp ?? null);
+    if (attack.techniqueId) techniqueProgression = recordWeaponTechniqueUse(attacker, category, attack.techniqueId);
   }
   attacker.defenseState.counterUntil = 0;
   if (target.hp <= 0) target.defeated = true;
-  return { executed: true, ...result, weaponCategory: effectiveAttack.weaponCategory || null, staminaSpent: payment.cost };
+  return { executed: true, ...result, weaponCategory: effectiveAttack.weaponCategory || null, staminaSpent: payment.cost, weaponProgression, techniqueProgression };
 }
+
+export { getWeaponProgression };
