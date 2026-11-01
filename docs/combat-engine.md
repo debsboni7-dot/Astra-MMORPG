@@ -1,4 +1,3 @@
-5331 docs/combat-engine.md
 # ASTREA — Combat Engine 0.1
 
 ## Statut
