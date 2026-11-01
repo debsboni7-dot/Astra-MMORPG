@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js';
-import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAttack, resolveIncomingAttack } from './combat/CombatRuntime.js';
+import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAttack, resolveIncomingAttack, equipWeapon, getWeaponProgression } from './combat/CombatRuntime.js';
 import { createEnemyAI, updateEnemyAI, staggerEnemyAI } from './combat/EnemyAI.js';
 import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery, createControlDiminishingState, applyControlDiminishing, applyWeaponHitProfile } from './combat/CombatTechniques.js';
 
@@ -70,6 +70,9 @@ const QUATERNIUS_ITEMS=[
 ];
 const WARDROBE_CATALOG=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,QUATERNIUS_ITEMS.filter(item=>item.slot===slot.id)]));
 let playerCombatant = createCombatant({ id: 'player', name: 'Joueur', physicalStrength: 10, fireMastery: 1, weaponMastery: 0 });
+const WEAPON_UI = { sword:{label:'Épée',power:8},axe:{label:'Hache',power:11},hammer:{label:'Marteau',power:13},polearm:{label:'Arme d’hast',power:9} };
+let selectedWeaponCategory='sword',selectedTechniqueId='';
+function equipTrainingWeapon(category=selectedWeaponCategory){const def=WEAPON_UI[category];if(!def)return false;const result=equipWeapon(playerCombatant,{id:'training-'+category,category,power:def.power,requiredStrength:1,requiredMastery:0});return result.equipped;}
 let trainingDummyCombatant = null;
 let trainingDummyMesh = null;
 let enemyCombatant = null;
@@ -227,11 +230,42 @@ function ensureCombatHud(){
  if(!panel){
   panel=document.createElement('div');panel.id='combat-panel';
   panel.className='combat-panel';
-  panel.innerHTML='<div style="font-weight:800;letter-spacing:.12em;margin-bottom:8px">ENTRAÎNEMENT · COMBO J × 3</div><div>JOUEUR · PV <span id="combat-player-hp">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 8px"><div id="combat-player-hp-bar" style="height:100%;width:100%;background:#55bd83"></div></div><div>ENDURANCE <span id="combat-player-stamina">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-player-stamina-bar" style="height:100%;width:100%;background:#56bfff"></div></div><div style="font-weight:700">MANNEQUIN · PV <span id="combat-target-hp">150 / 150</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-target-hp-bar" style="height:100%;width:100%;background:#e18a55"></div></div><div style="font-weight:700">PILLARD · PV <span id="combat-enemy-hp">120 / 120</span> · <span id="combat-enemy-state">APPROACH</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-enemy-hp-bar" style="height:100%;width:100%;background:#e65d4d"></div></div><div id="combat-message" style="min-height:32px;color:#b9d9f2;margin-bottom:8px">Le pillard approche. Prépare-toi à esquiver ou à parer.</div><div class="combat-actions"><button data-combat="attack">Attaque (J)</button><button data-combat="fire">Feu (K)</button><button data-combat="block">Parade (L)</button><button data-combat="dodge">Esquive (O)</button><button data-combat="reset" class="combat-reset">Réinitialiser le combat</button></div>';
+  panel.innerHTML='<div style="font-weight:800;letter-spacing:.12em;margin-bottom:8px">ENTRAÎNEMENT · COMBO J × 3</div><div>JOUEUR · PV <span id="combat-player-hp">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 8px"><div id="combat-player-hp-bar" style="height:100%;width:100%;background:#55bd83"></div></div><div>ENDURANCE <span id="combat-player-stamina">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-player-stamina-bar" style="height:100%;width:100%;background:#56bfff"></div></div><div style="font-weight:700">MANNEQUIN · PV <span id="combat-target-hp">150 / 150</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-target-hp-bar" style="height:100%;width:100%;background:#e18a55"></div></div><div style="font-weight:700">PILLARD · PV <span id="combat-enemy-hp">120 / 120</span> · <span id="combat-enemy-state">APPROACH</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-enemy-hp-bar" style="height:100%;width:100%;background:#e65d4d"></div></div><div id="combat-message" style="min-height:32px;color:#b9d9f2;margin-bottom:8px">Le pillard approche. Prépare-toi à esquiver ou à parer.</div><div class="weapon-progression"><label for="combat-weapon-select">ARME ÉQUIPÉE</label><select id="combat-weapon-select" class="combat-select"><option value="sword">Épée</option><option value="axe">Hache</option><option value="hammer">Marteau</option><option value="polearm">Arme d’hast</option></select><div id="combat-mastery-progress" class="mastery-progress" aria-live="polite"></div><label for="combat-technique-select">TECHNIQUE</label><select id="combat-technique-select" class="combat-select"><option value="">Attaque normale</option></select><div id="combat-technique-progress" class="mastery-progress" aria-live="polite"></div></div><div class="combat-actions"><button data-combat="attack">Attaque (J)</button><button data-combat="fire">Feu (K)</button><button data-combat="block">Parade (L)</button><button data-combat="dodge">Esquive (O)</button><button data-combat="reset" class="combat-reset">Réinitialiser le combat</button></div>';
   for(const button of panel.querySelectorAll('button')){button.classList.add('combat-action-button');button.addEventListener('click',()=>combatAction(button.dataset.combat));}
+  panel.querySelector('#combat-weapon-select').addEventListener('change',e=>selectCombatWeapon(e.target.value));
+  panel.querySelector('#combat-technique-select').addEventListener('change',e=>{selectedTechniqueId=e.target.value;updateWeaponProgressionHud();});
   gameHud.append(panel);
+  equipTrainingWeapon(selectedWeaponCategory);
+  updateWeaponProgressionHud();
  }
  panel.hidden=false;
+}
+function selectCombatWeapon(category){
+ if(!WEAPON_UI[category])return;
+ if(!equipTrainingWeapon(category)){combatMessage('Impossible d’équiper cette arme.');return;}
+ selectedWeaponCategory=category;selectedTechniqueId='';
+ updateWeaponProgressionHud();
+}
+function updateWeaponProgressionHud(){
+ const weaponSelect=$('#combat-weapon-select'),techniqueSelect=$('#combat-technique-select');
+ if(!weaponSelect||!techniqueSelect||!playerCombatant)return;
+ weaponSelect.value=selectedWeaponCategory;
+ const progression=getWeaponProgression(playerCombatant,selectedWeaponCategory);
+ const m=progression.mastery;
+ const mastery=$('#combat-mastery-progress');
+ if(mastery)mastery.textContent='Maîtrise '+m.level+'/100 · '+Math.floor(m.xp)+' XP · '+(m.level>=100?'Maximum atteint':m.xpRemaining+' XP avant le rang suivant');
+ const previous=selectedTechniqueId;
+ techniqueSelect.replaceChildren(new Option('Attaque normale',''));
+ for(const technique of progression.techniques){
+  const option=new Option((technique.unlocked?'✓ ':'🔒 ')+technique.name+(technique.unlocked?' · R'+technique.techniqueMasteryLevel:' · Maîtrise '+technique.requiredMastery),technique.id);
+  option.disabled=!technique.unlocked;
+  techniqueSelect.add(option);
+ }
+ selectedTechniqueId=progression.techniques.some(t=>t.id===previous&&t.unlocked)?previous:'';
+ techniqueSelect.value=selectedTechniqueId;
+ const selected=progression.techniques.find(t=>t.id===selectedTechniqueId);
+ const detail=$('#combat-technique-progress');
+ if(detail)detail.textContent=selected?'Technique R'+selected.techniqueMasteryLevel+'/5 · '+selected.xp+' utilisations · '+(selected.techniqueMasteryLevel>=5?'Maîtrise maximale':selected.xpRemaining+' utilisations avant le rang suivant'):'Choisis une technique débloquée ou utilise une attaque normale.';
 }
 function combatMessage(message){
  const el=$('#combat-message');if(el)el.textContent=message;
@@ -262,7 +296,7 @@ function performPlayerAttack(kind='physical'){
  const combo=kind==='magic'?null:advanceCombo(comboState,combatClockMs);
  const attack=kind==='magic'
   ? {id:'training-fire-bolt',kind:'magic',element:'fire',base:24,relevantPower:0,powerCoefficient:0,techniqueMultiplier:1,schoolMasteryMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:12}
-  : {id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,weaponPower:0,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':combo.stage===2?'launcher':'light'};
+  : {id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,weaponPower:0,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':combo.stage===2?'launcher':'light',techniqueId:selectedTechniqueId||undefined};
  const result=executeAttack(playerCombatant,target,attack,{now:combatClockMs});
  if(!result.executed){if(kind!=='magic'){resetCombo(comboState);comboTargetId=null;}combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
  playAction(kind==='magic'?'charged_spell_cast':'attack',true);
@@ -292,10 +326,10 @@ function combatAction(action){
   if(result.started){playAction('dodge_roll',true);combatMessage('Esquive : invulnérabilité temporaire.');}
   else combatMessage('Pas assez d’endurance pour esquiver.');
  }else if(action==='reset'){
-  playerCombatant=createCombatant({id:'player',name:state.name||'Joueur',physicalStrength:10,fireMastery:1,weaponMastery:0});resetCombo(comboState);comboTargetId=null;
+  playerCombatant=createCombatant({id:'player',name:state.name||'Joueur',physicalStrength:10,fireMastery:1,weaponMastery:0});equipTrainingWeapon(selectedWeaponCategory);selectedTechniqueId='';resetCombo(comboState);comboTargetId=null;
   createTrainingDummy();createTrainingEnemy();combatMessage('Combat réinitialisé : PV, endurance et ennemis restaurés.');
  }
- updateCombatHud();
+ updateCombatHud();updateWeaponProgressionHud();
 }
 
 function updateEnemyEncounter(dt,now){
