@@ -9,6 +9,7 @@ Node.js 22+ et PostgreSQL. Le manifeste racine définit les modules ES et la dé
 Exécuter dans l'ordre :
 1. `server/migrations/000_accounts_and_sessions.sql`
 2. `server/migrations/001_character_weapon_progression.sql`
+3. `server/migrations/002_character_magic_progression.sql`
 
 La migration 001 crée la table `characters` avec identifiant UUID, propriétaire `account_id`, nom d'affichage et données JSONB, puis ajoute le bloc de progression. Si une table `characters` existe déjà, vérifier et adapter ses types/colonnes avant migration. Les personnages historiques doivent être rattachés à un compte avant production.
 
@@ -23,6 +24,6 @@ La migration 001 crée la table `characters` avec identifiant UUID, propriétair
 
 ## État
 
-Routes HTTP : `POST /v1/auth/register`, `POST /v1/auth/login`, `POST /v1/auth/logout`, `GET/POST /v1/characters`, `GET /v1/characters/:id/progression/weapons`. Les routes de personnage/progression exigent un jeton Bearer. La progression n'est attribuée qu'en appelant le service depuis le moteur serveur après résolution de combat autoritaire.
+Routes HTTP : `POST /v1/auth/register`, `POST /v1/auth/login`, `POST /v1/auth/logout`, `GET/POST /v1/characters`, `GET /v1/characters/:id/progression/weapons`, `GET /v1/characters/:id/progression/magic`, `GET /v1/characters/:id/progression/magic/:school` et `POST /v1/characters/:id/progression/magic/unlock`. Les routes de personnage/progression exigent un jeton Bearer. Les points et XP magiques sont attribués uniquement par des événements internes de progression/jeu, jamais par une route client. La progression n'est attribuée qu'en appelant le service depuis le moteur serveur après résolution de combat autoritaire.
 
 Cette livraison fournit l'authentification de base, la création/liste de personnages et le dépôt PostgreSQL, pas encore le serveur de combat temps réel ni l'intégration au client du prototype. Les secrets, la chaîne PostgreSQL et le cycle de déploiement doivent être configurés dans l'environnement d'hébergement. Les secrets, la chaîne PostgreSQL et le cycle de déploiement doivent être configurés dans l'environnement d'hébergement.
