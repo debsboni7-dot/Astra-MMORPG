@@ -50,10 +50,10 @@ test('knockdown recovery stays grounded until its stun ends, then stands up over
   const { createHitRecoveryState, beginHitRecovery, updateHitRecovery } = await import('../prototype/src/combat/CombatTechniques.js');
   const recovery = createHitRecoveryState({ getUpDurationMs: 500 });
   beginHitRecovery(recovery, { knockdown: true, staggerMs: 900 }, 1000);
-  assert.deepEqual(updateHitRecovery(recovery, 1500), { phase: 'down', progress: 0, grounded: true });
-  assert.deepEqual(updateHitRecovery(recovery, 1900), { phase: 'getting-up', progress: 0, grounded: true });
-  assert.deepEqual(updateHitRecovery(recovery, 2150), { phase: 'getting-up', progress: 0.5, grounded: true });
-  assert.deepEqual(updateHitRecovery(recovery, 2400), { phase: 'standing', progress: 1, grounded: false });
+  assert.deepEqual(updateHitRecovery(recovery, 1500), { phase: 'down', progress: 0, height: 0, grounded: true });
+  assert.deepEqual(updateHitRecovery(recovery, 1900), { phase: 'getting-up', progress: 0, height: 0, grounded: true });
+  assert.deepEqual(updateHitRecovery(recovery, 2150), { phase: 'getting-up', progress: 0.5, height: 0, grounded: true });
+  assert.deepEqual(updateHitRecovery(recovery, 2400), { phase: 'standing', progress: 1, height: 0, grounded: false });
 });
 
 test('non-knockdown reactions do not force a grounded recovery', async () => {
