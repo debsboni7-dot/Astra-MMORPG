@@ -33,7 +33,7 @@ function sanitizeProgression(value = {}) {
  * the returned progression. The authenticated account ID is never read from the request body.
  */
 export function createWeaponProgressionService(repository) {
-  if (!repository || typeof repository.withCharacterTransaction !== 'function') {
+  if (!repository || typeof repository.withCharacterTransaction !== 'function' || typeof repository.saveWeaponProgression !== 'function') {
     throw new TypeError('A transactional character repository is required');
   }
 
