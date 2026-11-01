@@ -3,7 +3,7 @@ import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js';
 import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAttack, resolveIncomingAttack } from './combat/CombatRuntime.js';
 import { createEnemyAI, updateEnemyAI, staggerEnemyAI } from './combat/EnemyAI.js';
-import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery, createControlDiminishingState, applyControlDiminishing } from './combat/CombatTechniques.js';
+import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery, createControlDiminishingState, applyControlDiminishing, applyWeaponHitProfile } from './combat/CombatTechniques.js';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
@@ -268,7 +268,7 @@ function performPlayerAttack(kind='physical'){
  playAction(kind==='magic'?'charged_spell_cast':'attack',true);
  let reaction=null;
  if(kind==='physical'){if(combo.finisher)comboTargetId=null;else if(combo.stage===1)comboTargetId=target.id;}
- if(targetIsEnemy&&result.executed){reaction=resolveHitReaction({impact:attack.impact??result.damage,targetPoise:enemyCombatant.poise,targetMass:enemyCombatant.mass,controlResistance:enemyCombatant.controlResistance,attackType:attack.attackType||'magic'});reaction=applyControlDiminishing(enemyControlDiminishing,reaction,combatClockMs);if(reaction.staggerMs>0)staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+reaction.staggerMs;enemyKnockdownUntil=reaction.knockdown?enemyStaggerUntil:0;
+ if(targetIsEnemy&&result.executed){reaction=resolveHitReaction({impact:attack.impact??result.damage,targetPoise:enemyCombatant.poise,targetMass:enemyCombatant.mass,controlResistance:enemyCombatant.controlResistance,attackType:attack.attackType||'magic'});if(attack.kind==='physical'&&attack.weaponCategory)reaction=applyWeaponHitProfile(reaction,attack.weaponCategory);reaction=applyControlDiminishing(enemyControlDiminishing,reaction,combatClockMs);if(reaction.staggerMs>0)staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+reaction.staggerMs;enemyKnockdownUntil=reaction.knockdown?enemyStaggerUntil:0;
   if(reaction.knockdown||reaction.launch){beginHitRecovery(enemyRecovery,reaction,combatClockMs);enemyMesh.position.y=reaction.launch?0:-.55;}
   if(reaction.knockback>0){const dx=enemyMesh.position.x-state.model.position.x,dz=enemyMesh.position.z-state.model.position.z,len=Math.hypot(dx,dz)||1;const displacement=reaction.knockback*(attack.attackType==='finisher'?1:.22);enemyMesh.position.x+=dx/len*displacement;enemyMesh.position.z+=dz/len*displacement;}
   if(reaction.knockdown)enemyMesh.rotation.x=-Math.PI/2;

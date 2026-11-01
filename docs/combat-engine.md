@@ -56,3 +56,8 @@ Limites connues de cette intégration :
 - Les contrôles du joueur sont raccordés aux animations disponibles ; les mouvements d'attaque du pillard restent représentés par la télégraphie et la résolution des dégâts, sans animation dédiée.
 - Une passe Chromium headless a validé WebGL, le chargement du modèle, le passage créateur → jeu, l'apparition du HUD, les trois coups du combo sur une même cible, le finisher avec mise à terre, ainsi que l'attaque ennemie, l'esquive et la parade/contre-attaque, sans erreur JavaScript dans la console. Les captures ont été générées, mais la revue esthétique image par image reste à faire.
 - Les tests CI valident la syntaxe JavaScript et les fonctions du moteur/runtime/IA ; ils ne certifient pas la qualité visuelle finale ni les animations dédiées.
+
+
+## Signatures de réaction par catégorie d'arme
+
+Le module expose `applyWeaponHitProfile` pour différencier les réactions après résolution de l'impact : épée (contrôle équilibré), hache (déséquilibre plus marqué), marteau (étourdissement prolongé et impact lourd) et arme d'hast (projection/recul supérieur). Le profil est appliqué uniquement si une attaque physique fournit explicitement `weaponCategory`; sans catégorie, le comportement reste neutre. Ces coefficients sont des valeurs techniques provisoires, pas un équilibrage officiel. Le prototype ne possède pas encore d'équipement d'arme réellement sélectionnable : l'intégration est donc prête à recevoir cette donnée, sans attribuer arbitrairement une arme au personnage.

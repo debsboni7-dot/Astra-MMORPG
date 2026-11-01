@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery } from '../prototype/src/combat/CombatTechniques.js';
+import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery, applyWeaponHitProfile } from '../prototype/src/combat/CombatTechniques.js';
 
 test('combo advances through three timed hits and marks the finisher', () => {
   const combo = createComboState({ maxStage: 3, inputWindowMs: 700 });
@@ -112,4 +112,18 @@ test('control diminishing resets after its recovery window', async () => {
   assert.equal(recovered.controlCount, 1);
   assert.equal(recovered.controlReduction, 0);
   assert.equal(recovered.staggerMs, 500);
+});
+
+
+test('weapon categories produce distinct hit-control signatures', () => {
+  const base = { reaction: 'stagger', staggerMs: 500, knockback: .5, knockdown: false, launch: false };
+  const sword = applyWeaponHitProfile(base, 'sword');
+  const axe = applyWeaponHitProfile(base, 'axe');
+  const hammer = applyWeaponHitProfile(base, 'hammer');
+  const polearm = applyWeaponHitProfile(base, 'polearm');
+  assert.ok(sword.staggerMs < axe.staggerMs);
+  assert.ok(axe.staggerMs < hammer.staggerMs);
+  assert.ok(polearm.knockback > hammer.knockback);
+  assert.equal(applyWeaponHitProfile(base, 'unknown').weaponCategory, 'unarmed');
+  assert.equal(applyWeaponHitProfile(base, 'unarmed').knockback, base.knockback);
 });

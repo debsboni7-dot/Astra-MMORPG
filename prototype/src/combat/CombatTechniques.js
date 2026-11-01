@@ -125,3 +125,23 @@ export function applyControlDiminishing(state, reaction, now, {
   }
   return adjusted;
 }
+
+
+/** Applies a weapon-category signature to an already resolved physical hit. */
+export function applyWeaponHitProfile(reaction, weaponCategory = 'unarmed') {
+  if (!reaction) throw new Error('A hit reaction is required.');
+  const profiles = {
+    unarmed: { stagger: 1, knockback: 1 },
+    sword: { stagger: 1.04, knockback: .96 },
+    axe: { stagger: 1.14, knockback: 1.08 },
+    hammer: { stagger: 1.2, knockback: 1.18 },
+    polearm: { stagger: 1.06, knockback: 1.28 },
+  };
+  const profile = profiles[weaponCategory] || profiles.unarmed;
+  return {
+    ...reaction,
+    staggerMs: reaction.staggerMs > 0 ? Math.round(reaction.staggerMs * profile.stagger) : 0,
+    knockback: Math.max(0, finite(reaction.knockback) * profile.knockback),
+    weaponCategory: profiles[weaponCategory] ? weaponCategory : 'unarmed',
+  };
+}
