@@ -2,7 +2,7 @@
 
 ## Dépendance d'exécution
 
-Node.js 22+ et PostgreSQL. Installer `pg` dans le projet serveur. Le dépôt prototype ne possédait pas encore de manifeste serveur ; cette couche est livrée comme modules ES.
+Node.js 22+ et PostgreSQL. Le manifeste racine définit les modules ES et la dépendance `pg`. Exécuter `npm install`, puis démarrer avec `DATABASE_URL=... npm run start:server`.
 
 ## Migrations
 
@@ -10,7 +10,7 @@ Exécuter dans l'ordre :
 1. `server/migrations/000_accounts_and_sessions.sql`
 2. `server/migrations/001_character_weapon_progression.sql`
 
-La table `characters` doit exister et posséder `id` ainsi qu'un `account_id` de même type que `accounts.id`. Avant d'exécuter en production, les comptes existants et personnages doivent être migrés/rattachés aux nouveaux comptes. La migration 001 ne crée pas la table de personnages.
+La migration 001 crée la table `characters` avec identifiant UUID, propriétaire `account_id`, nom d'affichage et données JSONB, puis ajoute le bloc de progression. Si une table `characters` existe déjà, vérifier et adapter ses types/colonnes avant migration. Les personnages historiques doivent être rattachés à un compte avant production.
 
 ## Sécurité
 
@@ -23,4 +23,6 @@ La table `characters` doit exister et posséder `id` ainsi qu'un `account_id` de
 
 ## État
 
-Cette livraison fournit l'authentification de base et le dépôt PostgreSQL, pas encore le serveur de combat temps réel ni l'intégration au client du prototype. Les secrets, la chaîne PostgreSQL et le cycle de déploiement doivent être configurés dans l'environnement d'hébergement.
+Routes HTTP : `POST /v1/auth/register`, `POST /v1/auth/login`, `POST /v1/auth/logout`, `GET/POST /v1/characters`, `GET /v1/characters/:id/progression/weapons`. Les routes de personnage/progression exigent un jeton Bearer. La progression n'est attribuée qu'en appelant le service depuis le moteur serveur après résolution de combat autoritaire.
+
+Cette livraison fournit l'authentification de base, la création/liste de personnages et le dépôt PostgreSQL, pas encore le serveur de combat temps réel ni l'intégration au client du prototype. Les secrets, la chaîne PostgreSQL et le cycle de déploiement doivent être configurés dans l'environnement d'hébergement. Les secrets, la chaîne PostgreSQL et le cycle de déploiement doivent être configurés dans l'environnement d'hébergement.
