@@ -48,7 +48,7 @@ test('ultimate requires the four non-ultimate branch capstones', () => {
   const state = createMagicProgression();
   state.schools.wind.level = 100;
   state.unspentSkillPoints = 1000;
-  assert.equal(canUnlockMagicSkill(state, 'wind', 'ultimate', 0).reason, 'prerequisite');
+  assert.equal(canUnlockMagicSkill(state, 'wind', 'ultimate', 0).reason, 'ultimate-capstones');
 });
 
 test('successful uses improve only the unlocked skill and its school', () => {
@@ -59,7 +59,7 @@ test('successful uses improve only the unlocked skill and its school', () => {
   const result = recordMagicSkillUse(unlocked.progression, 'ice', 'ice:offense:1');
   assert.equal(result.recorded, true);
   assert.equal(result.masteryXp, 1);
-  assert.equal(result.schoolXp, undefined);
+  assert.equal(result.schoolXp, 1);
   assert.equal(result.progression.schools.ice.successfulCasts, 1);
 });
 
