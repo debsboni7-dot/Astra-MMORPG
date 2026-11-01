@@ -17,7 +17,9 @@ export function createCombatant(config = {}) {
     fireMastery: Math.max(0, number(config.fireMastery, 0)),
     weapon: config.weapon || null,
     weaponMastery: Math.max(0, number(config.weaponMastery, 0)),
+    weaponMasteries: { ...(config.weaponMasteries || {}) },
     weaponUses: 0,
+    weaponUsesByCategory: { ...(config.weaponUsesByCategory || {}) },
     shields: config.shields || [],
     statusEffects: config.statusEffects || [],
     modifiers: config.modifiers || [],
@@ -25,6 +27,30 @@ export function createCombatant(config = {}) {
     cooldowns: Object.create(null),
     defeated: false,
   };
+}
+
+
+const WEAPON_CATEGORIES = new Set(['sword', 'axe', 'hammer', 'polearm']);
+
+export function equipWeapon(combatant, weapon) {
+  if (!combatant) throw new Error('A combatant is required.');
+  if (weapon == null) {
+    combatant.weapon = null;
+    return { equipped: true, weapon: null };
+  }
+  if (!weapon.id || !WEAPON_CATEGORIES.has(weapon.category)) {
+    return { equipped: false, reason: 'invalid-weapon-definition' };
+  }
+  const mastery = number(combatant.weaponMasteries?.[weapon.category], combatant.weaponMastery);
+  const requirement = Engine.canUseWeapon({
+    physicalStrength: combatant.physicalStrength,
+    requiredStrength: weapon.requiredStrength,
+    weaponMastery: mastery,
+    requiredMastery: weapon.requiredMastery,
+  });
+  if (!requirement.canUse) return { equipped: false, reason: 'weapon-requirements', requirement };
+  combatant.weapon = { ...weapon };
+  return { equipped: true, weapon: combatant.weapon, requirement };
 }
 
 export function regenerateStamina(combatant, deltaSeconds, inCombat = true) {
@@ -115,17 +141,27 @@ export function executeAttack(attacker, target, attack, {
   if (attacker.cooldowns[attack.id] > now) return { executed: false, reason: 'cooldown' };
   if (attacker.defenseState.counterUntil > 0 && attacker.defenseState.counterUntil <= now) attacker.defenseState.counterUntil = 0;
   if (attack.counterOnly && attacker.defenseState.counterUntil <= now) return { executed: false, reason: 'counter-window-closed' };
-  if (attack.weapon) {
+  const weapon = attack.weapon || attacker.weapon || null;
+  if (weapon) {
+    const mastery = number(attacker.weaponMasteries?.[weapon.category], attacker.weaponMastery);
     const requirement = Engine.canUseWeapon({
-      physicalStrength: attacker.physicalStrength, requiredStrength: attack.weapon.requiredStrength,
-      weaponMastery: attacker.weaponMastery, requiredMastery: attack.weapon.requiredMastery,
+      physicalStrength: attacker.physicalStrength, requiredStrength: weapon.requiredStrength,
+      weaponMastery: mastery, requiredMastery: weapon.requiredMastery,
     });
     if (!requirement.canUse) return { executed: false, reason: 'weapon-requirements', requirement };
   }
   const payment = spendStamina(attacker, attack.staminaCost || 0);
   if (!payment.paid) return { executed: false, reason: 'insufficient-stamina' };
-  const result = Engine.resolveAttack({ attacker, target, attack, balance, rng });
-  attacker.weaponUses += attack.weapon ? 1 : 0;
+  const effectiveAttack = weapon ? {
+    ...attack,
+    weaponPower: attack.weaponPower ?? weapon.power ?? 0,
+    weaponCategory: attack.weaponCategory || weapon.category,
+  } : attack;
+  const result = Engine.resolveAttack({ attacker, target, attack: effectiveAttack, balance, rng });
+  if (weapon) {
+    attacker.weaponUses += 1;
+    attacker.weaponUsesByCategory[weapon.category] = (attacker.weaponUsesByCategory[weapon.category] || 0) + 1;
+  }
   attacker.defenseState.counterUntil = 0;
   if (target.hp <= 0) target.defeated = true;
   return { executed: true, ...result, staminaSpent: payment.cost };

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombatant, regenerateStamina, beginBlock, beginDodge, resolveIncomingAttack, executeAttack } from '../prototype/src/combat/CombatRuntime.js';
+import { createCombatant, regenerateStamina, beginBlock, beginDodge, resolveIncomingAttack, executeAttack, equipWeapon } from '../prototype/src/combat/CombatRuntime.js';
 
 test('combatants have bounded HP and stamina resources', () => {
   const c = createCombatant({ hp: 140, maxHp: 100, stamina: -5, maxStamina: 80 });
@@ -72,4 +72,35 @@ test('counterattack must be manually executed before the window closes', () => {
   assert.equal(executeAttack(player, enemy, { id: 'counter', kind: 'physical', base: 5, counterOnly: true }, { now: 1000 }).reason, 'counter-window-closed');
   player.defenseState.counterUntil = 1800;
   assert.equal(executeAttack(player, enemy, { id: 'counter', kind: 'physical', base: 5, counterOnly: true }, { now: 1200, rng: () => 1 }).executed, true);
+});
+
+
+test('equipping a weapon enforces strength and category mastery independently', () => {
+  const player = createCombatant({ physicalStrength: 80, weaponMasteries: { sword: 4, axe: 1 } });
+  const sword = { id: 'iron-sword', category: 'sword', power: 12, requiredStrength: 50, requiredMastery: 3 };
+  const axe = { id: 'battle-axe', category: 'axe', power: 18, requiredStrength: 40, requiredMastery: 2 };
+  assert.equal(equipWeapon(player, sword).equipped, true);
+  const rejected = equipWeapon(player, axe);
+  assert.equal(rejected.equipped, false);
+  assert.equal(rejected.requirement.masteryMet, false);
+  assert.equal(player.weapon.id, 'iron-sword');
+});
+
+test('equipped weapon supplies power, category and per-category usage tracking', () => {
+  const player = createCombatant({ physicalStrength: 50, weaponMasteries: { hammer: 2 }, stamina: 100 });
+  const enemy = createCombatant({ hp: 100 });
+  equipWeapon(player, { id: 'training-hammer', category: 'hammer', power: 15, requiredStrength: 30, requiredMastery: 1 });
+  const result = executeAttack(player, enemy, { id: 'hammer-hit', kind: 'physical', base: 10, strength: 0, staminaCost: 0 }, { rng: () => 1 });
+  assert.equal(result.executed, true);
+  assert.equal(result.rawDamage, 25);
+  assert.equal(player.weaponUses, 1);
+  assert.equal(player.weaponUsesByCategory.hammer, 1);
+});
+
+test('unequipping a weapon restores unarmed attack and invalid definitions are rejected', () => {
+  const player = createCombatant({ physicalStrength: 50, weaponMastery: 5 });
+  assert.equal(equipWeapon(player, { id: 'bad', category: 'wand' }).reason, 'invalid-weapon-definition');
+  equipWeapon(player, { id: 'sword', category: 'sword', requiredStrength: 1, requiredMastery: 1 });
+  assert.equal(equipWeapon(player, null).equipped, true);
+  assert.equal(player.weapon, null);
 });

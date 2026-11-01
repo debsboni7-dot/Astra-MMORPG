@@ -61,3 +61,8 @@ Limites connues de cette intégration :
 ## Signatures de réaction par catégorie d'arme
 
 Le module expose `applyWeaponHitProfile` pour différencier les réactions après résolution de l'impact : épée (contrôle équilibré), hache (déséquilibre plus marqué), marteau (étourdissement prolongé et impact lourd) et arme d'hast (projection/recul supérieur). Le profil est appliqué uniquement si une attaque physique fournit explicitement `weaponCategory`; sans catégorie, le comportement reste neutre. Ces coefficients sont des valeurs techniques provisoires, pas un équilibrage officiel. Le prototype ne possède pas encore d'équipement d'arme réellement sélectionnable : l'intégration est donc prête à recevoir cette donnée, sans attribuer arbitrairement une arme au personnage.
+
+
+## Équipement d'arme raccordé au runtime
+
+Le runtime permet maintenant d'équiper/déséquiper une arme physique avec une catégorie validée (épée, hache, marteau, arme d'hast). L'équipement est refusé si la force physique ou la maîtrise de cette catégorie est insuffisante ; un refus conserve l'arme précédemment équipée. Une attaque utilise automatiquement la puissance et la catégorie de l'arme équipée, sauf surcharge explicite de l'attaque. Les utilisations sont comptabilisées au total et par catégorie pour préparer la progression de maîtrise. Aucun gain numérique de maîtrise n'est attribué automatiquement : la courbe de progression et les seuils restent à définir officiellement.
