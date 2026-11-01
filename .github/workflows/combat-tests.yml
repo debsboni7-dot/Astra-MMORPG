@@ -16,5 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run combat engine tests
+      - name: Check browser prototype syntax
+        run: node --check prototype/src/main.js && node --check prototype/src/combat/CombatEngine.js && node --check prototype/src/combat/CombatRuntime.js
+      - name: Run combat engine and runtime tests
         run: node --test tests/*.test.js
