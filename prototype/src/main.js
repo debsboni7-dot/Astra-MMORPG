@@ -105,6 +105,24 @@ const ring=new THREE.Mesh(new THREE.RingGeometry(2.38,2.42,80),new THREE.MeshBas
 const grid=new THREE.GridHelper(30,30,0x2b4964,0x1b3045);grid.position.y=-.04;scene.add(grid);
 const world=new THREE.Group();scene.add(world);
 let worldGround=null;
+const combatVfx=[];
+function spawnCombatBurst(position,color=0xffa34d,count=34){
+ const positions=new Float32Array(count*3),velocities=[];
+ for(let i=0;i<count;i++){positions[i*3]=position.x;positions[i*3+1]=position.y;positions[i*3+2]=position.z;const v=new THREE.Vector3(Math.random()-.5,Math.random()*.85,Math.random()-.5).normalize().multiplyScalar(.9+Math.random()*2.6);velocities.push(v);}
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+ const material=new THREE.PointsMaterial({color,size:.13,transparent:true,opacity:1,depthWrite:false,blending:THREE.AdditiveBlending});
+ const particles=new THREE.Points(geometry,material);world.add(particles);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.22,.035,6,24),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9,side:THREE.DoubleSide}));
+ ring.rotation.x=Math.PI/2;ring.position.copy(position);world.add(ring);
+ combatVfx.push({geometry,material,particles,ring,velocities,age:0,duration:.62});
+}
+function updateCombatVfx(dt){
+ for(let i=combatVfx.length-1;i>=0;i--){const fx=combatVfx[i];fx.age+=dt;const t=fx.age/fx.duration;const p=fx.geometry.attributes.position;
+  for(let j=0;j<fx.velocities.length;j++){const v=fx.velocities[j];p.array[j*3]+=v.x*dt;p.array[j*3+1]+=v.y*dt-1.6*dt*dt;p.array[j*3+2]+=v.z*dt;}
+  p.needsUpdate=true;fx.material.opacity=Math.max(0,1-t);fx.material.size=.13*(1-t*.45);fx.ring.scale.setScalar(1+t*5);fx.ring.material.opacity=Math.max(0,.9-t);
+  if(t>=1){world.remove(fx.particles,fx.ring);fx.geometry.dispose();fx.material.dispose();fx.ring.geometry.dispose();fx.ring.material.dispose();combatVfx.splice(i,1);}
+ }
+}
 function makeSurfaceTexture(base, accent, kind='grain'){
   const canvas=document.createElement('canvas');canvas.width=canvas.height=512;
   const ctx=canvas.getContext('2d');ctx.fillStyle=base;ctx.fillRect(0,0,512,512);
@@ -369,6 +387,7 @@ function performPlayerAttack(kind='physical'){
  }
  const comboText=combo?(combo.finisher?' · FINISHER':` · COMBO ${combo.stage}/3`):'';
  const reactionText=reaction?' · '+reaction.reaction.toUpperCase():'';
+ spawnCombatBurst(targetMesh.position.clone().add(new THREE.Vector3(0,1,0)),kind==='magic'?0xff632e:0xffd18a,kind==='magic'?52:32);
  combatMessage((kind==='magic'?'Sort de feu':'Attaque')+comboText+reactionText+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
  if(target.defeated)combatMessage(targetIsEnemy?'Pillard vaincu !':'Mannequin détruit ! Tu peux le réinitialiser.');
  updateCombatHud();updateWeaponProgressionHud();
@@ -500,7 +519,7 @@ let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(st
 let lastTime=performance.now();let currentMode='';
 function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);regenerateStamina(enemyCombatant,dt,true);combatClockMs+=dt*1000;updateEnemyEncounter(dt,combatClockMs);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
  if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
- if(world.userData.updateVFX)world.userData.updateVFX(now,dt);if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0)+(state.touchX||0);const padForward=-(state.gamePadY||0)-(state.touchY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
+ if(world.userData.updateVFX)world.userData.updateVFX(now,dt);updateCombatVfx(dt);if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0)+(state.touchX||0);const padForward=-(state.gamePadY||0)-(state.touchY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
  renderer.render(scene,camera);
 }
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
