@@ -34,3 +34,42 @@
 @media(max-height:420px){
  .combat-panel{max-height:calc(100dvh - 76px);top:64px}
 }
+
+
+/* Évite que les contrôles du créateur se chevauchent sur les écrans étroits. */
+.creator-layout,.settings-panel{min-width:0}
+@media(max-width:480px){
+ .creator-header{min-width:0;padding:8px;gap:8px}
+ .creator-header>.back-button{flex:0 0 auto;padding:8px 7px;white-space:nowrap}
+ .creator-header>.back-button span{font-size:8px;margin-left:3px;letter-spacing:.06em}
+ .creator-header>div:nth-child(2){min-width:0;flex:1}
+ .creator-header h2{font-size:clamp(11px,3.4vw,15px);white-space:normal;line-height:1.15}
+ .creator-header .eyebrow{font-size:7px;letter-spacing:.12em}
+ .step-label{flex:0 0 auto;white-space:nowrap;font-size:7px;letter-spacing:.08em}
+ .creator-layout{grid-template-columns:minmax(0,58fr) minmax(0,42fr)}
+ .settings-panel{padding:12px 9px;overflow-x:hidden}
+ .wardrobe-row{grid-template-columns:minmax(0,1fr);gap:4px}
+ .wardrobe-row select{max-width:100%}
+ .wardrobe-heading{align-items:flex-start;flex-wrap:wrap}
+ .wardrobe-heading>span:first-child{font-size:8px}
+ .wardrobe-count{font-size:7px}
+ .gender-row{gap:6px}
+ .choice{min-width:0;padding:8px 4px;font-size:9px;overflow-wrap:anywhere}
+ .primary-button{gap:5px;padding:0 7px;font-size:8px;letter-spacing:.03em}
+ .primary-button kbd{flex:0 0 22px;width:22px;height:22px}
+ .preview-top,.preview-bottom{display:grid;gap:4px;overflow-wrap:anywhere;letter-spacing:.04em}
+ .preview-top span,.preview-bottom span{max-width:100%;font-size:6px}
+ .preview-name{right:7px;left:7px;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+ .preview-hint{right:7px;max-width:calc(100% - 14px);line-height:1.4;overflow-wrap:anywhere}
+}
+@media(max-width:360px){
+ .creator-header{gap:5px;padding:7px}
+ .creator-header h2{font-size:11px}
+ .creator-header>.back-button{padding:7px 5px}
+ .creator-layout{grid-template-columns:minmax(0,62fr) minmax(0,38fr)}
+ .settings-panel{padding:10px 7px}
+ .panel-heading{gap:6px;font-size:8px;letter-spacing:.1em}
+ .field-label{letter-spacing:.04em}
+ .race-choice{padding:6px 5px;font-size:8px}
+ .preview-top,.preview-bottom{left:6px;right:6px}
+}
