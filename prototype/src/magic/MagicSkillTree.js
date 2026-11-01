@@ -183,6 +183,17 @@ export function grantMagicSkillPoints(progression, amount) {
   return { granted: points, unspentSkillPoints: state.unspentSkillPoints, progression: state };
 }
 
+/** Adds school XP only from a trusted server progression event. */
+export function grantMagicSchoolXp(progression, school, amount) {
+  const state = sanitizeMagicProgression(progression);
+  if (!isSchool(school)) return { granted: 0, reason: 'unknown-school', progression: state };
+  const granted = clampInt(amount, 0, 100000);
+  const schoolState = state.schools[school];
+  schoolState.xp = Math.min(100000000, schoolState.xp + granted);
+  schoolState.level = getMagicSchoolLevel(schoolState.xp).level;
+  return { granted, school, schoolXp: schoolState.xp, schoolLevel: schoolState.level, progression: state };
+}
+
 /** Records only a successful cast of a previously unlocked skill. */
 export function recordMagicSkillUse(progression, school, skill) {
   const state = sanitizeMagicProgression(progression);
@@ -200,5 +211,5 @@ export function recordMagicSkillUse(progression, school, skill) {
   schoolState.level = getMagicSchoolLevel(xp).level;
   const masteryXp = schoolState.skillMasteryXp[skill];
   const masteryLevel = MAGIC_TREE_RULES.masteryUseThresholds.filter(t => masteryXp >= t).length;
-  return { recorded: true, school, skill, schoolLevel: schoolState.level, masteryXp, masteryLevel, progression: state };
+  return { recorded: true, school, skill, schoolXp: schoolState.xp, schoolLevel: schoolState.level, masteryXp, masteryLevel, progression: state };
 }
