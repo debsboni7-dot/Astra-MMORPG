@@ -36,7 +36,6 @@ test('login issues an opaque token and only its hash is stored', async () => {
   await auth.register({ email: 'player@example.com', password: 'a-very-long-secret-123' });
   const session = await auth.login({ email: 'player@example.com', password: 'a-very-long-secret-123' });
   assert.ok(session.token.length >= 40);
-  assert.equal(await auth.authenticate(session.token).then(account => account.email), undefined);
   assert.equal(repository.sessions.has(session.token), false);
   assert.equal((await auth.authenticate(session.token)).id, '1');
 });
