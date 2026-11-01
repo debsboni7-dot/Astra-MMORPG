@@ -11,10 +11,11 @@ function fixture() {
     async withCharacterTransaction(accountId, characterId, callback) {
       const character = characters.get(characterId);
       if (!character || character.accountId !== accountId) throw new Error('Character ownership validation failed.');
-      return callback(character);
-    },
-    async saveMagicProgression(characterId, progression) {
-      characters.get(characterId).magicProgression = structuredClone(progression);
+      const saveProgression = async (progression, kind = 'weapon') => {
+        if (kind !== 'magic') throw new Error('Unexpected progression kind');
+        character.magicProgression = structuredClone(progression);
+      };
+      return callback(character, saveProgression);
     },
   };
   return { service: createMagicProgressionService(repository), characters };
