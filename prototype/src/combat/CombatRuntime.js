@@ -144,7 +144,8 @@ export function executeAttack(attacker, target, attack, {
   if (attacker.cooldowns[attack.id] > now) return { executed: false, reason: 'cooldown' };
   if (attacker.defenseState.counterUntil > 0 && attacker.defenseState.counterUntil <= now) attacker.defenseState.counterUntil = 0;
   if (attack.counterOnly && attacker.defenseState.counterUntil <= now) return { executed: false, reason: 'counter-window-closed' };
-  const weapon = attack.weapon || attacker.weapon || null;
+  const usesPhysicalWeapon = attack.kind !== 'magic' && attack.kind !== 'spell';
+  const weapon = usesPhysicalWeapon ? (attack.weapon || attacker.weapon || null) : null;
   if (weapon) {
     const mastery = number(attacker.weaponMasteries?.[weapon.category], attacker.weaponMastery);
     const requirement = Engine.canUseWeapon({
