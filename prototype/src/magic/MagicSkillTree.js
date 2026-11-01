@@ -187,9 +187,9 @@ export function grantMagicSkillPoints(progression, amount) {
 export function recordMagicSkillUse(progression, school, skill) {
   const state = sanitizeMagicProgression(progression);
   if (!isSchool(school)) return { recorded: false, reason: 'unknown-school', progression: state };
-  const match = Object.values(MAGIC_BRANCHES).some(count =>
-    Array.from({ length: count }, (_, i) => skillId(school, Object.keys(MAGIC_BRANCHES).find(b => skillId(school, b, i) === skill), i)).includes(skill));
-  if (!match || !state.schools[school].unlockedSkills.includes(skill)) {
+  const knownSkill = Object.keys(MAGIC_BRANCHES).some(branch =>
+    Array.from({ length: MAGIC_BRANCHES[branch] }, (_, index) => skillId(school, branch, index)).includes(skill));
+  if (!knownSkill || !state.schools[school].unlockedSkills.includes(skill)) {
     return { recorded: false, reason: 'skill-locked-or-unknown', progression: state };
   }
   const schoolState = state.schools[school];
