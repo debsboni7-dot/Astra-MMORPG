@@ -169,3 +169,13 @@ test('failed attacks do not grant weapon mastery', () => {
   assert.equal(player.weaponMasteryXpByCategory.sword, undefined);
   assert.equal(player.weaponUses, 0);
 });
+
+test('magic attacks do not increase physical weapon mastery', () => {
+  const player = createCombatant({ physicalStrength: 50 });
+  const enemy = createCombatant({ hp: 1000 });
+  equipWeapon(player, { id: 'training-sword', category: 'sword', power: 8, requiredStrength: 1, requiredMastery: 0 });
+  const result = executeAttack(player, enemy, { id: 'fire-bolt', kind: 'magic', element: 'fire', base: 12, staminaCost: 0 }, { rng: () => 1 });
+  assert.equal(result.executed, true);
+  assert.equal(player.weaponUses, 0);
+  assert.equal(player.weaponMasteryXpByCategory.sword, undefined);
+});
