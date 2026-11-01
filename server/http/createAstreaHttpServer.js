@@ -49,24 +49,32 @@ export function createAstreaHttpServer({ authService, characterService, progress
         await authService.logout(bearer(request));
         return send(response, 204, {});
       }
-      if (magicProgressionService && request.method === 'GET' && url.pathname.match(/^\\/v1\\/characters\\/[^/]+\\/progression\\/magic$/)) {
+      const pathSegments = url.pathname.split('/');
+      const isMagicSnapshot = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
+        pathSegments.length === 6 && pathSegments[4] === 'progression' && pathSegments[5] === 'magic';
+      const isMagicSchool = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
+        pathSegments.length === 7 && pathSegments[4] === 'progression' && pathSegments[5] === 'magic' &&
+        pathSegments[6] !== 'unlock';
+      const isMagicUnlock = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
+        pathSegments.length === 7 && pathSegments[4] === 'progression' && pathSegments[5] === 'magic' &&
+        pathSegments[6] === 'unlock';
+      if (magicProgressionService && request.method === 'GET' && isMagicSnapshot) {
         const account = await authService.authenticate(bearer(request));
         if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
-        const characterId = decodeURIComponent(url.pathname.split('/')[3]);
+        const characterId = decodeURIComponent(pathSegments[3]);
         return send(response, 200, await magicProgressionService.getSnapshot(account.id, characterId));
       }
-      if (magicProgressionService && request.method === 'GET' && url.pathname.match(/^\\/v1\\/characters\\/[^/]+\\/progression\\/magic\\/[^/]+$/)) {
+      if (magicProgressionService && request.method === 'GET' && isMagicSchool) {
         const account = await authService.authenticate(bearer(request));
         if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
-        const parts = url.pathname.split('/');
-        const characterId = decodeURIComponent(parts[3]);
-        const school = decodeURIComponent(parts[6]);
+        const characterId = decodeURIComponent(pathSegments[3]);
+        const school = decodeURIComponent(pathSegments[6]);
         return send(response, 200, await magicProgressionService.getTree(account.id, characterId, school));
       }
-      if (magicProgressionService && request.method === 'POST' && url.pathname.match(/^\\/v1\\/characters\\/[^/]+\\/progression\\/magic\\/unlock$/)) {
+      if (magicProgressionService && request.method === 'POST' && isMagicUnlock) {
         const account = await authService.authenticate(bearer(request));
         if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
-        const characterId = decodeURIComponent(url.pathname.split('/')[3]);
+        const characterId = decodeURIComponent(pathSegments[3]);
         const body = await readJson(request);
         const result = await magicProgressionService.unlockSkill({
           accountId: account.id, characterId, school: body.school,
