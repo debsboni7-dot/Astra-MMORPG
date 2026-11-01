@@ -1,6 +1,6 @@
 import {
   createMagicProgression, sanitizeMagicProgression, getMagicSkillTree,
-  unlockMagicSkill, grantMagicSkillPoints, recordMagicSkillUse,
+  unlockMagicSkill, grantMagicSkillPoints, grantMagicSchoolXp, recordMagicSkillUse,
 } from '../../prototype/src/magic/MagicSkillTree.js';
 
 const clone = value => structuredClone(value);
@@ -54,6 +54,17 @@ export function createMagicProgressionService(repository) {
         const result = grantMagicSkillPoints(progression, amount);
         Object.assign(progression, result.progression);
         return { granted: result.granted, unspentSkillPoints: result.unspentSkillPoints, eventId };
+      });
+    },
+
+    /** Trusted account progression event; never expose arbitrary XP grants to clients. */
+    async grantSchoolXpFromServerEvent({ accountId, characterId, school, amount, eventId }) {
+      if (!eventId || typeof eventId !== 'string') throw new Error('A trusted progression event id is required.');
+      return transact(accountId, characterId, async progression => {
+        const result = grantMagicSchoolXp(progression, school, amount);
+        if (result.reason) return { granted: 0, reason: result.reason, persist: false };
+        Object.assign(progression, result.progression);
+        return { granted: result.granted, school: result.school, schoolXp: result.schoolXp, schoolLevel: result.schoolLevel, eventId };
       });
     },
 
