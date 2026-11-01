@@ -48,6 +48,7 @@ export function createMagicProgression() {
   return {
     schemaVersion: MAGIC_TREE_VERSION,
     unspentSkillPoints: 0,
+    processedEvents: [],
     schools: Object.fromEntries(MAGIC_SCHOOLS.map(school => [school, {
       level: 0,
       xp: 0,
@@ -65,6 +66,8 @@ export function createMagicProgression() {
 export function sanitizeMagicProgression(value = {}) {
   const clean = createMagicProgression();
   clean.unspentSkillPoints = clampInt(value.unspentSkillPoints, 0, 100000);
+  clean.processedEvents = [...new Set((Array.isArray(value.processedEvents) ? value.processedEvents : [])
+    .filter(eventId => typeof eventId === 'string' && eventId.length > 0 && eventId.length <= 160))].slice(-1000);
   for (const school of MAGIC_SCHOOLS) {
     const source = value.schools?.[school] || {};
     const target = clean.schools[school];
