@@ -12,7 +12,7 @@ test('elemental resistance and weakness modify damage', () => {
 });
 test('resistance is capped by configuration', () => {
   const r = C.calculateMagicDamage({ base: 100, resistance: 1, balance: { maxResistance: .9 }, rng: () => 1 });
-  assert.equal(r.damage, 10);
+  assert.ok(Math.abs(r.damage - 10) < 1e-9, `expected approximately 10, received ${r.damage}`);
 });
 test('critical chance is clamped and deterministic with injected RNG', () => {
   assert.equal(C.calculateCritical({ chance: 2, rng: () => 0 }).critical, true);
