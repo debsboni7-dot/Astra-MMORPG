@@ -73,3 +73,16 @@
  .race-choice{padding:6px 5px;font-size:8px}
  .preview-top,.preview-bottom{left:6px;right:6px}
 }
+
+
+/* Progression d'armes : contrôles empilés, sans chevauchement. */
+.weapon-progression{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin:10px 0;padding:9px;border:1px solid #344b60;border-radius:7px;background:#101e2b}
+.weapon-progression label{display:block;min-width:0;margin-top:3px;color:#9ebbd2;font-size:9px;font-weight:800;letter-spacing:.1em}
+.combat-select{display:block;width:100%;min-width:0;max-width:100%;min-height:36px;padding:7px 28px 7px 9px;border:1px solid #42627c;border-radius:6px;background:#182b3c;color:#eff8ff;font:600 11px/1.3 Inter,system-ui,sans-serif}
+.combat-select:focus-visible{outline:2px solid #56bfff;outline-offset:2px}
+.mastery-progress{min-width:0;color:#b9d9f2;font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:480px){
+ .weapon-progression{gap:5px;padding:8px}
+ .combat-select{min-height:40px;font-size:10px}
+ .mastery-progress{font-size:9px}
+}
