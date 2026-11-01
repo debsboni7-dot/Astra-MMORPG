@@ -33,7 +33,7 @@ function sanitizeProgression(value = {}) {
  * the returned progression. The authenticated account ID is never read from the request body.
  */
 export function createWeaponProgressionService(repository) {
-  if (!repository || typeof repository.withCharacterTransaction !== 'function' || typeof repository.saveWeaponProgression !== 'function') {
+  if (!repository || typeof repository.withCharacterTransaction !== 'function') {
     throw new TypeError('A transactional character repository is required');
   }
 
@@ -48,7 +48,7 @@ export function createWeaponProgressionService(repository) {
   async function recordSuccessfulAttack({ accountId, characterId, category, attackType = 'default', techniqueId = null }) {
     if (!accountId || !characterId) throw new TypeError('Authenticated account and character are required');
     if (!CATEGORIES.has(category) || !ATTACK_TYPES.has(attackType)) throw new TypeError('Invalid server-validated weapon attack');
-    return repository.withCharacterTransaction(accountId, characterId, async character => {
+    return repository.withCharacterTransaction(accountId, characterId, async (character, saveProgression) => {
       const progression = sanitizeProgression(character.weaponProgression);
       const combatant = { ...progression };
       const mastery = awardWeaponMastery(combatant, category, attackType);
@@ -62,7 +62,9 @@ export function createWeaponProgressionService(repository) {
         if (!technique.recorded) throw new TypeError(technique.reason);
       }
       const saved = sanitizeProgression(combatant);
-      await repository.saveWeaponProgression(character.id, saved);
+      if (typeof saveProgression === 'function') await saveProgression(saved);
+      else if (typeof repository.saveWeaponProgression === 'function') await repository.saveWeaponProgression(character.id, saved);
+      else throw new TypeError('Transactional progression writer is required');
       return { progression: saved, result: { awarded: mastery.awarded, mastery, technique } };
     });
   }
