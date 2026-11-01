@@ -12,6 +12,20 @@ export function createPostgresRepository(pool) {
       const { rows } = await pool.query('SELECT id,email,password_hash AS "passwordHash",password_salt AS "passwordSalt" FROM accounts WHERE email=$1', [email]);
       return rows[0] || null;
     },
+    async createCharacter(accountId, displayName) {
+      const { rows } = await pool.query(
+        'INSERT INTO characters (account_id,display_name) VALUES ($1,$2) RETURNING id,display_name AS "displayName",created_at AS "createdAt"',
+        [accountId, displayName],
+      );
+      return rows[0];
+    },
+    async listCharacters(accountId) {
+      const { rows } = await pool.query(
+        'SELECT id,display_name AS "displayName",created_at AS "createdAt" FROM characters WHERE account_id=$1 ORDER BY created_at,id',
+        [accountId],
+      );
+      return rows;
+    },
     async createSession({ accountId, tokenHash, expiresAt }) {
       await pool.query('INSERT INTO account_sessions (account_id,token_hash,expires_at) VALUES ($1,$2,$3)', [accountId, tokenHash, expiresAt]);
     },
