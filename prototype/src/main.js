@@ -1,138 +1,245 @@
-// ASTRA custom prototype engine — WebGL 2, no Unity/Unreal/third-party game engine.
-const canvas = document.querySelector("#viewport");
-const loading = document.querySelector("#loading");
-const errorBox = document.querySelector("#error");
-const gl = canvas.getContext("webgl2", { antialias: true, alpha: false });
-if (!gl) fail("WebGL 2 n'est pas disponible sur cet appareil ou navigateur.");
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js';
 
-function fail(message) { errorBox.hidden = false; errorBox.textContent = message; loading.hidden = true; throw new Error(message); }
-
-const vertexShader = `#version 300 es
-in vec3 aPosition;
-in vec3 aColor;
-uniform mat4 uMvp;
-out vec3 vColor;
-void main(){ gl_Position=uMvp*vec4(aPosition,1.0); vColor=aColor; }`;
-const fragmentShader = `#version 300 es
-precision highp float;
-in vec3 vColor;
-out vec4 outColor;
-void main(){ outColor=vec4(vColor,1.0); }`;
-function compile(type, source) {
-  const shader=gl.createShader(type); gl.shaderSource(shader,source); gl.compileShader(shader);
-  if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)) fail(gl.getShaderInfoLog(shader)||"Erreur shader");
-  return shader;
-}
-const program=gl.createProgram();
-gl.attachShader(program,compile(gl.VERTEX_SHADER,vertexShader));
-gl.attachShader(program,compile(gl.FRAGMENT_SHADER,fragmentShader));
-gl.linkProgram(program);
-if(!gl.getProgramParameter(program,gl.LINK_STATUS)) fail(gl.getProgramInfoLog(program)||"Erreur programme GPU");
-gl.useProgram(program);
-
-const cubeFaces = [
-  // positions and face normals are represented by face colors for a clean prototype.
-  [[-1,-1,1],[1,-1,1],[1,1,1],[-1,-1,1],[1,1,1],[-1,1,1]],
-  [[1,-1,-1],[-1,-1,-1],[-1,1,-1],[1,-1,-1],[-1,1,-1],[1,1,-1]],
-  [[-1,-1,-1],[-1,-1,1],[-1,1,1],[-1,-1,-1],[-1,1,1],[-1,1,-1]],
-  [[1,-1,1],[1,-1,-1],[1,1,-1],[1,-1,1],[1,1,-1],[1,1,1]],
-  [[-1,1,1],[1,1,1],[1,1,-1],[-1,1,1],[1,1,-1],[-1,1,-1]],
-  [[-1,-1,-1],[1,-1,-1],[1,-1,1],[-1,-1,-1],[1,-1,1],[-1,-1,1]]
-];
-const faceShade=[1,.72,.82,.64,1,.52];
-const verts=[];
-for(let f=0;f<cubeFaces.length;f++) for(const p of cubeFaces[f]) verts.push(...p,faceShade[f]);
-const cubeVao=gl.createVertexArray(); gl.bindVertexArray(cubeVao);
-const cubeBuffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,cubeBuffer);
-gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.STATIC_DRAW);
-const stride=4*4;
-const posLoc=gl.getAttribLocation(program,"aPosition"), colLoc=gl.getAttribLocation(program,"aColor");
-gl.enableVertexAttribArray(posLoc); gl.vertexAttribPointer(posLoc,3,gl.FLOAT,false,stride,0);
-gl.enableVertexAttribArray(colLoc); gl.vertexAttribPointer(colLoc,1,gl.FLOAT,false,stride,12);
-gl.disableVertexAttribArray(colLoc);
-gl.vertexAttrib3f(colLoc,1,1,1);
-const mvpLoc=gl.getUniformLocation(program,"uMvp");
-
-const mat4={
-  identity:()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]),
-  multiply:(a,b)=>{const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;},
-  translate:(x,y,z)=>{const m=mat4.identity();m[12]=x;m[13]=y;m[14]=z;return m;},
-  scale:(x,y,z)=>{const m=mat4.identity();m[0]=x;m[5]=y;m[10]=z;return m;},
-  rotateX:a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]);},
-  rotateY:a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);},
-  rotateZ:a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,s,0,0,-s,c,0,0,0,0,1,0,0,0,0,1]);},
-  perspective:(fovy,aspect,near,far)=>{const f=1/Math.tan(fovy/2),nf=1/(near-far),m=new Float32Array(16);m[0]=f/aspect;m[5]=f;m[10]=(far+near)*nf;m[11]=-1;m[14]=2*far*near*nf;return m;},
-  lookAt:(eye,center,up)=>{let z=norm(sub(eye,center)),x=norm(cross(up,z)),y=cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1]);}
+const $ = (s) => document.querySelector(s);
+const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
+const menu = $('#main-menu'), creator = $('#creator'), gameHud = $('#game-hud');
+const loader = new GLTFLoader();
+const QUATERNIUS_ARCHIVE_URL = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/8f0a48d9-0075-4ea9-af70-2324e2bf69b4.zip';
+let quaterniusZipPromise = null;
+let wardrobeAssetLoads = 0;
+let pauseRenderForWardrobe = false;
+const ZIP_URLS = {
+  human_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/502efa24-3e80-4e06-8a16-04f4083184c3.zip',
+  human_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/8f991f9b-2ec3-4ae8-a9a9-9447d3c005aa.zip',
+  elf_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/57f10f79-0cd9-4f11-98ed-372a8b4a061d.zip',
+  elf_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/bfd35628-e06b-4fac-9b2d-2a6161ab1c54.zip',
+  dwarf_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/82d04fb6-9198-4690-a92c-8c4fc3b566a0.zip',
+  dwarf_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/7824e835-0f7e-44a8-8d29-115bd6356ca4.zip',
+  demon_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/b232dc06-5866-4992-bc5f-bfe37629906f.zip',
+  demon_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/bf2f2bd5-903a-4677-b829-6b0ae146d953.zip',
+  angel_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/e83af76b-cc86-4bb8-b1de-d54bdd71b2d0.zip',
+  angel_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/0e7fb12e-03b9-4df1-87e9-81cb3138f4b0.zip',
+  orc_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/285adf12-e8db-4e6a-b598-b6a9383bd428.zip',
+  orc_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/9b614d2e-153f-40ea-81ed-cad7c3a2a690.zip',
+  draconoid_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/3fb4c6bd-3a63-4680-85a0-a9beef8778a4.zip',
+  draconoid_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/cdcf056f-2f2c-47ba-97ea-68769cdb1475.zip'
 };
-const sub=(a,b)=>a.map((v,i)=>v-b[i]), dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0), cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], norm=a=>{const l=Math.hypot(...a)||1;return a.map(v=>v/l);};
-function model(x,y,z,sx,sy,sz,ry=0,rx=0){return mat4.multiply(mat4.translate(x,y,z),mat4.multiply(mat4.rotateY(ry),mat4.multiply(mat4.rotateX(rx),mat4.scale(sx,sy,sz))));}
-function draw(mvp,color){gl.uniformMatrix4fv(mvpLoc,false,mvp);gl.vertexAttrib3fv(colLoc,color);gl.drawArrays(gl.TRIANGLES,0,36);}
-function compose(vp,m,color){draw(mat4.multiply(vp,m),color);}
+const RACES = [
+  ['human','Humain'],['elf','Elfe'],['dwarf','Nain'],['demon','Démon'],['angel','Ange'],['orc','Orc'],['draconoid','Dragonoïde']
+];
+const WARDROBE_SLOTS = [
+  {id:'hair',label:'Cheveux / coiffure'},
+  {id:'head',label:'Tête / casque'},
+  {id:'torso',label:'Torse'},
+  {id:'legs',label:'Jambes'},
+  {id:'boots',label:'Bottes'},
+  {id:'arms',label:'Bras / manches'},
+  {id:'accessory',label:'Accessoires'}
+];
+// Catalogue Quaternius Standard : 20 pièces séparées (4 Peasant + 6 Ranger, par sexe).
+// Les pièces sont d'abord proposées aux humains : l'ajustement sur les six autres races
+// nécessite une validation visuelle morphologique avant d'élargir leur compatibilité.
+const Q='assets/quaternius/Modular Parts/';
+const qItem=(id,label,slot,gender,filename)=>({id,label,slot,url:Q+filename+'.gltf',races:['human'],genders:[gender],source:'Quaternius Modular Character Outfits - Fantasy Standard'});
+const QUATERNIUS_ITEMS=[
+ qItem('peasant_m_body','Peasant · Torse','torso','male','Male_Peasant_Body'),
+ qItem('peasant_m_arms','Peasant · Bras et manches','arms','male','Male_Peasant_Arms'),
+ qItem('peasant_m_legs','Peasant · Jambes','legs','male','Male_Peasant_Legs'),
+ qItem('peasant_m_feet','Peasant · Pieds','boots','male','Male_Peasant_Feet'),
+ qItem('ranger_m_body','Ranger · Torse et ceinture','torso','male','Male_Ranger_Body'),
+ qItem('ranger_m_arms','Ranger · Bras et brassards','arms','male','Male_Ranger_Arms'),
+ qItem('ranger_m_legs','Ranger · Jambes','legs','male','Male_Ranger_Legs'),
+ qItem('ranger_m_feet','Ranger · Bottes','boots','male','Male_Ranger_Feet_Boots'),
+ qItem('ranger_m_hood','Ranger · Capuche','head','male','Male_Ranger_Head_Hood'),
+ qItem('ranger_m_pauldron','Ranger · Épaulière','accessory','male','Male_Ranger_Acc_Pauldron'),
+ qItem('peasant_f_body','Peasant · Torse','torso','female','Female_Peasant_Body'),
+ qItem('peasant_f_arms','Peasant · Bras et manches','arms','female','Female_Peasant_Arms'),
+ qItem('peasant_f_legs','Peasant · Jambes','legs','female','Female_Peasant_Legs'),
+ qItem('peasant_f_feet','Peasant · Pieds','boots','female','Female_Peasant_Feet'),
+ qItem('ranger_f_body','Ranger · Torse et ceinture','torso','female','Female_Ranger_Body'),
+ qItem('ranger_f_arms','Ranger · Bras et brassards','arms','female','Female_Ranger_Arms'),
+ qItem('ranger_f_legs','Ranger · Jambes','legs','female','Female_Ranger_Legs'),
+ qItem('ranger_f_feet','Ranger · Bottes','boots','female','Female_Ranger_Feet'),
+ qItem('ranger_f_hood','Ranger · Capuche','head','female','Female_Ranger_Head_Hood'),
+ qItem('ranger_f_pauldron','Ranger · Épaulières','accessory','female','Female_Ranger_Acc_Pauldrons')
+];
+const WARDROBE_CATALOG=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,QUATERNIUS_ITEMS.filter(item=>item.slot===slot.id)]));
+const state = {race:'human',gender:'male',category:'appearance',name:'',alias:'',screen:'menu',model:null,mixer:null,actions:{},currentAction:'idle',actionOneShot:false,zipCache:new Map(),loadToken:0,gameYaw:0,gamePos:new THREE.Vector3(0,0,0),keys:new Set(),drag:false,lastX:0,previewYaw:0,previewDistance:4.8,wardrobe:Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,''])),wardrobeObjects:{},wardrobeToken:0,wardrobeSlotTokens:{}};
 
-const player={x:0,z:0,yaw:0,walk:0,run:false};
-const keys=new Set(); let stick={x:0,y:0}; let cameraYaw=0, cameraPitch=.32;
-addEventListener("keydown",e=>{keys.add(e.key.toLowerCase()); if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase()))e.preventDefault();});
-addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
-const runButton=document.querySelector("#run");runButton.addEventListener("pointerdown",e=>{player.run=true;runButton.classList.add("active");});["pointerup","pointercancel","pointerleave"].forEach(n=>runButton.addEventListener(n,()=>{player.run=false;runButton.classList.remove("active");}));
-const stickEl=document.querySelector("#stick"), knob=document.querySelector("#stick-knob");let stickPointer=null;
-stickEl.addEventListener("pointerdown",e=>{stickPointer=e.pointerId;stickEl.setPointerCapture(e.pointerId);moveStick(e);});
-stickEl.addEventListener("pointermove",e=>{if(e.pointerId===stickPointer)moveStick(e);});
-function moveStick(e){const r=stickEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=(e.clientX-cx)/43,dy=(e.clientY-cy)/43,l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l;}stick={x:dx,y:dy};knob.style.transform=`translate(${dx*30}px,${dy*30}px)`;}
-function resetStick(){stick={x:0,y:0};stickPointer=null;knob.style.transform="translate(0,0)";}
-["pointerup","pointercancel","lostpointercapture"].forEach(n=>stickEl.addEventListener(n,resetStick));
-let dragging=false,lastX=0,lastY=0;
-canvas.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"){dragging=true;lastX=e.clientX;lastY=e.clientY;}});
-addEventListener("pointerup",()=>dragging=false);
-addEventListener("pointermove",e=>{if(dragging){cameraYaw-=(e.clientX-lastX)*.005;cameraPitch=Math.max(-.05,Math.min(.85,cameraPitch+(e.clientY-lastY)*.003));lastX=e.clientX;lastY=e.clientY;}});
-function resize(){const dpr=Math.min(devicePixelRatio||1,1.7),w=Math.floor(canvas.clientWidth*dpr),h=Math.floor(canvas.clientHeight*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}}
-function part(vp,x,y,z,sx,sy,sz,color,ry=0,rx=0){compose(vp,model(x,y,z,sx,sy,sz,ry,rx),color);}
-function drawWorld(vp,t){
-  // Ground platform and a simple low-poly grove to test scale, depth and camera.
-  part(vp,0,-.18,0,28,.18,28,[.19,.25,.22]);
-  for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++)if((i+j)%2===0)part(vp,i*4,-.005,j*4,1.96,.012,1.96,[.23,.29,.25]);
-  for(const [x,z] of [[-7,-7],[7,-8],[-9,5],[9,4],[-4,10],[5,10]]){
-    part(vp,x,.9,z,.22,.95,.22,[.27,.17,.11]);
-    part(vp,x,2.15,z,.95,1.05,.95,[.13,.29,.18]);
-    part(vp,x,3.1,z,.62,.72,.62,[.18,.37,.22]);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111c2a);
+scene.fog = new THREE.Fog(0x111c2a, 14, 48);
+const camera = new THREE.PerspectiveCamera(38,1,.1,100); camera.position.set(0,1.45,4.7);
+const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7)); renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
+scene.add(new THREE.HemisphereLight(0xcfe8ff,0x25202a,2.0));
+const keyLight=new THREE.DirectionalLight(0xffe3c0,3.2);keyLight.position.set(-3,6,4);scene.add(keyLight);
+const rimLight=new THREE.DirectionalLight(0x5abfff,2.2);rimLight.position.set(4,3,-4);scene.add(rimLight);
+const ground=new THREE.Mesh(new THREE.CircleGeometry(2.4,64),new THREE.MeshStandardMaterial({color:0x172638,roughness:.88,metalness:.18}));ground.rotation.x=-Math.PI/2;ground.position.y=-.025;scene.add(ground);
+const ring=new THREE.Mesh(new THREE.RingGeometry(2.38,2.42,80),new THREE.MeshBasicMaterial({color:0x56bfff,transparent:true,opacity:.5,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=-.012;scene.add(ring);
+const grid=new THREE.GridHelper(30,30,0x2b4964,0x1b3045);grid.position.y=-.04;scene.add(grid);
+const world=new THREE.Group();scene.add(world);
+let worldGround=null;
+function makeWorld(){
+  world.clear();
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x26372f,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.05;world.add(floor);
+  const path=new THREE.Mesh(new THREE.PlaneGeometry(3.5,70),new THREE.MeshStandardMaterial({color:0x6b6250,roughness:1}));path.rotation.x=-Math.PI/2;path.position.set(0,-.035,-12);world.add(path);
+  const trunkMat=new THREE.MeshStandardMaterial({color:0x55402d}),leafMat=new THREE.MeshStandardMaterial({color:0x294a37});
+  for(const [x,z] of [[-7,-7],[7,-8],[-9,5],[9,4],[-4,10],[5,10],[-12,-18],[12,-20]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.26,1.8,7),trunkMat);trunk.position.set(x,.9,z);world.add(trunk);const crown=new THREE.Mesh(new THREE.ConeGeometry(1.15,2.7,7),leafMat);crown.position.set(x,2.7,z);world.add(crown);}
+}
+
+function buildWardrobeUI(){
+ const root=$('#wardrobe-slots');root.innerHTML='';let available=0;
+ for(const slot of WARDROBE_SLOTS){
+  const label=document.createElement('label');label.className='wardrobe-row';label.htmlFor='wardrobe-'+slot.id;
+  const title=document.createElement('span');title.textContent=slot.label;
+  const select=document.createElement('select');select.id='wardrobe-'+slot.id;select.dataset.slot=slot.id;
+  const compatible=(WARDROBE_CATALOG[slot.id]||[]).filter(item=>(!item.races||item.races.includes(state.race))&&(!item.genders||item.genders.includes(state.gender)));
+  const none=document.createElement('option');none.value='';none.textContent=compatible.length?'Aucun':'Aucun élément disponible';select.append(none);
+  for(const item of compatible){const option=document.createElement('option');option.value=item.id;option.textContent=item.label;select.append(option);}
+  select.value=state.wardrobe[slot.id]||'';select.disabled=compatible.length===0;select.addEventListener('change',()=>equipWardrobeItem(slot.id,select.value));
+  label.append(title,select);root.append(label);available+=compatible.length;
+ }
+ const presets=$('#wardrobe-presets');presets.innerHTML='';
+ if(state.race==='human'){
+  for(const [id,labelText] of [['peasant','Tenue Peasant'],['ranger','Tenue Ranger']]){
+   const button=document.createElement('button');button.type='button';button.className='wardrobe-preset';button.textContent=labelText;button.addEventListener('click',()=>applyWardrobePreset(id));presets.append(button);
   }
-  // A stone path marker.
-  part(vp,0,.04,-7,1.2,.08,.42,[.42,.39,.32]);
+ }
+ $('#wardrobe-status').textContent=available?available+' pièce(s) disponibles · 4 tenues complètes reconstituables.':'Pack Quaternius : 20 pièces. Disponibles pour les humains ; adaptation des autres races à valider.';
 }
-function drawPlayer(vp,t){
-  const x=player.x,z=player.z,a=player.walk;
-  const swing=Math.sin(a)*.58, bob=Math.abs(Math.sin(a*2))*.055;
-  const root=mat4.multiply(mat4.translate(x,bob,z),mat4.rotateY(player.yaw));
-  const P=(px,py,pz,sx,sy,sz,c,rx=0,ry=0)=>{const local=mat4.multiply(root,model(px,py,pz,sx,sy,sz,ry,rx));compose(vp,local,c);};
-  // Neutral humanoid blockout. The production source mesh will be authored in T-pose and rigged separately.
-  P(0,1.35,0,.38,.58,.23,[.31,.34,.39]);
-  P(0,2.12,0,.25,.28,.24,[.67,.48,.34]);
-  P(0,2.48,0,.28,.07,.26,[.2,.2,.23]);
-  P(-.49,1.37,0,.15,.47,.15,[.67,.48,.34],swing);
-  P(.49,1.37,0,.15,.47,.15,[.67,.48,.34],-swing);
-  P(-.2,.48,0,.18,.5,.19,[.2,.23,.29],-swing);
-  P(.2,.48,0,.18,.5,.19,[.2,.23,.29],swing);
-  P(-.2,.08,.1,.2,.12,.31,[.12,.13,.16]);
-  P(.2,.08,.1,.2,.12,.31,[.12,.13,.16]);
-  // Shoulder guards and a simple belt accent.
-  P(-.43,1.76,0,.2,.16,.2,[.53,.39,.22]);
-  P(.43,1.76,0,.2,.16,.2,[.53,.39,.22]);
-  P(0,.94,0,.4,.09,.25,[.55,.38,.19]);
+async function applyWardrobePreset(preset){
+ const prefix=preset+'_'+(state.gender==='male'?'m':'f')+'_';
+ const suffixes={torso:'body',arms:'arms',legs:'legs',boots:'feet',head:'hood',accessory:'pauldron'};
+ const included=preset==='peasant'?['torso','arms','legs','boots']:['torso','arms','legs','boots','head','accessory'];
+ const values=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,'']));
+ for(const slot of included){const id=prefix+suffixes[slot];if((WARDROBE_CATALOG[slot]||[]).some(item=>item.id===id))values[slot]=id;}
+ state.wardrobe={...values};buildWardrobeUI();
+ await Promise.all(WARDROBE_SLOTS.map(slot=>equipWardrobeItem(slot.id,values[slot.id])));
+ $('#wardrobe-status').textContent=(preset==='peasant'?'Peasant':'Ranger')+' équipé(e) · tu peux modifier chaque emplacement.';
 }
-let previous=performance.now();
-function frame(now){
-  resize();const dt=Math.min((now-previous)/1000,.04);previous=now;const t=now/1000;
-  const forward=(keys.has("w")||keys.has("z")||keys.has("arrowup")?1:0)-(keys.has("s")||keys.has("arrowdown")?1:0)-stick.y;
-  const strafe=(keys.has("d")||keys.has("arrowright")?1:0)-(keys.has("a")||keys.has("q")||keys.has("arrowleft")?1:0)+stick.x;
-  if(keys.has("arrowleft"))cameraYaw+=dt*1.5;if(keys.has("arrowright"))cameraYaw-=dt*1.5;
-  const moving=Math.hypot(forward,strafe)>.08;
-  if(moving){const fx=Math.sin(cameraYaw),fz=Math.cos(cameraYaw);const dx=strafe*Math.cos(cameraYaw)+forward*fx,dz=forward*fz-strafe*fx;const l=Math.hypot(dx,dz)||1;const speed=player.run?6.2:3.2;player.x+=dx/l*speed*dt;player.z+=dz/l*speed*dt;player.yaw=Math.atan2(dx/l,dz/l);player.walk+=dt*(player.run?13:8);}
-  player.x=Math.max(-24,Math.min(24,player.x));player.z=Math.max(-24,Math.min(24,player.z));
-  gl.enable(gl.DEPTH_TEST);gl.clearColor(.36,.48,.54,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-  const aspect=canvas.width/Math.max(1,canvas.height),proj=mat4.perspective(Math.PI/3,aspect,.1,120);
-  const dist=8, eye=[player.x-Math.sin(cameraYaw)*dist,3.1+cameraPitch*3,player.z-Math.cos(cameraYaw)*dist],target=[player.x,1.15,player.z];
-  const view=mat4.lookAt(eye,target,[0,1,0]),vp=mat4.multiply(proj,view);
-  drawWorld(vp,t);drawPlayer(vp,t);
-  requestAnimationFrame(frame);
+function removeWardrobeItem(slot){
+ const object=state.wardrobeObjects[slot];if(!object)return;state.model?.remove(object);
+ object.traverse?.(node=>{if(node.isMesh){node.geometry?.dispose();if(Array.isArray(node.material))node.material.forEach(m=>m.dispose());else node.material?.dispose();}});
+ delete state.wardrobeObjects[slot];
 }
-loading.hidden=true;
-requestAnimationFrame(frame);
+async function equipWardrobeItem(slot,itemId){
+ const token=(state.wardrobeSlotTokens[slot]||0)+1;state.wardrobeSlotTokens[slot]=token;const resetToken=state.wardrobeToken;
+ state.wardrobe[slot]=itemId;removeWardrobeItem(slot);if(!itemId||!state.model)return;
+ const item=(WARDROBE_CATALOG[slot]||[]).find(entry=>entry.id===itemId);if(!item)return;
+ $('#wardrobe-status').textContent='Chargement : '+item.label+'…';
+ try{
+  const gltf=await loadQuaterniusGLTF(item.url);if(resetToken!==state.wardrobeToken||token!==state.wardrobeSlotTokens[slot]||!state.model)return;
+  const garment=SkeletonUtils.clone(gltf.scene);let attached=0;const baseBones=new Map();
+  state.model.updateMatrixWorld(true);
+  state.model.traverse(node=>{if(node.isBone)baseBones.set(node.name,node);});
+  const boneAliases={root:'Hips',pelvis:'Hips',spine_01:'Spine',spine_02:'Spine01',spine_03:'Spine02',neck_01:'neck',Head:'Head',clavicle_l:'LeftShoulder',upperarm_l:'LeftArm',lowerarm_l:'LeftForeArm',hand_l:'LeftHand',clavicle_r:'RightShoulder',upperarm_r:'RightArm',lowerarm_r:'RightForeArm',hand_r:'RightHand',thigh_l:'LeftUpLeg',calf_l:'LeftLeg',foot_l:'LeftFoot',ball_l:'LeftToeBase',ball_leaf_l:'LeftToeBase',thigh_r:'RightUpLeg',calf_r:'RightLeg',foot_r:'RightFoot',ball_r:'RightToeBase',ball_leaf_r:'RightToeBase'};
+  const mappedBone=(bone)=>baseBones.get(bone.name)||baseBones.get(boneAliases[bone.name])||baseBones.get(bone.name.endsWith('_l')?'LeftHand':bone.name.endsWith('_r')?'RightHand':'Hips');
+  // Les doigts Quaternius sont rabattus sur les mains ASTREA, qui ne possèdent pas de phalanges.
+  garment.traverse(node=>{
+   if(!node.isSkinnedMesh)return;
+   const mapped=node.skeleton.bones.map(mappedBone);
+   if(mapped.some(bone=>!bone))throw new Error('Squelette ASTREA incomplet : impossible de mapper les os.');
+   const skeleton=new THREE.Skeleton(mapped);skeleton.calculateInverses();node.bind(skeleton,node.bindMatrix);
+   node.frustumCulled=false;node.castShadow=true;node.receiveShadow=true;node.userData.wardrobeSlot=slot;attached++;
+  });
+  if(!attached)throw new Error('Le fichier doit contenir au moins un mesh skinné.');
+  // Ajuste la hauteur du vêtement à celle du personnage sans modifier l'échelle du personnage.
+  const bodyBounds=new THREE.Box3().setFromObject(state.model);const bodyHeight=bodyBounds.getSize(new THREE.Vector3()).y/(state.model.scale.y||1);
+  const garmentBounds=new THREE.Box3().setFromObject(garment);const garmentHeight=garmentBounds.getSize(new THREE.Vector3()).y||bodyHeight;
+  const fit=THREE.MathUtils.clamp(bodyHeight/garmentHeight,.65,1.45);garment.scale.setScalar(fit);
+  garment.name='wardrobe_'+slot+'_'+item.id;state.model.add(garment);state.wardrobeObjects[slot]=garment;
+  $('#wardrobe-status').textContent=item.label+' équipé.';
+ }catch(error){
+  console.error(error);state.wardrobe[slot]='';const select=$('#wardrobe-'+slot);if(select)select.value='';
+  $('#wardrobe-status').textContent='Pièce non compatible : '+error.message;showError('Impossible d’équiper '+item.label+'. Vérifie le GLB et son squelette.');
+ }
+}
+function resetWardrobe(){
+ state.wardrobeToken++;state.wardrobeSlotTokens={};for(const slot of WARDROBE_SLOTS)removeWardrobeItem(slot.id);
+ state.wardrobe=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,'']));buildWardrobeUI();
+}
+function restoreWardrobe(saved={}){
+ resetWardrobe();for(const slot of WARDROBE_SLOTS){const id=saved?.[slot.id];if(id&&(WARDROBE_CATALOG[slot.id]||[]).some(item=>item.id===id))equipWardrobeItem(slot.id,id);}
+}
+
+function setStatus(text,good=false){$('#model-status').textContent=text;$('#model-status').style.color=good?'#77d8a0':'#f1c77a';}
+function setScreen(name){state.screen=name;menu.hidden=name!=='menu';creator.hidden=name!=='creator';gameHud.hidden=name!=='game';canvas.style.opacity=name==='menu'?'0.38':'1';if(name==='creator'){camera.position.set(0,1.45,4.7);camera.lookAt(0,1,0);}if(name==='game'){makeWorld();camera.position.set(0,3,7);}}
+function createRaceButtons(){const root=$('#race-options');root.innerHTML='';for(const [id,label] of RACES){const b=document.createElement('button');b.className='race-choice'+(id===state.race?' selected':'');b.textContent=label;b.dataset.race=id;b.addEventListener('click',()=>{state.race=id;updateSelection();loadSelectedCharacter();});root.append(b);}}
+function updateSelection(){document.querySelectorAll('.race-choice').forEach(b=>b.classList.toggle('selected',b.dataset.race===state.race));document.querySelectorAll('[data-gender]').forEach(b=>b.classList.toggle('selected',b.dataset.gender===state.gender));$('#preview-name').textContent=`${RACES.find(x=>x[0]===state.race)[1].toUpperCase()} · ${state.gender==='male'?'MASCULIN':'FÉMININ'}`;}
+function archiveKey(){return `${state.race}_${state.gender}`;}
+async function getArchive(key){if(state.zipCache.has(key))return state.zipCache.get(key);const url=ZIP_URLS[key];if(!url)throw new Error(`Aucun pack 3D disponible pour ${key}`);const promise=(async()=>{const response=await fetch(url);if(!response.ok)throw new Error(`Téléchargement du pack ${key}: HTTP ${response.status}`);const bytes=await response.arrayBuffer();return await window.JSZip.loadAsync(bytes);})();state.zipCache.set(key,promise);try{return await promise;}catch(e){state.zipCache.delete(key);throw e;}}
+async function parseGLB(zip,path){const file=zip.file(path);if(!file)throw new Error(`Fichier manquant dans le pack : ${path}`);const data=await file.async('arraybuffer');return await loader.parseAsync(data,'');}
+async function getQuaterniusZip(){
+ if(!quaterniusZipPromise){quaterniusZipPromise=(async()=>{const response=await fetch(QUATERNIUS_ARCHIVE_URL,{cache:'force-cache'});if(!response.ok)throw new Error(`Pack de vêtements Quaternius : HTTP ${response.status}`);return await window.JSZip.loadAsync(await response.arrayBuffer());})();}
+ try{return await quaterniusZipPromise;}catch(error){quaterniusZipPromise=null;throw error;}
+}
+async function loadQuaterniusGLTF(assetUrl){
+ wardrobeAssetLoads++;pauseRenderForWardrobe=true;
+ const urls=new Map();
+ try{
+  const zip=await getQuaterniusZip();
+  const archivePath=assetUrl.replace('assets/quaternius/','');
+  const file=zip.file(archivePath);if(!file)throw new Error(`Pièce absente du pack Quaternius : ${archivePath}`);
+  const json=JSON.parse(await file.async('string'));
+  const baseDir=archivePath.slice(0,archivePath.lastIndexOf('/')+1);
+  const baseURL='https://astrea-quaternius.invalid/'+baseDir;
+  const references=[...(json.buffers||[]).map(entry=>entry.uri),...(json.images||[]).map(entry=>entry.uri)].filter(Boolean);
+  for(const uri of references){
+   const dependency=zip.file(baseDir+uri);if(!dependency)throw new Error(`Ressource GLTF absente : ${uri}`);
+   const blob=await dependency.async('blob');urls.set(baseURL+uri,URL.createObjectURL(blob));
+  }
+  const manager=new THREE.LoadingManager();manager.setURLModifier(url=>urls.get(url)||url);
+  return await new GLTFLoader(manager).parseAsync(JSON.stringify(json),baseURL);
+ }finally{
+  for(const objectUrl of urls.values())URL.revokeObjectURL(objectUrl);
+  wardrobeAssetLoads=Math.max(0,wardrobeAssetLoads-1);pauseRenderForWardrobe=wardrobeAssetLoads>0;
+ }
+}
+function clearCurrentModel(){if(state.mixer){state.mixer.stopAllAction();state.mixer=null;}if(state.model){scene.remove(state.model);state.model.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();}});state.model=null;}state.actions={};}
+async function loadSelectedCharacter(){const token=++state.loadToken,key=archiveKey();setStatus('CHARGEMENT…');$('#category-note').textContent='Chargement du véritable modèle 3D et de ses animations…';try{const zip=await getArchive(key);if(token!==state.loadToken)return false;const gltf=await parseGLB(zip,'model.glb');if(token!==state.loadToken)return false;resetWardrobe();clearCurrentModel();const model=gltf.scene;model.name=key;const box=new THREE.Box3().setFromObject(model);const size=box.getSize(new THREE.Vector3());const center=box.getCenter(new THREE.Vector3());const height=size.y||1.8;model.scale.setScalar(1.78/height);model.position.set(1.15-center.x*model.scale.x,-box.min.y*model.scale.y,-center.z*model.scale.z);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.side=THREE.DoubleSide;}}});scene.add(model);state.model=model;
+  const animationNames=['idle','walking','running','jump','attack','charged_spell_cast','block','hit_reaction','dodge_roll'];state.mixer=new THREE.AnimationMixer(model);state.mixer.addEventListener('finished',()=>{state.actionOneShot=false;if(state.screen==='game')playAction('idle');});for(const name of animationNames){try{const anim=await parseGLB(zip,`animations/${name}.glb`);if(token!==state.loadToken)return false;const clip=anim.animations?.[0];if(clip){state.actions[name]=state.mixer.clipAction(clip);}}catch(e){console.warn(`Animation ${name} indisponible pour ${key}`,e);}}
+  buildWardrobeUI();playAction('idle');setStatus('MODÈLE CHARGÉ',true);$('#category-note').textContent=`Modèle ${RACES.find(x=>x[0]===state.race)[1]} ${state.gender==='male'?'masculin':'féminin'} chargé. Aperçu 3D réel.`;return true;
+ }catch(err){console.error(err);if(token===state.loadToken){setStatus('ERREUR DE CHARGEMENT');$('#category-note').textContent=err.message;showError(`Impossible de charger le personnage ${key}.\n${err.message}`);}return false;}}
+function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning())return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;state.actionOneShot=oneShot;next.fadeIn(.16).play();if(previous&&previous!==next)previous.fadeOut(.16);state.currentAction=name;}
+async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
+function showError(message){errorBox.hidden=false;errorBox.textContent=message;setTimeout(()=>{errorBox.hidden=true;},9000);}
+
+createRaceButtons();updateSelection();buildWardrobeUI();
+$('#race-options').addEventListener('click',()=>{});
+document.querySelectorAll('[data-gender]').forEach(b=>b.addEventListener('click',()=>{state.gender=b.dataset.gender;updateSelection();loadSelectedCharacter();}));
+document.querySelectorAll('.category').forEach(b=>b.addEventListener('click',()=>{state.category=b.dataset.category;document.querySelectorAll('.category').forEach(x=>x.classList.toggle('selected',x===b));const messages={appearance:'Le modèle de base de la race et du sexe sélectionnés est affiché.',hair:'Les variantes de coiffure ne sont pas encore séparées en pièces sélectionnables.',outfit:'20 pièces Quaternius disponibles pour les personnages humains : torse, bras, jambes, pieds, capuche et épaulières.',accessories:'Les accessoires personnalisables seront ajoutés à cette catégorie.'};$('#category-note').textContent=messages[state.category];}));
+$('#new-game-btn').addEventListener('click',()=>{setScreen('creator');loadSelectedCharacter();});
+$('#continue-btn').addEventListener('click',async()=>{const saved=localStorage.getItem('astrea-character');if(!saved){$('#new-game-btn').click();return;}try{const data=JSON.parse(saved);state.race=data.race;state.gender=data.gender;state.name=data.name;state.alias=data.alias;updateSelection();$('#character-name').value=state.name;$('#player-alias').value=state.alias;$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;const loaded=await loadSelectedCharacter();if(!loaded)return;restoreWardrobe(data.wardrobe||{});setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}catch(err){showError('La sauvegarde du personnage est illisible.');console.error(err);}});
+$('#back-menu').addEventListener('click',()=>setScreen('menu'));
+$('#create-character').addEventListener('click',saveCharacter);
+$('#back-creator').addEventListener('click',()=>{setScreen('creator');loadSelectedCharacter();});
+
+canvas.addEventListener('pointerdown',e=>{if(state.screen==='creator'){state.drag=true;state.lastX=e.clientX;canvas.setPointerCapture(e.pointerId);}});
+canvas.addEventListener('pointermove',e=>{if(state.drag&&state.model){state.previewYaw+=(e.clientX-state.lastX)*.009;state.model.rotation.y=state.previewYaw;state.lastX=e.clientX;}});
+canvas.addEventListener('pointerup',()=>state.drag=false);canvas.addEventListener('pointercancel',()=>state.drag=false);
+canvas.addEventListener('wheel',e=>{if(state.screen==='creator'){e.preventDefault();state.previewDistance=THREE.MathUtils.clamp(state.previewDistance+e.deltaY*.004,3.0,7.5);}}, {passive:false});
+addEventListener('keydown',e=>{state.keys.add(e.key.toLowerCase());if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault();if(e.key==='Enter'&&state.screen==='menu')$('#new-game-btn').click();if(e.key==='Escape'&&state.screen==='creator')setScreen('menu');});
+addEventListener('keyup',e=>state.keys.delete(e.key.toLowerCase()));
+function visibleFocusables(){return state.screen==='menu'?[...document.querySelectorAll('#main-menu .ps-option')]:state.screen==='creator'?[...document.querySelectorAll('#creator button:not([disabled]),#creator input')].filter(el=>el.offsetParent!==null):[];}
+function moveFocus(direction){const list=visibleFocusables();if(!list.length)return;let index=list.indexOf(document.activeElement);if(index<0)index=0;index=(index+direction+list.length)%list.length;list[index].focus();}
+function backAction(){if(state.screen==='creator')setScreen('menu');else if(state.screen==='game'){setScreen('creator');loadSelectedCharacter();}}
+addEventListener('keydown',e=>{if(state.screen==='menu'&&['arrowup','arrowdown'].includes(e.key.toLowerCase())){e.preventDefault();moveFocus(e.key==='ArrowDown'?1:-1);}if(state.screen==='creator'&&['arrowup','arrowdown'].includes(e.key.toLowerCase())&&document.activeElement?.tagName!=='INPUT'){e.preventDefault();moveFocus(e.key==='ArrowDown'?1:-1);}if(e.key==='Escape'||e.key.toLowerCase()==='backspace'){if(state.screen!=='menu')backAction();}if(state.screen==='game'){const k=e.key.toLowerCase();if(k===' '||k==='space')triggerAction('jump');if(k==='j')triggerAction('attack');if(k==='k')triggerAction('charged_spell_cast');if(k==='l')triggerAction('block');if(k==='o')triggerAction('dodge_roll');}});
+let gamepadPrev={};function triggerAction(name){if(state.screen==='game'&&state.actions[name])playAction(name,true);}
+function pollGamepad(){const pads=navigator.getGamepads?.()||[];const pad=[...pads].find(Boolean);if(!pad)return;const pressed=(i)=>!!pad.buttons[i]?.pressed;const edge=(key,down)=>{const was=!!gamepadPrev[key];gamepadPrev[key]=down;return down&&!was;};if(edge('up',pressed(12)))moveFocus(-1);if(edge('down',pressed(13)))moveFocus(1);if(edge('left',pressed(14))&&state.screen==='creator')cycleRace(-1);if(edge('right',pressed(15))&&state.screen==='creator')cycleRace(1);if(edge('cross',pressed(0))){if(state.screen==='game')triggerAction('jump');else document.activeElement?.click?.();}if(edge('circle',pressed(1))){if(state.screen==='game')triggerAction('dodge_roll');else backAction();}if(edge('square',pressed(2)))triggerAction('attack');if(edge('triangle',pressed(3)))triggerAction('charged_spell_cast');if(edge('l1',pressed(4))){if(state.screen==='creator')cycleCategory(-1);else triggerAction('block');}if(edge('r1',pressed(5))){if(state.screen==='creator')cycleCategory(1);else triggerAction('attack');}if(edge('r2',pressed(7)))triggerAction('charged_spell_cast');if(state.screen==='game'){const x=pad.axes?.[0]||0,y=pad.axes?.[1]||0;if(Math.abs(x)>.15||Math.abs(y)>.15){state.gamePadX=x;state.gamePadY=y;}else{state.gamePadX=0;state.gamePadY=0;}}}
+function cycleRace(dir){const i=RACES.findIndex(x=>x[0]===state.race);state.race=RACES[(i+dir+RACES.length)%RACES.length][0];updateSelection();loadSelectedCharacter();}
+function cycleCategory(dir){const buttons=[...document.querySelectorAll('.category')];const i=buttons.findIndex(x=>x.dataset.category===state.category);buttons[(i+dir+buttons.length)%buttons.length]?.click();}
+let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(state.screen==='game'&&e.pointerType==='mouse'){mouseDown=true;lastMouseX=e.clientX;}});addEventListener('pointerup',()=>mouseDown=false);addEventListener('pointermove',e=>{if(mouseDown&&state.screen==='game'){state.gameYaw-=(e.clientX-lastMouseX)*.006;lastMouseX=e.clientX;}});
+
+let lastTime=performance.now();let currentMode='';
+function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);
+ if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
+ if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0);const padForward=-(state.gamePadY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
+ renderer.render(scene,camera);
+}
+function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
+addEventListener('resize',resize);resize();loading.hidden=true;setScreen('menu');
+requestAnimationFrame(animate);

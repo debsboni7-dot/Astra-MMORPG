@@ -1,27 +1,55 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <meta name="theme-color" content="#10151b">
-  <title>Astra MMORPG — Prototype moteur maison</title>
-  <link rel="stylesheet" href="./style.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#080d17"><title>ASTREA — MMORPG</title><link rel="stylesheet" href="./style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
 </head>
 <body>
   <main id="game">
-    <canvas id="viewport" aria-label="Vue 3D du prototype Astra"></canvas>
-    <div class="hud">
-      <div class="brand">ASTRA <span>MMORPG</span></div>
-      <div class="status"><i></i> Prototype moteur maison · WebGL 2</div>
-      <div class="help" id="help">Déplacement : ZQSD / WASD · Caméra : souris ou flèches</div>
-    </div>
-    <div class="mobile-controls" aria-label="Commandes tactiles">
-      <div class="stick" id="stick"><div class="stick-knob" id="stick-knob"></div></div>
-      <button id="run" type="button">COURIR</button>
-    </div>
-    <div class="loading" id="loading">Initialisation du moteur…</div>
-    <div class="error" id="error" hidden></div>
+    <canvas id="viewport" aria-label="Prévisualisation 3D du personnage ASTREA"></canvas>
+    <section id="main-menu" class="screen menu-screen">
+      <div class="menu-brand"><div class="brand-mark">A</div><div><h1>ASTREA</h1><p>LES CHRONIQUES DES SEPT RACES</p></div></div>
+      <div class="menu-actions"><button class="ps-option selected" id="continue-btn"><span>Continuer</span><kbd>✕</kbd></button><button class="ps-option" id="new-game-btn"><span>Créer une nouvelle partie</span><kbd>✕</kbd></button></div>
+      <div class="screen-footer">NAVIGATION <b>✕</b> VALIDER <b>○</b> RETOUR</div>
+    </section>
+    <section id="creator" class="screen creator-screen" hidden>
+      <header class="creator-header"><button id="back-menu" class="back-button">○ <span>RETOUR</span></button><div><div class="eyebrow">NOUVELLE PARTIE</div><h2>Création du personnage</h2></div><div class="step-label">ÉTAPE 01 <span>/ 03</span></div></header>
+      <div class="creator-layout">
+        <aside class="settings-panel">
+          <div class="panel-heading"><span>PERSONNALISATION</span><span class="panel-line"></span></div>
+          <label class="field-label" for="character-name">Nom du personnage</label><input id="character-name" maxlength="24" placeholder="Nom du héros">
+          <label class="field-label" for="player-alias">Pseudonyme</label><input id="player-alias" maxlength="24" placeholder="Ton pseudonyme">
+          <div class="field-label">Race</div><div id="race-options" class="option-grid"></div>
+          <div class="field-label">Sexe</div><div class="gender-row"><button class="choice selected" data-gender="male">Masculin</button><button class="choice" data-gender="female">Féminin</button></div>
+          <div class="field-label">Personnalisation</div><div class="category-list" id="category-list">
+            <button class="category selected" data-category="appearance"><span>Apparence</span><small>01</small></button>
+            <button class="category" data-category="hair"><span>Cheveux</span><small>02</small></button>
+            <button class="category" data-category="outfit"><span>Tenue</span><small>03</small></button>
+            <button class="category" data-category="accessories"><span>Accessoires</span><small>04</small></button>
+          </div>
+          <section class="wardrobe-panel" aria-labelledby="wardrobe-title">
+            <div class="wardrobe-heading"><span id="wardrobe-title">ÉQUIPEMENT MODULAIRE</span><span class="wardrobe-count">7 EMPLACEMENTS</span></div>
+            <p class="wardrobe-intro">Choisis une tenue complète ou compose ton équipement pièce par pièce.</p>
+            <div id="wardrobe-slots" class="wardrobe-slots"></div>
+            <div id="wardrobe-presets" class="wardrobe-presets" aria-label="Tenues complètes"></div>
+            <p class="wardrobe-status" id="wardrobe-status">Pack Quaternius : 20 pièces modulaires pour humains.</p>
+          </section>
+          <p class="panel-note" id="category-note">Choisis une race et un modèle pour afficher ton personnage.</p>
+          <button class="primary-button" id="create-character">CONFIRMER LE PERSONNAGE <kbd>✕</kbd></button>
+        </aside>
+        <section class="preview-panel">
+          <div class="preview-top"><span>APERÇU 3D EN TEMPS RÉEL</span><span id="model-status">CHARGEMENT…</span></div>
+          <div class="preview-name" id="preview-name">HUMAIN <i>·</i> MASCULIN</div>
+          <div class="preview-hint">MAINTENIR ET GLISSER POUR FAIRE TOURNER</div>
+          <div class="preview-bottom"><span>ASTREA CHARACTER SYSTEM</span><span>MODÈLE IDENTIQUE EN JEU</span></div>
+        </section>
+      </div>
+      <footer class="creator-footer"><span><b>✕</b> VALIDER <b>○</b> RETOUR <b>L1 / R1</b> CHANGER DE CATÉGORIE</span><span>INTERFACE INSPIRÉE PLAYSTATION</span></footer>
+    </section>
+    <section id="game-hud" class="game-hud" hidden><div class="hud-brand">ASTREA <span>MMORPG</span></div><div class="hud-player" id="hud-player"></div><div class="hud-help">ZQSD / WASD : DÉPLACER · SOURIS : CAMÉRA · ESPACE : SAUTER</div><button id="back-creator" class="hud-menu">OPTIONS · PERSONNAGE</button></section>
+    <div class="loading" id="loading">Initialisation d'ASTREA…</div><div class="error" id="error" hidden></div>
   </main>
   <script type="module" src="./src/main.js"></script>
-</body>
-</html>
+</body></html>

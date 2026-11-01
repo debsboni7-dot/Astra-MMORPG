@@ -1,19 +1,26 @@
-# Astra MMORPG
+# ASTREA MMORPG
 
-Projet de MMORPG fantasy en développement. Le dépôt contient le socle de documentation et l'organisation des ressources.
+ASTREA est un projet de MMORPG fantasy en développement. Ce dépôt rassemble le prototype web jouable, les systèmes de jeu en construction, les ressources artistiques et la documentation.
 
-## État actuel
-- Prototype historique : `ASTRA_edition_amelioree.html` (3,95 Mo), retrouvé dans la bibliothèque de travail. Son ajout binaire au dépôt reste à effectuer ; il n'est pas encore présent ici.
-- Architecture cible : client de jeu, systèmes gameplay, ressources artistiques et documentation.
-- Aucun asset 3D, texture, animation, VFX ou SFX n'est déclaré intégré tant que le fichier correspondant n'a pas été ajouté et vérifié.
+## Jouer dans le navigateur
 
-## Arborescence
-- `client/` : application et rendu du jeu
-- `gameplay/` : combat, personnages, progression, inventaire, magie
-- `assets/` : modèles 3D, textures, matériaux, animations, effets et sons
-- `docs/` : architecture, conventions et suivi
+Le prototype est prévu pour être publié sur **GitHub Pages** : aucune installation ni archive du jeu à télécharger n'est nécessaire. Le navigateur charge l'application, les modèles 3D et les animations à la demande. Une connexion Internet et un navigateur récent compatible WebGL 2 sont nécessaires.
 
-## Règles de contribution
-- Conserver les licences et la provenance de chaque ressource externe.
-- Ne pas ajouter de fichiers temporaires, secrets ou clés API.
-- Vérifier les assets avant de les considérer comme intégrés au jeu.
+- Application : `prototype/`
+- Guide du prototype : [`prototype/README.md`](prototype/README.md)
+- Suivi du projet : `docs/`
+
+## Contenu actuellement présent
+
+- Créateur de personnage avec les sept races et les deux sexes.
+- Quatorze modèles 3D de personnages avec animations, chargés depuis l'hébergement des ressources.
+- Interface de garde-robe avec sept emplacements et 20 pièces modulaires Quaternius Standard, actuellement proposées aux personnages humains.
+- Prototype Three.js avec déplacement de base, caméra, clavier et manette.
+
+## État du projet
+
+ASTREA n'est pas encore un MMORPG en production : le prototype ne dispose pas encore d'un serveur multijoueur, de comptes, d'une sauvegarde en ligne, d'un monde complet ni de systèmes de combat et de progression finalisés. Les limites connues et les vérifications restantes sont détaillées dans [`prototype/README.md`](prototype/README.md).
+
+## Licence des ressources
+
+Les ressources Quaternius importées proviennent de l'édition Standard du pack Modular Character Outfits - Fantasy ; sa licence CC0 est conservée dans `prototype/assets/quaternius/License_Standard.txt`. Les autres ressources conservent leur hébergement et leurs conditions propres.
