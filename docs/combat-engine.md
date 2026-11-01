@@ -30,3 +30,22 @@ Les 19 tests automatisés couvrent les calculs physiques et magiques, les limite
 - Implémenter résistances/immunités spécifiques aux espèces et aux boss.
 - Ajouter un système serveur autoritaire pour les combats multijoueurs ; ne jamais faire confiance au client pour les dégâts PvP.
 - Tester les valeurs par simulations PvE/PvP et avec télémétrie.
+
+
+## Prototype 3D : intégration initiale
+
+Le prototype `prototype/src/main.js` importe maintenant `CombatRuntime.js` et instancie un combattant joueur ainsi qu'un mannequin d'entraînement 3D. Le HUD de combat affiche les PV, l'endurance et les PV de la cible.
+
+Commandes raccordées :
+- `J` / bouton Attaque : frappe physique de démonstration.
+- `K` / bouton Feu : projectile de feu de démonstration.
+- `L` / bouton Parade : blocage avec fenêtre initiale de parade parfaite.
+- `O` / bouton Esquive : esquive avec fenêtre temporaire.
+- Bouton Réinitialiser : restaure les PV du mannequin.
+
+Limites connues de cette première intégration :
+- Le mannequin est une cible d'entraînement immobile, sans IA ni riposte.
+- Les valeurs de dégâts, coûts d'endurance, durées, statistiques de démonstration et distances sont provisoires.
+- Le joueur de démonstration commence avec des statistiques simplifiées ; la fiche de personnage et la progression réelle ne sont pas encore branchées.
+- Les contrôles sont raccordés aux animations disponibles, mais aucune validation visuelle en navigateur n'a encore été effectuée.
+- Les tests CI valident la syntaxe JavaScript et les fonctions du moteur/runtime, pas le rendu WebGL ni le comportement réel des animations.
