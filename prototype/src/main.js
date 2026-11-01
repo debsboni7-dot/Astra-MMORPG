@@ -3,6 +3,7 @@ import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js';
 import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAttack, resolveIncomingAttack } from './combat/CombatRuntime.js';
 import { createEnemyAI, updateEnemyAI, staggerEnemyAI } from './combat/EnemyAI.js';
+import { createComboState, advanceCombo, resetCombo, resolveHitReaction } from './combat/CombatTechniques.js';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
@@ -76,6 +77,10 @@ let enemyMesh = null;
 let enemyTelegraph = null;
 let enemyAI = null;
 let enemyStaggerUntil = 0;
+let enemyKnockdownUntil = 0;
+let comboState = createComboState();
+let comboTargetId = null;
+let enemyBaseY = 0;
 let combatUiTimer = 0;
 let combatClockMs = 0;
 const state = {race:'human',gender:'male',category:'appearance',name:'',alias:'',screen:'menu',model:null,mixer:null,actions:{},currentAction:'idle',actionOneShot:false,zipCache:new Map(),loadToken:0,gameYaw:0,gamePos:new THREE.Vector3(0,0,0),keys:new Set(),drag:false,lastX:0,previewYaw:0,previewDistance:4.8,wardrobe:Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,''])),wardrobeObjects:{},wardrobeToken:0,wardrobeSlotTokens:{}};
@@ -197,7 +202,8 @@ function createTrainingEnemy(){
  if(enemyMesh)world.remove(enemyMesh);
  enemyCombatant=createCombatant({id:'forest-raider',name:'Pillard des ruines',maxHp:120,hp:120,physicalStrength:7});
  enemyAI=createEnemyAI({id:'forest-raider',attackRange:1.8,telegraphMs:850,recoveryMs:1050,attackCooldownMs:350});
- enemyStaggerUntil=0;
+ enemyCombatant.poise=42;enemyCombatant.mass=1.25;enemyCombatant.controlResistance=.08;
+ enemyStaggerUntil=0;enemyKnockdownUntil=0;enemyBaseY=0;resetCombo(comboState);comboTargetId=null;
  const group=new THREE.Group();
  const armor=new THREE.MeshStandardMaterial({color:0x344b4a,roughness:.78,metalness:.15});
  const leather=new THREE.MeshStandardMaterial({color:0x573b2c,roughness:.95});
@@ -220,7 +226,7 @@ function ensureCombatHud(){
  if(!panel){
   panel=document.createElement('div');panel.id='combat-panel';
   panel.style.cssText='position:absolute;right:18px;top:72px;width:min(280px,calc(100vw - 24px));padding:12px;pointer-events:auto;background:rgba(8,15,25,.88);border:1px solid rgba(92,174,225,.65);border-radius:10px;color:#edf6ff;font:12px/1.4 system-ui;z-index:5;backdrop-filter:blur(8px)';
-  panel.innerHTML='<div style="font-weight:800;letter-spacing:.12em;margin-bottom:8px">ENTRAÎNEMENT</div><div>JOUEUR · PV <span id="combat-player-hp">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 8px"><div id="combat-player-hp-bar" style="height:100%;width:100%;background:#55bd83"></div></div><div>ENDURANCE <span id="combat-player-stamina">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-player-stamina-bar" style="height:100%;width:100%;background:#56bfff"></div></div><div style="font-weight:700">MANNEQUIN · PV <span id="combat-target-hp">150 / 150</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-target-hp-bar" style="height:100%;width:100%;background:#e18a55"></div></div><div style="font-weight:700">PILLARD · PV <span id="combat-enemy-hp">120 / 120</span> · <span id="combat-enemy-state">APPROACH</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-enemy-hp-bar" style="height:100%;width:100%;background:#e65d4d"></div></div><div id="combat-message" style="min-height:32px;color:#b9d9f2;margin-bottom:8px">Le pillard approche. Prépare-toi à esquiver ou à parer.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button data-combat="attack">Attaque (J)</button><button data-combat="fire">Feu (K)</button><button data-combat="block">Parade (L)</button><button data-combat="dodge">Esquive (O)</button><button data-combat="reset" style="grid-column:1 / -1">Réinitialiser le mannequin</button></div>';
+  panel.innerHTML='<div style="font-weight:800;letter-spacing:.12em;margin-bottom:8px">ENTRAÎNEMENT · COMBO J × 3</div><div>JOUEUR · PV <span id="combat-player-hp">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 8px"><div id="combat-player-hp-bar" style="height:100%;width:100%;background:#55bd83"></div></div><div>ENDURANCE <span id="combat-player-stamina">100 / 100</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-player-stamina-bar" style="height:100%;width:100%;background:#56bfff"></div></div><div style="font-weight:700">MANNEQUIN · PV <span id="combat-target-hp">150 / 150</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-target-hp-bar" style="height:100%;width:100%;background:#e18a55"></div></div><div style="font-weight:700">PILLARD · PV <span id="combat-enemy-hp">120 / 120</span> · <span id="combat-enemy-state">APPROACH</span></div><div style="height:7px;background:#263746;border-radius:8px;overflow:hidden;margin:4px 0 10px"><div id="combat-enemy-hp-bar" style="height:100%;width:100%;background:#e65d4d"></div></div><div id="combat-message" style="min-height:32px;color:#b9d9f2;margin-bottom:8px">Le pillard approche. Prépare-toi à esquiver ou à parer.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button data-combat="attack">Attaque (J)</button><button data-combat="fire">Feu (K)</button><button data-combat="block">Parade (L)</button><button data-combat="dodge">Esquive (O)</button><button data-combat="reset" style="grid-column:1 / -1">Réinitialiser le combat</button></div>';
   for(const button of panel.querySelectorAll('button')){button.style.cssText='padding:7px 5px;border:1px solid #42627c;border-radius:6px;background:#182b3c;color:#eff8ff;font-weight:650';button.addEventListener('click',()=>combatAction(button.dataset.combat));}
   gameHud.append(panel);
  }
@@ -246,37 +252,46 @@ function performPlayerAttack(kind='physical'){
  if(!state.model){combatMessage('Personnage indisponible.');return;}
  const dummyDistance=trainingDummyMesh?state.model.position.distanceTo(trainingDummyMesh.position):Infinity;
  const enemyDistance=enemyMesh&&enemyCombatant&&!enemyCombatant.defeated?state.model.position.distanceTo(enemyMesh.position):Infinity;
- const targetIsEnemy=enemyDistance<dummyDistance;
- const target=targetIsEnemy?enemyCombatant:trainingDummyCombatant;
- const targetMesh=targetIsEnemy?enemyMesh:trainingDummyMesh;
+ let targetIsEnemy=enemyDistance<dummyDistance;
+ let target=targetIsEnemy?enemyCombatant:trainingDummyCombatant;
+ let targetMesh=targetIsEnemy?enemyMesh:trainingDummyMesh;
+ if(kind==='physical'&&comboState.stage>0&&comboTargetId){const locked=comboTargetId==='forest-raider'?enemyCombatant:trainingDummyCombatant;const lockedMesh=comboTargetId==='forest-raider'?enemyMesh:trainingDummyMesh;const lockedDistance=lockedMesh?state.model.position.distanceTo(lockedMesh.position):Infinity;if(locked&&!locked.defeated&&lockedDistance<=3.35){target=locked;targetMesh=lockedMesh;targetIsEnemy=locked.id==='forest-raider';}else comboTargetId=null;}
  const distance=targetMesh?state.model.position.distanceTo(targetMesh.position):Infinity;
  if(!target||target.defeated){combatMessage('Aucune cible disponible.');return;}
  if(distance>3.35){combatMessage('Rapproche-toi de la cible.');return;}
+ const combo=kind==='magic'?null:advanceCombo(comboState,combatClockMs);
  const attack=kind==='magic'
   ? {id:'training-fire-bolt',kind:'magic',element:'fire',base:24,relevantPower:0,powerCoefficient:0,techniqueMultiplier:1,schoolMasteryMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:12}
-  : {id:'training-light-strike',kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,weaponPower:0,techniqueMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:0};
+  : {id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,weaponPower:0,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':'light'};
  const result=executeAttack(playerCombatant,target,attack,{now:combatClockMs});
- if(!result.executed){combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
+ if(!result.executed){if(kind!=='magic'){resetCombo(comboState);comboTargetId=null;}combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
  playAction(kind==='magic'?'charged_spell_cast':'attack',true);
- if(targetIsEnemy&&result.executed){staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+420;}
- combatMessage((kind==='magic'?'Sort de feu':'Attaque')+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
+ let reaction=null;
+ if(kind==='physical'){if(combo.finisher)comboTargetId=null;else if(combo.stage===1)comboTargetId=target.id;}
+ if(targetIsEnemy&&result.executed){reaction=resolveHitReaction({impact:attack.impact??result.damage,targetPoise:enemyCombatant.poise,targetMass:enemyCombatant.mass,controlResistance:enemyCombatant.controlResistance,attackType:attack.attackType||'magic'});staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+reaction.staggerMs;enemyKnockdownUntil=reaction.knockdown?enemyStaggerUntil:0;
+  if(reaction.knockback>0){const dx=enemyMesh.position.x-state.model.position.x,dz=enemyMesh.position.z-state.model.position.z,len=Math.hypot(dx,dz)||1;const displacement=reaction.knockback*(attack.attackType==='finisher'?1:.22);enemyMesh.position.x+=dx/len*displacement;enemyMesh.position.z+=dz/len*displacement;}
+  if(reaction.knockdown)enemyMesh.rotation.x=-Math.PI/2;
+ }
+ const comboText=combo?(combo.finisher?' · FINISHER':` · COMBO ${combo.stage}/3`):'';
+ const reactionText=reaction?' · '+reaction.reaction.toUpperCase():'';
+ combatMessage((kind==='magic'?'Sort de feu':'Attaque')+comboText+reactionText+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
  if(target.defeated)combatMessage(targetIsEnemy?'Pillard vaincu !':'Mannequin détruit ! Tu peux le réinitialiser.');
  updateCombatHud();
 }
 function combatAction(action){
  const now=combatClockMs;
  if(action==='attack')performPlayerAttack('physical');
- else if(action==='fire')performPlayerAttack('magic');
+ else if(action==='fire'){resetCombo(comboState);comboTargetId=null;performPlayerAttack('magic');}
  else if(action==='block'){
-  const result=beginBlock(playerCombatant,{now,staminaCost:4,durationMs:650,parryWindowMs:180});
+  resetCombo(comboState);comboTargetId=null;const result=beginBlock(playerCombatant,{now,staminaCost:4,durationMs:650,parryWindowMs:180});
   if(result.started){playAction('block',true);combatMessage('Garde active : fenêtre de parade parfaite pendant 180 ms.');}
   else combatMessage('Pas assez d’endurance pour bloquer.');
  }else if(action==='dodge'){
-  const result=beginDodge(playerCombatant,{now,staminaCost:18,durationMs:420});
+  resetCombo(comboState);comboTargetId=null;const result=beginDodge(playerCombatant,{now,staminaCost:18,durationMs:420});
   if(result.started){playAction('dodge_roll',true);combatMessage('Esquive : invulnérabilité temporaire.');}
   else combatMessage('Pas assez d’endurance pour esquiver.');
  }else if(action==='reset'){
-  playerCombatant=createCombatant({id:'player',name:state.name||'Joueur',physicalStrength:10,fireMastery:1,weaponMastery:0});
+  playerCombatant=createCombatant({id:'player',name:state.name||'Joueur',physicalStrength:10,fireMastery:1,weaponMastery:0});resetCombo(comboState);comboTargetId=null;
   createTrainingDummy();createTrainingEnemy();combatMessage('Combat réinitialisé : PV, endurance et ennemis restaurés.');
  }
  updateCombatHud();
@@ -289,13 +304,14 @@ function updateEnemyEncounter(dt,now){
  const result=updateEnemyAI(enemyAI,{deltaSeconds:dt,distance,defeated:enemyCombatant.defeated,staggered:now<enemyStaggerUntil});
  if(result.canMove&&distance>enemyAI.attackRange*.88){const step=Math.min(distance-enemyAI.attackRange*.88,2.15*dt);enemyMesh.position.x+=dx/(distance||1)*step;enemyMesh.position.z+=dz/(distance||1)*step;}
  if(distance>.08)enemyMesh.rotation.y=Math.atan2(dx,dz);
+ if(enemyMesh&&enemyCombatant&&!enemyCombatant.defeated&&now>=enemyKnockdownUntil&&enemyMesh.rotation.x<0){enemyMesh.rotation.x=Math.min(0,enemyMesh.rotation.x+dt*4.5);}
  if(enemyTelegraph){enemyTelegraph.visible=result.telegraph;enemyTelegraph.material.opacity=result.telegraph?.55+.3*Math.sin(now*.025):.0;}
  if(result.attack&&distance<=enemyAI.attackRange+.35){
   const hit=resolveIncomingAttack(enemyCombatant,playerCombatant,{kind:'physical',base:12,strength:5,strengthCoefficient:.2,weaponPower:0,techniqueMultiplier:1,executionQuality:1,criticalChance:0},{now,rng:Math.random});
   if(hit.parried){staggerEnemyAI(enemyAI);enemyStaggerUntil=now+650;combatMessage('Parade parfaite ! Le pillard est déstabilisé : contre-attaque !');}
   else if(hit.dodged)combatMessage('Esquive réussie : le pillard a manqué son attaque.');
-  else if(hit.blocked)combatMessage('Garde : dégâts réduits à '+Math.round(hit.hpLost)+'.');
-  else if(hit.hit)combatMessage('Le pillard te frappe : '+Math.round(hit.hpLost)+' dégâts.');
+  else if(hit.blocked){playAction('block',true);combatMessage('Garde : dégâts réduits à '+Math.round(hit.hpLost)+'.');}
+  else if(hit.hit){playAction('hit_reaction',true);combatMessage('Le pillard te frappe : '+Math.round(hit.hpLost)+' dégâts.');}
   if(playerCombatant.defeated)combatMessage('Tu es vaincu. Réinitialise le combat pour recommencer.');
  }
  if(enemyCombatant.defeated){enemyAI.state='defeated';enemyMesh.rotation.x=-Math.PI/2;enemyMesh.position.y=-.55;if(enemyTelegraph)enemyTelegraph.visible=false;}
