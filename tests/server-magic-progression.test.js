@@ -60,6 +60,19 @@ test('trusted progression events unlock a skill and confirmed casts improve its 
   assert.equal(cast.schoolXp, 21);
 });
 
+test('replayed server reward and cast events cannot award progression twice', async () => {
+  const { service } = fixture();
+  const first = await service.grantPointsFromServerEvent({
+    accountId: 'account-1', characterId: 'char-1', amount: 2, eventId: 'same-reward',
+  });
+  const replay = await service.grantPointsFromServerEvent({
+    accountId: 'account-1', characterId: 'char-1', amount: 2, eventId: 'same-reward',
+  });
+  assert.equal(first.granted, 2);
+  assert.equal(replay.granted, 0);
+  assert.equal(replay.duplicate, true);
+});
+
 test('ownership is checked before progression can be read or changed', async () => {
   const { service } = fixture();
   await assert.rejects(() => service.getSnapshot('other-account', 'char-1'), /ownership/);
