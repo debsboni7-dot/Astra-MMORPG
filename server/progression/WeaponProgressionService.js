@@ -52,7 +52,6 @@ export function createWeaponProgressionService(repository) {
       const progression = sanitizeProgression(character.weaponProgression);
       const combatant = { ...progression };
       const mastery = awardWeaponMastery(combatant, category, attackType);
-      if (mastery.awarded <= 0) return { progression, result: { awarded: 0, mastery } };
       combatant.weaponUses = (combatant.weaponUses || 0) + 1;
       combatant.weaponUsesByCategory[category] = (combatant.weaponUsesByCategory[category] || 0) + 1;
       let technique = null;
