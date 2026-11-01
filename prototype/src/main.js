@@ -105,10 +105,31 @@ const ring=new THREE.Mesh(new THREE.RingGeometry(2.38,2.42,80),new THREE.MeshBas
 const grid=new THREE.GridHelper(30,30,0x2b4964,0x1b3045);grid.position.y=-.04;scene.add(grid);
 const world=new THREE.Group();scene.add(world);
 let worldGround=null;
+function makeSurfaceTexture(base, accent, kind='grain'){
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=512;
+  const ctx=canvas.getContext('2d');ctx.fillStyle=base;ctx.fillRect(0,0,512,512);
+  let seed=kind==='stone'?41:kind==='plaster'?83:kind==='wood'?127:kind==='roof'?191:229;
+  const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  if(kind==='stone'){
+    for(let y=0;y<512;y+=48)for(let x=0;x<512;x+=64){const ox=(Math.floor(y/48)%2)*32;ctx.fillStyle=accent;ctx.globalAlpha=.25+rand()*.28;ctx.fillRect(x+ox+2,y+2,58,42);ctx.globalAlpha=1;ctx.strokeStyle='#252a2a';ctx.globalAlpha=.32;ctx.strokeRect(x+ox+2,y+2,58,42);ctx.globalAlpha=1;}
+  }else if(kind==='wood'){
+    ctx.strokeStyle=accent;for(let i=0;i<34;i++){ctx.globalAlpha=.12+rand()*.24;ctx.lineWidth=1+rand()*4;ctx.beginPath();const y=rand()*512;ctx.moveTo(0,y);ctx.bezierCurveTo(150,y-18,340,y+18,512,y-5);ctx.stroke();}ctx.globalAlpha=1;
+  }else if(kind==='roof'){
+    for(let y=0;y<512;y+=38)for(let x=0;x<512;x+=42){ctx.fillStyle=accent;ctx.globalAlpha=.25+rand()*.25;ctx.beginPath();ctx.roundRect(x+(y/38%2)*20,y,38,31,5);ctx.fill();}ctx.globalAlpha=1;
+  }else{
+    for(let i=0;i<6500;i++){ctx.fillStyle=rand()>.5?accent:'#171a17';ctx.globalAlpha=.035+rand()*.11;ctx.fillRect(rand()*512,rand()*512,1+rand()*4,1+rand()*4);}ctx.globalAlpha=1;
+  }
+  const texture=new THREE.CanvasTexture(canvas);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4;return texture;
+}
 function makeWorld(){
   world.clear();
-  const mat=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
-  const grass=mat(0x344331),stone=mat(0x746b59),plaster=mat(0xb9a17a),timber=mat(0x493321),roof=mat(0x493b32),dark=mat(0x292b2a),leaf=mat(0x294532);
+  const mat=(color,roughness=1,map=null,extra={})=>new THREE.MeshStandardMaterial({color,roughness,map,...extra});
+  const grassMap=makeSurfaceTexture('#344331','#708052','grain');grassMap.repeat.set(18,18);
+  const stoneMap=makeSurfaceTexture('#756b5a','#c0b39a','stone');stoneMap.repeat.set(3,28);
+  const plasterMap=makeSurfaceTexture('#b9a17a','#f0d9ac','plaster');plasterMap.repeat.set(2,2);
+  const woodMap=makeSurfaceTexture('#493321','#b17a45','wood');woodMap.repeat.set(2,2);
+  const roofMap=makeSurfaceTexture('#493b32','#9b7050','roof');roofMap.repeat.set(3,3);
+  const grass=mat(0xffffff,1,grassMap),stone=mat(0xffffff,.94,stoneMap),plaster=mat(0xffffff,.92,plasterMap),timber=mat(0xffffff,.84,woodMap),roof=mat(0xffffff,.95,roofMap),dark=mat(0x292b2a,.95),leaf=mat(0x294532,.98);
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(150,150),grass);floor.rotation.x=-Math.PI/2;floor.position.y=-.08;world.add(floor);
   // Grande voie pavée, inspirée du village médiéval fourni.
   const road=new THREE.Mesh(new THREE.PlaneGeometry(5.5,100),stone);road.rotation.x=-Math.PI/2;road.position.set(0,-.035,-16);world.add(road);
@@ -130,6 +151,26 @@ function makeWorld(){
   for(const [x,z] of [[-18,-7],[18,-8],[-20,5],[20,4],[-16,19],[17,26],[-23,-30],[23,-38]]){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.2,.3,2.2,8),trunkMat);trunk.position.set(x,1.1,z);world.add(trunk);const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.65,1),leafMat);crown.position.set(x,3,z);world.add(crown);}
   for(const [x,z] of [[-5,-5],[5,-16],[-5,5],[5,2]]){const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.38,.42,.85,12),timber);barrel.position.set(x,.42,z);world.add(barrel);const hoop=new THREE.Mesh(new THREE.TorusGeometry(.4,.035,6,16),dark);hoop.rotation.x=Math.PI/2;hoop.position.set(x,.2,z);world.add(hoop);}
   const well=new THREE.Group();well.position.set(5,0,-4);world.add(well);const ring=new THREE.Mesh(new THREE.CylinderGeometry(1,.95,.75,12),stone);ring.position.y=.38;well.add(ring);const roofCap=new THREE.Mesh(new THREE.ConeGeometry(1.15,.8,4),roof);roofCap.position.y=2.2;roofCap.rotation.y=Math.PI/4;well.add(roofCap);
+  // Lanternes chaudes, halos et poussières lumineuses pour donner de la vie au village.
+  const lanterns=[];
+  for(const [x,z] of [[-6,-10],[7,-19],[-8,5],[9,10],[0,-30]]){
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,2.25,8),timber);pole.position.set(x,1.12,z);world.add(pole);
+    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),new THREE.MeshStandardMaterial({color:0xffc66e,emissive:0xff8a32,emissiveIntensity:2.4,roughness:.25}));lamp.position.set(x,2.25,z);world.add(lamp);
+    const glow=new THREE.PointLight(0xffa94d,2.1,8,2);glow.position.copy(lamp.position);world.add(glow);lanterns.push({lamp,glow,phase:Math.random()*6.28});
+  }
+  const moteCount=150,positions=new Float32Array(moteCount*3),speeds=new Float32Array(moteCount);
+  for(let i=0;i<moteCount;i++){positions[i*3]=(Math.random()-.5)*42;positions[i*3+1]=Math.random()*6+.3;positions[i*3+2]=(Math.random()-.5)*65-8;speeds[i]=.12+Math.random()*.28;}
+  const moteGeometry=new THREE.BufferGeometry();moteGeometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  const moteMaterial=new THREE.PointsMaterial({color:0xffd99a,size:.055,transparent:true,opacity:.72,depthWrite:false,blending:THREE.AdditiveBlending});
+  const motes=new THREE.Points(moteGeometry,moteMaterial);world.add(motes);
+  const emberMaterial=new THREE.PointsMaterial({color:0xff8b45,size:.09,transparent:true,opacity:.85,depthWrite:false,blending:THREE.AdditiveBlending});
+  const embers=new THREE.Points(moteGeometry.clone(),emberMaterial);embers.position.set(0,0,-22);world.add(embers);
+  world.userData.updateVFX=(time,dt)=>{
+    const p=moteGeometry.attributes.position;
+    for(let i=0;i<moteCount;i++){p.array[i*3+1]+=(speeds[i]*dt);p.array[i*3]+=(Math.sin(time*.00035+i)*.0008);if(p.array[i*3+1]>7)p.array[i*3+1]=.25;}
+    p.needsUpdate=true;
+    lanterns.forEach(l=>{const flicker=1+Math.sin(time*.006+l.phase)*.12+Math.sin(time*.019+l.phase)*.05;l.glow.intensity=2.1*flicker;l.lamp.material.emissiveIntensity=2.2*flicker;});
+  };
 }
 
 function buildWardrobeUI(){
@@ -459,7 +500,7 @@ let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(st
 let lastTime=performance.now();let currentMode='';
 function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);regenerateStamina(enemyCombatant,dt,true);combatClockMs+=dt*1000;updateEnemyEncounter(dt,combatClockMs);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
  if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
- if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0)+(state.touchX||0);const padForward=-(state.gamePadY||0)-(state.touchY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
+ if(world.userData.updateVFX)world.userData.updateVFX(now,dt);if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const side=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0)+(state.gamePadX||0)+(state.touchX||0);const padForward=-(state.gamePadY||0)-(state.touchY||0);const actualForward=forward+padForward;const moving=Math.hypot(actualForward,side)>.05;if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
  renderer.render(scene,camera);
 }
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
