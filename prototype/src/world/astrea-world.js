@@ -17,7 +17,7 @@ export const ASTREA_ACTIVITIES=[
   {id:'herb',x:-7,z:3,kind:'herb',prompt:'Cueillir des plantes médicinales',resource:'herbs',min:1,max:3},
   {id:'wood',x:-145,z:75,kind:'wood',prompt:'Récupérer du bois',resource:'wood',min:1,max:3},
   {id:'ore',x:155,z:45,kind:'ore',prompt:'Extraire du minerai',resource:'stone',min:1,max:2},
-  {id:'fish',x:riverX(65)+17,z:65,kind:'fish',prompt:'Pêcher dans la rivière',resource:'fish',min:1,max:2},
+  {id:'fish',x:550,z:65,kind:'fish',prompt:'Pêcher dans la rivière',resource:'fish',min:1,max:2},
   {id:'crops',x:-125,z:-255,kind:'crop',prompt:'Récolter les céréales',resource:'crops',min:1,max:3},
   {id:'shrine',x:190,z:-165,kind:'relic',prompt:'Examiner le sanctuaire lumineux',resource:'relics',min:1,max:1}
  ,
