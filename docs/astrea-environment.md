@@ -8,4 +8,4 @@
 - Cycle jour/nuit, eau animée et sources lumineuses locales.
 - Textures PBR 512 px issues d'ambientCG : Grass 004, Ground 106 et Rock 064, licence CC0 1.0. Voir `assets/textures/astrea/ASSET_SOURCES.md`.
 
-La géographie continentale et le streaming sont définis dans le prototype, mais les huit régions n'ont pas encore toutes leurs villes, contenu artisanal, sons, saisons et activités propres. La première zone détaillée et testable est la Plaine d'Aube ; les autres régions utilisent pour l'instant leurs profils de relief et de biome.
+La géographie, le streaming et des activités de collecte propres aux huit régions sont intégrés. Les sept régions éloignées disposent encore de points d'intérêt simples, pas de villes complètes ni de chaînes artisanales avancées. Les saisons, la météo, les sons d'ambiance et les grands sites scénarisés restent à développer.
