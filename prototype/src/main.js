@@ -20,89 +20,30 @@ const ZIP_URLS = {
   human_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/8f991f9b-2ec3-4ae8-a9a9-9447d3c005aa.zip',
   elf_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/57f10f79-0cd9-4f11-98ed-372a8b4a061d.zip',
   elf_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/bfd35628-e06b-4fac-9b2d-2a6161ab1c54.zip',
-  dwa
-…[1 chars truncated — re-run with head/grep/tail for full output]…
-key);const url=ZIP_URLS[key];if(!url)throw new Error(`Aucun pack 3D disponible pour ${key}`);const promise=(async()=>{const response=await fetch(url);if(!response.ok)throw new Error(`Téléchargement du pack ${key}: HTTP ${response.status}`);const bytes=await response.arrayBuffer();return await window.JSZip.loadAsync(bytes);})();state.zipCache.set(key,promise);try{return await promise;}catch(e){state.zipCache.delete(key);throw e;}}
-async function parseGLB(zip,path){const file=zip.file(path);if(!file)throw new Error(`Fichier manquant dans le pack : ${path}`);const data=await file.async('arraybuffer');return await loader.parseAsync(data,'');}
-async function getQuaterniusZip(){
- if(!quaterniusZipPromise){quaterniusZipPromise=(async()=>{const response=await fetch(QUATERNIUS_ARCHIVE_URL,{cache:'force-cache'});if(!response.ok)throw new Error(`Pack de vêtements Quaternius : HTTP ${response.status}`);return await window.JSZip.loadAsync(await response.arrayBuffer());})();}
- try{return await quaterniusZipPromise;}catch(error){quaterniusZipPromise=null;throw error;}
-}
-async function loadQuaterniusGLTF(assetUrl){
- wardrobeAssetLoads++;pauseRenderForWardrobe=true;
- const urls=new Map();
- try{
-  const zip=await getQuaterniusZip();
-  const archivePath=assetUrl.replace('assets/quaternius/','');
-  const file=zip.file(archivePath);if(!file)throw new Error(`Pièce absente du pack Quaternius : ${archivePath}`);
-  const json=JSON.parse(await file.async('string'));
-  const baseDir=archivePath.slice(0,archivePath.lastIndexOf('/')+1);
-  const baseURL='https://astrea-quaternius.invalid/'+baseDir;
-  const references=[...(json.buffers||[]).map(entry=>entry.uri),...(json.images||[]).map(entry=>entry.uri)].filter(Boolean);
-  for(const uri of references){
-   const dependency=zip.file(baseDir+uri);if(!dependency)throw new Error(`Ressource GLTF absente : ${uri}`);
-   const blob=await dependency.async('blob');urls.set(baseURL+uri,URL.createObjectURL(blob));
-  }
-  const manager=new THREE.LoadingManager();manager.setURLModifier(url=>urls.get(url)||url);
-  return await new GLTFLoader(manager).parseAsync(JSON.stringify(json),baseURL);
- }finally{
-  for(const objectUrl of urls.values())URL.revokeObjectURL(objectUrl);
-  wardrobeAssetLoads=Math.max(0,wardrobeAssetLoads-1);pauseRenderForWardrobe=wardrobeAssetLoads>0;
- }
-}
-function clearCurrentModel(){if(state.mixer){state.mixer.stopAllAction();state.mixer=null;}if(state.model){scene.remove(state.model);state.model.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();}});state.model=null;}state.actions={};}
-async function loadSelectedCharacter(){const token=++state.loadToken,key=archiveKey();setStatus('CHARGEMENT…');$('#category-note').textContent='Chargement du véritable modèle 3D et de ses animations…';try{const zip=await getArchive(key);if(token!==state.loadToken)return false;const gltf=await parseGLB(zip,'model.glb');if(token!==state.loadToken)return false;resetWardrobe();clearCurrentModel();const model=gltf.scene;model.name=key;const box=new THREE.Box3().setFromObject(model);const size=box.getSize(new THREE.Vector3());const center=box.getCenter(new THREE.Vector3());const height=size.y||1.8;model.scale.setScalar(1.78/height);model.position.set(1.15-center.x*model.scale.x,-box.min.y*model.scale.y,-center.z*model.scale.z);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.side=THREE.DoubleSide;}}});scene.add(model);state.model=model;
-  const animationNames=['idle','walking','running','jump','attack','charged_spell_cast','block','hit_reaction','dodge_roll'];state.mixer=new THREE.AnimationMixer(model);state.mixer.addEventListener('finished',()=>{state.actionOneShot=false;if(state.screen==='game')playAction('idle');});for(const name of animationNames){try{const anim=await parseGLB(zip,`animations/${name}.glb`);if(token!==state.loadToken)return false;const clip=anim.animations?.[0];if(clip){if(name==='dodge_roll'){clip.tracks=clip.tracks.filter(track=>!/(?:^|[|.])(?:mixamorig)?(?:Hips|Root)\.position$/i.test(track.name));}state.actions[name]=state.mixer.clipAction(clip);}}catch(e){console.warn(`Animation ${name} indisponible pour ${key}`,e);}}
-  buildWardrobeUI();playAction('idle');setStatus('MODÈLE CHARGÉ',true);$('#category-note').textContent=`Modèle ${RACES.find(x=>x[0]===state.race)[1]} ${state.gender==='male'?'masculin':'féminin'} chargé. Aperçu 3D réel.`;return true;
- }catch(err){console.error(err);if(token===state.loadToken){setStatus('ERREUR DE CHARGEMENT');$('#category-note').textContent=err.message;showError(`Impossible de charger le personnage ${key}.\n${err.message}`);}return false;}}
-function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning()&&!oneShot)return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;if(oneShot){const duration=name==='attack'?.52:name==='charged_spell_cast'?.82:name==='dodge_roll'?.42:.62;next.setDuration(duration);}else next.timeScale=1;state.actionOneShot=oneShot;next.fadeIn(.08).play();if(previous&&previous!==next)previous.fadeOut(.08);state.currentAction=name;}
-async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=Math.PI;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
-function showError(message){errorBox.hidden=false;errorBox.textContent=message;setTimeout(()=>{errorBox.hidden=true;},9000);}
-createRaceButtons();updateSelection();buildWardrobeUI();loadWorldResources();
-$('#race-options').addEventListener('click',()=>{});
-document.querySelectorAll('[data-gender]').forEach(b=>b.addEventListener('click',()=>{state.gender=b.dataset.gender;updateSelection();loadSelectedCharacter();}));
-document.querySelectorAll('.category').forEach(b=>b.addEventListener('click',()=>{state.category=b.dataset.category;document.querySelectorAll('.category').forEach(x=>x.classList.toggle('selected',x===b));const messages={appearance:'Le modèle de base de la race et du sexe sélectionnés est affiché.',hair:'Les variantes de coiffure ne sont pas encore séparées en pièces sélectionnables.',outfit:'20 pièces Quaternius disponibles pour les personnages humains : torse, bras, jambes, pieds, capuche et épaulières.',accessories:'Les accessoires personnalisables seront ajoutés à cette catégorie.'};$('#category-note').textContent=messages[state.category];}));
-$('#new-game-btn').addEventListener('click',()=>{setScreen('creator');loadSelectedCharacter();});
-$('#continue-btn').addEventListener('click',async()=>{const saved=localStorage.getItem('astrea-character');if(!saved){$('#new-game-btn').click();return;}try{const data=JSON.parse(saved);state.race=data.race;state.gender=data.gender;state.name=data.name;state.alias=data.alias;updateSelection();$('#character-name').value=state.name;$('#player-alias').value=state.alias;$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;const loaded=await loadSelectedCharacter();if(!loaded)return;restoreWardrobe(data.wardrobe||{});setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}catch(err){showError('La sauvegarde du personnage est illisible.');console.error(err);}});
-$('#back-menu').addEventListener('click',()=>setScreen('menu'));
-$('#create-character').addEventListener('click',saveCharacter);
-
-
-canvas.addEventListener('pointerdown',e=>{if(state.screen==='creator'){state.drag=true;state.lastX=e.clientX;canvas.setPointerCapture(e.pointerId);}});
-canvas.addEventListener('pointermove',e=>{if(state.drag&&state.model){state.previewYaw+=(e.clientX-state.lastX)*.009;state.model.rotation.y=state.previewYaw;state.lastX=e.clientX;}});
-canvas.addEventListener('pointerup',()=>state.drag=false);canvas.addEventListener('pointercancel',()=>state.drag=false);
-canvas.addEventListener('wheel',e=>{if(state.screen==='creator'){e.preventDefault();state.previewDistance=THREE.MathUtils.clamp(state.previewDistance+e.deltaY*.004,3.0,7.5);}}, {passive:false});
-addEventListener('keydown',e=>{state.keys.add(e.key.toLowerCase());if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault();if(e.key==='Enter'&&state.screen==='menu')$('#new-game-btn').click();if(e.key==='Escape'&&state.screen==='creator')setScreen('menu');});
-addEventListener('keyup',e=>state.keys.delete(e.key.toLowerCase()));
-addEventListener('blur',()=>{state.keys.clear();state.gamePadX=0;state.gamePadY=0;state.touchX=0;state.touchY=0;state.drag=false;mouseDown=false;});
-function visibleFocusables(){return state.screen==='menu'?[...document.querySelectorAll('#main-menu .ps-option')]:state.screen==='creator'?[...document.querySelectorAll('#creator button:not([disabled]),#creator input:not([disabled]),#creator select:not([disabled])')].filter(el=>el.offsetParent!==null):[];}
-function moveFocus(direction){const list=visibleFocusables();if(!list.length)return;let index=list.indexOf(document.activeElement);if(index<0)index=0;index=(index+direction+list.length)%list.length;list[index].focus();}
-function backAction(){if(state.screen==='creator')setScreen('menu');else if(state.screen==='game'){setScreen('creator');loadSelectedCharacter();}}
-addEventListener('keydown',e=>{if(state.screen==='menu'&&['arrowup','arrowdown'].includes(e.key.toLowerCase())){e.preventDefault();moveFocus(e.key==='ArrowDown'?1:-1);}if(state.screen==='creator'&&['arrowup','arrowdown'].includes(e.key.toLowerCase())&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)) {e.preventDefault();moveFocus(e.key==='ArrowDown'?1:-1);}if(e.key==='Escape'||e.key.toLowerCase()==='backspace'){if(state.screen!=='menu')backAction();}if(state.screen==='game'){const k=e.key.toLowerCase();if(k==='e')interactWithWorld();if(k===' '||k==='space')triggerAction('jump');if(k==='j')triggerAction('attack');if(k==='k')triggerAction('charged_spell_cast');if(k==='l')triggerAction('block');if(k==='o')triggerAction('dodge_roll');}});
-let gamepadPrev={};function triggerAction(name){if(state.screen!=='game')return;if(name==='attack'){performPlayerAttack('physical');return;}if(name==='charged_spell_cast'){performPlayerAttack('magic');return;}if(name==='block'){combatAction('block');return;}if(name==='dodge_roll'){combatAction('dodge');return;}if(state.actions[name])playAction(name,true);}
-function pollGamepad(){const pads=navigator.getGamepads?.()||[];const pad=[...pads].find(Boolean);if(!pad)return;const pressed=(i)=>!!pad.buttons[i]?.pressed;const edge=(key,down)=>{const was=!!gamepadPrev[key];gamepadPrev[key]=down;return down&&!was;};if(edge('up',pressed(12)))moveFocus(-1);if(edge('down',pressed(13)))moveFocus(1);if(edge('left',pressed(14))&&state.screen==='creator')cycleRace(-1);if(edge('right',pressed(15))&&state.screen==='creator')cycleRace(1);if(edge('cross',pressed(0))){if(state.screen==='game')triggerAction('jump');else document.activeElement?.click?.();}if(edge('circle',pressed(1))){if(state.screen==='game')triggerAction('dodge_roll');else backAction();}if(edge('square',pressed(2)))triggerAction('attack');if(edge('triangle',pressed(3)))triggerAction('charged_spell_cast');if(edge('l1',pressed(4))){if(state.screen==='creator')cycleCategory(-1);else triggerAction('block');}if(edge('r1',pressed(5))){if(state.screen==='creator')cycleCategory(1);else triggerAction('attack');}if(edge('r2',pressed(7)))triggerAction('charged_spell_cast');if(state.screen==='game'){const x=pad.axes?.[0]||0,y=pad.axes?.[1]||0;if(Math.abs(x)>.15||Math.abs(y)>.15){state.gamePadX=x;state.gamePadY=y;}else{state.gamePadX=0;state.gamePadY=0;}}}
-function cycleRace(dir){const i=RACES.findIndex(x=>x[0]===state.race);state.race=RACES[(i+dir+RACES.length)%RACES.length][0];updateSelection();loadSelectedCharacter();}
-function cycleCategory(dir){const buttons=[...document.querySelectorAll('.category')];const i=buttons.findIndex(x=>x.dataset.category===state.category);buttons[(i+dir+buttons.length)%buttons.length]?.click();}
-let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(state.screen==='game'&&e.pointerType==='mouse'){mouseDown=true;lastMouseX=e.clientX;}});addEventListener('pointerup',()=>mouseDown=false);addEventListener('pointermove',e=>{if(mouseDown&&state.screen==='game'){state.gameYaw-=(e.clientX-lastMouseX)*.006;lastMouseX=e.clientX;}});
-
-
- // Commandes tactiles : joystick gauche et actions à droite.
- const stickRoot=$('#move-stick'),stickKnob=$('#stick-knob');let stickPointer=null;
- function updateStick(e){const r=stickRoot.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,limit=r.width*.34,len=Math.hypot(dx,dy)||1,k=Math.min(1,limit/len);const axes=normalizeTouchStick(dx,dy,limit);state.touchX=axes.side;state.touchY=axes.forward;stickKnob.style.transform=`translate(${dx*k}px,${dy*k}px)`;}
- stickRoot.addEventListener('pointerdown',e=>{if(state.screen!=='game')return;stickPointer=e.pointerId;stickRoot.setPointerCapture(e.pointerId);updateStick(e);e.preventDefault();});
- stickRoot.addEventListener('pointermove',e=>{if(e.pointerId===stickPointer)updateStick(e);});
- function releaseStick(e){if(stickPointer===null||e.pointerId!==stickPointer)return;stickPointer=null;state.touchX=state.touchY=0;stickKnob.style.transform='translate(0,0)';}
- stickRoot.addEventListener('pointerup',releaseStick);stickRoot.addEventListener('pointercancel',releaseStick);
- document.querySelectorAll('.touch-actions [data-action]').forEach(button=>{button.addEventListener('pointerdown',e=>{e.preventDefault();triggerAction(button.dataset.action);});});
-  $('#world-interact')?.addEventListener('pointerdown',e=>{e.preventDefault();interactWithWorld();});
-
-let lastTime=performance.now();let currentMode='';let worldHudTimer=0;
-function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);regenerateStamina(enemyCombatant,dt,true);combatClockMs+=dt*1000;updateEnemyEncounter(dt,combatClockMs);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
- if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
- if(mode==='game'&&state.model){world.userData.updateStreaming?.(state.model.position);state.model.position.y=world.userData.getHeightAt?.(state.model.position.x,state.model.position.z)??state.model.position.y;worldHudTimer+=dt;if(worldHudTimer>=.25){worldHudTimer=0;updateWorldHud();}}
-  if(world.userData.updateVFX)world.userData.updateVFX(now,dt);updateCombatVfx(dt);if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const keyboardSide=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0);const axes=getMovementAxes({keyboardForward:forward,keyboardSide,gamePadX:state.gamePadX||0,gamePadY:state.gamePadY||0,touchX:state.touchX||0,touchForward:state.touchY||0});const side=axes.side,actualForward=axes.forward;const moving=Math.hypot(actualForward,side)>.05;if(state.dodgeMotion){const motion=state.dodgeMotion;motion.elapsed=Math.min(motion.duration,motion.elapsed+dt);const t=motion.elapsed/motion.duration,ease=1-Math.pow(1-t,3);state.model.position.lerpVectors(motion.from,motion.to,ease);if(t>=1){state.model.position.copy(motion.to);state.dodgeMotion=null;}}else if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len)+Math.PI;if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*6,target.y+3.1,target.z-Math.cos(state.gameYaw)*6);camera.position.lerp(desired,.08);camera.lookAt(target);}
- renderer.render(scene,camera);
-}
-function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
-addEventListener('resize',resize);resize();loading.hidden=true;setScreen('menu');
-requestAnimationFrame(animate);
+  dwarf_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/82d04fb6-9198-4690-a92c-8c4fc3b566a0.zip',
+  dwarf_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/7824e835-0f7e-44a8-8d29-115bd6356ca4.zip',
+  demon_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/b232dc06-5866-4992-bc5f-bfe37629906f.zip',
+  demon_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/bf2f2bd5-903a-4677-b829-6b0ae146d953.zip',
+  angel_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/e83af76b-cc86-4bb8-b1de-d54bdd71b2d0.zip',
+  angel_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/0e7fb12e-03b9-4df1-87e9-81cb3138f4b0.zip',
+  orc_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/285adf12-e8db-4e6a-b598-b6a9383bd428.zip',
+  orc_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/9b614d2e-153f-40ea-81ed-cad7c3a2a690.zip',
+  draconoid_male:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/3fb4c6bd-3a63-4680-85a0-a9beef8778a4.zip',
+  draconoid_female:'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/cdcf056f-2f2c-47ba-97ea-68769cdb1475.zip'
+};
+const RACES = [
+  ['human','Humain'],['elf','Elfe'],['dwarf','Nain'],['demon','Démon'],['angel','Ange'],['orc','Orc'],['draconoid','Dragonoïde']
+];
+const WARDROBE_SLOTS = [
+  {id:'hair',label:'Cheveux / coiffure'},
+  {id:'head',label:'Tête / casque'},
+  {id:'torso',label:'Torse'},
+  {id:'legs',label:'Jambes'},
+  {id:'boots',label:'Bottes'},
+  {id:'arms',label:'Bras / manches'},
+  {id:'accessory',label:'Accessoires'}
+];
+// Catalogue Quaternius Standard : 20 pièces séparées (4 Peasant + 6 Ranger, par sexe).
+// Les pièces sont d'abord proposées aux humains : l'ajustement sur les six autres races
+// nécessite une validation visuelle morphologique avant d'élargir leur compatibilité.
+const Q='as
