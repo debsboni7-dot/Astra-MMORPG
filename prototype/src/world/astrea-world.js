@@ -37,11 +37,22 @@ export function getAstreaTerrainHeight(x,z){
 function hash(x,z){let h=Math.imul(x|0,374761393)+Math.imul(z|0,668265263);h=Math.imul(h^(h>>>13),1274126177);return(h^(h>>>16))>>>0;}
 function rng(seed){let a=seed>>>0;return()=>{a+=0x6D2B79F5;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 
-export function createAstreaWorld(THREE,world,{scene,keyLight,rimLight,npcFactory}={}){
+export function createAstreaWorld(THREE,world,{scene,keyLight,rimLight,npcFactory,camera}={}){
  world.userData.dispose?.();world.clear();world.userData={};
  const size=ASTREA_CONTINENT.chunkSize,chunks=new Map(),activities=[],waterMeshes=[],glows=[],npcs=[],sharedMats=new Set(),sharedGeos=new Set();
  const mat=(c,r=.95,e={})=>new THREE.MeshStandardMaterial({color:c,roughness:r,...e});
- const tex=(name,color=false)=>{const t=new THREE.TextureLoader().load(new URL('../../assets/textures/astrea/'+name,import.meta.url).href);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;t.anisotropy=4;return t;};
+ const TEXTURE_URLS={
+ 'grass004-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/2ad6d645-d90b-4c2f-94a8-b043f796601f.jpg',
+ 'grass004-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/57ec646d-655f-40ce-ae8f-62f6e3259441.jpg',
+ 'grass004-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/f553264c-3f61-4c18-9b41-ab903da0bd7c.jpg',
+ 'ground106-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/444aba04-1b41-40cb-b6f6-963991ee224b.jpg',
+ 'ground106-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/47f9616b-c63a-442e-884d-618ea8ba92b1.jpg',
+ 'ground106-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/cc6ad5ab-5ad6-4ea5-be78-dad326297931.jpg',
+ 'rock064-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/dcdc5915-52cc-4d53-9b1a-c8c143af2263.jpg',
+ 'rock064-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/26fced80-b920-4eb7-bc5d-92a659ce6d41.jpg',
+ 'rock064-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/6f87dfda-b6c2-4383-8a18-7eb8640aabeb.jpg'
+};
+ const tex=(name,color=false)=>{const t=new THREE.TextureLoader().load(TEXTURE_URLS[name]);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;t.anisotropy=4;return t;};
  const grass=mat(0xffffff,1,{map:tex('grass004-color.jpg',true),normalMap:tex('grass004-normal.jpg'),roughnessMap:tex('grass004-roughness.jpg')});
  const forest=mat(0xffffff,1,{map:tex('ground106-color.jpg',true),normalMap:tex('ground106-normal.jpg'),roughnessMap:tex('ground106-roughness.jpg')});
  const rock=mat(0xffffff,.98,{map:tex('rock064-color.jpg',true),normalMap:tex('rock064-normal.jpg')});
@@ -50,7 +61,7 @@ export function createAstreaWorld(THREE,world,{scene,keyLight,rimLight,npcFactor
  const water=new THREE.MeshPhysicalMaterial({color:0x4c9dbb,roughness:.16,transparent:true,opacity:.82,clearcoat:.8,side:THREE.DoubleSide});
  const glowBlue=mat(0xa9edff,.25,{emissive:0x3ac9f2,emissiveIntensity:2.5}),glowGold=mat(0xffe2a0,.25,{emissive:0xff9c37,emissiveIntensity:2}),glowGreen=mat(0xcaff9d,.3,{emissive:0x63e65d,emissiveIntensity:1.7});
  [grass,forest,rock,dirt,stone,wood,darkWood,plaster,roof,water,glowBlue,glowGold,glowGreen].forEach(m=>sharedMats.add(m));
- if(scene){scene.background=new THREE.Color(0x9cc8df);scene.fog=new THREE.Fog(0x9cc8df,9000,26000);}
+ if(scene){scene.background=new THREE.Color(0x9cc8df);scene.fog=new THREE.Fog(0x9cc8df,9000,26000);}if(camera){camera.far=30000;camera.updateProjectionMatrix();}
  const hemi=new THREE.HemisphereLight(0xd9efff,0x687451,1.45);world.add(hemi);
  if(keyLight){keyLight.color.setHex(0xffe3c0);keyLight.intensity=2.4;keyLight.position.set(-250,420,220);}
  if(rimLight){rimLight.color.setHex(0x83c9ff);rimLight.intensity=.8;}
