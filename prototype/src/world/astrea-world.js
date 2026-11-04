@@ -25,9 +25,83 @@ export const ASTREA_LANDMARKS=Object.freeze([
 export const ASTREA_ACTIVITIES=[
   {id:'herb',x:-7,z:3,kind:'herb',prompt:'Cueillir des plantes médicinales',resource:'herbs',min:1,max:3},
   {id:'wood',x:-145,z:75,kind:'wood',prompt:'Récupérer du bois',resource:'wood',min:1,max:3},
-  {id:'ore',x:155,z:45,kind:'ore',prompt:'Extraire du minerai',resour
-…[1 chars truncated — re-run with head/grep/tail for full output]…
-at=mat(0xffffff,.98,{map:tex('rock064-color.jpg',true)});
+  {id:'ore',x:155,z:45,kind:'ore',prompt:'Extraire du minerai',resource:'stone',min:1,max:2},
+  {id:'fish',x:550,z:65,kind:'fish',prompt:'Pêcher dans la rivière',resource:'fish',min:1,max:2},
+  {id:'crops',x:-125,z:-255,kind:'crop',prompt:'Récolter les céréales',resource:'crops',min:1,max:3},
+  {id:'shrine',x:190,z:-165,kind:'relic',prompt:'Examiner le sanctuaire lumineux',resource:'relics',min:1,max:1}
+ ,
+ {id:'sylve-herb',x:-160080,z:-49920,kind:'herb',prompt:'Cueillir les simples du Bois de Sylve',resource:'herbs',min:2,max:4},
+ {id:'sylve-wood',x:-160180,z:-50090,kind:'wood',prompt:'Ramasser du bois de Sylve',resource:'wood',min:2,max:4},
+ {id:'greniers-crop',x:180090,z:25060,kind:'crop',prompt:'Récolter les céréales des Greniers d’Or',resource:'crops',min:2,max:5},
+ {id:'greniers-herb',x:180210,z:24920,kind:'herb',prompt:'Cueillir les herbes des champs',resource:'herbs',min:1,max:3},
+ {id:'veyr-ore',x:20080,z:-280100,kind:'ore',prompt:'Extraire le minerai des Hautes Terres',resource:'stone',min:2,max:4},
+ {id:'veyr-relic',x:19890,z:-279850,kind:'relic',prompt:'Étudier une rune ancienne de Veyr',resource:'relics',min:1,max:2},
+ {id:'miroirs-fish',x:260100,z:-199900,kind:'fish',prompt:'Pêcher dans le Lac des Miroirs',resource:'fish',min:2,max:4},
+ {id:'miroirs-relic',x:259850,z:-200120,kind:'relic',prompt:'Examiner le vestige immergé',resource:'relics',min:1,max:2},
+ {id:'eloria-crop',x:100100,z:220100,kind:'crop',prompt:'Récolter dans le Bassin d’Eloria',resource:'crops',min:2,max:5},
+ {id:'eloria-fish',x:99850,z:219900,kind:'fish',prompt:'Pêcher dans les eaux d’Eloria',resource:'fish',min:1,max:3},
+ {id:'marches-ore',x:-339900,z:-179900,kind:'ore',prompt:'Extraire la pierre des Marches de l’Ouest',resource:'stone',min:1,max:3},
+ {id:'marches-wood',x:-340120,z:-180100,kind:'wood',prompt:'Récupérer du bois côtier',resource:'wood',min:1,max:2},
+ {id:'brumes-herb',x:-259900,z:300100,kind:'herb',prompt:'Cueillir les plantes des marais',resource:'herbs',min:2,max:4},
+ {id:'brumes-fish',x:-260120,z:299900,kind:'fish',prompt:'Pêcher sur la Côte des Brumes',resource:'fish',min:1,max:3}
+];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+const gauss=(d,r)=>Math.exp(-((d/r)**2));
+const riverX=z=>500+Math.sin(z/80000)*40000;
+export function getAstreaRegionAt(x,z){let best=ASTREA_REGIONS[0],d0=Infinity;for(const r of ASTREA_REGIONS){const d=Math.hypot(x-r.x,z-r.z);if(d<d0){best=r;d0=d;}}return best;}
+export function getAstreaBiomeAt(x,z){return getAstreaRegionAt(x,z).biome;}
+export function getAstreaTerrainHeight(x,z){
+ const biome=getAstreaBiomeAt(x,z);
+ let h=17+Math.sin(x*.00125)*7+Math.cos(z*.00105)*8+Math.sin((x+z)*.00063)*4+Math.cos((x-z)*.00031)*3;
+ h-=13*gauss(Math.abs(x-riverX(z)),210);
+ if(biome==='forest')h+=28+Math.sin(x*.0008)*24+Math.cos(z*.0007)*18;
+ if(biome==='farmland')h+=8+Math.sin(x*.0004)*7+Math.cos(z*.0005)*6;
+ if(biome==='highlands'){const north=smooth(120000,310000,-z),ridge=.25+.75*gauss(x-(20000+Math.sin(z*.000018)*72000),150000),peaks=Math.pow(Math.abs(Math.sin(x*.000021+z*.000013)*Math.cos(z*.000017)),1.35);h+=north*ridge*(950+peaks*2700);}
+ if(biome==='lake')h-=75*gauss(Math.hypot(x-260000,z+200000),80000);
+ if(biome==='riverlands')h-=20*gauss(Math.abs(x-riverX(z)),900);
+ if(biome==='coastal')h+=80*gauss(x+340000,100000)+45*Math.sin(z*.00045);
+ if(biome==='wetlands')h-=15+20*gauss(z-300000,80000);
+ h+=62*gauss(z+7200,4300)*(.35+.65*Math.pow(Math.sin(x*.0011),2));
+ const coast=Math.min(600000-Math.abs(x),450000-Math.abs(z));if(coast<26000)h=h*smooth(-5000,26000,coast)-2;
+ return clamp(h,-35,3600);
+}
+function hash(x,z){let h=Math.imul(x|0,374761393)+Math.imul(z|0,668265263);h=Math.imul(h^(h>>>13),1274126177);return(h^(h>>>16))>>>0;}
+function rng(seed){let a=seed>>>0;return()=>{a+=0x6D2B79F5;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
+
+export function createAstreaWorld(THREE,world,{scene,keyLight,rimLight,npcFactory,camera}={}){
+ world.userData.dispose?.();world.clear();world.userData={};
+ const size=ASTREA_CONTINENT.chunkSize,chunks=new Map(),activities=[],waterMeshes=[],glows=[],npcs=[],landmarks=[],sharedMats=new Set(),sharedGeos=new Set();
+ const mat=(c,r=.95,e={})=>new THREE.MeshStandardMaterial({color:c,roughness:r,...e});
+ const TEXTURE_URLS={
+ 'grass004-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/2ad6d645-d90b-4c2f-94a8-b043f796601f.jpg',
+ 'grass004-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/57ec646d-655f-40ce-ae8f-62f6e3259441.jpg',
+ 'grass004-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/f553264c-3f61-4c18-9b41-ab903da0bd7c.jpg',
+ 'ground106-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/444aba04-1b41-40cb-b6f6-963991ee224b.jpg',
+ 'ground106-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/47f9616b-c63a-442e-884d-618ea8ba92b1.jpg',
+ 'ground106-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/cc6ad5ab-5ad6-4ea5-be78-dad326297931.jpg',
+ 'rock064-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/dcdc5915-52cc-4d53-9b1a-c8c143af2263.jpg',
+ 'rock064-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/26fced80-b920-4eb7-bc5d-92a659ce6d41.jpg',
+ 'rock064-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/6f87dfda-b6c2-4383-8a18-7eb8640aabeb.jpg'
+};
+ const tex=(name,color=false)=>{const t=new THREE.TextureLoader().load(TEXTURE_URLS[name]);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;t.anisotropy=4;return t;};
+ const grass=mat(0xffffff,1,{map:tex('grass004-color.jpg',true),normalMap:tex('grass004-normal.jpg'),roughnessMap:tex('grass004-roughness.jpg')});
+ const forest=mat(0xffffff,1,{map:tex('ground106-color.jpg',true),normalMap:tex('ground106-normal.jpg'),roughnessMap:tex('ground106-roughness.jpg')});
+ const rock=mat(0xffffff,.98,{map:tex('rock064-color.jpg',true),normalMap:tex('rock064-normal.jpg')});
+ const dirt=mat(0xffffff,.98,{map:tex('ground106-color.jpg',true),normalMap:tex('ground106-normal.jpg')});
+ const stone=mat(0x88887e),wood=mat(0x725039),darkWood=mat(0x392a20),plaster=mat(0xc5b18c),roof=mat(0x685044);
+ const water=new THREE.MeshPhysicalMaterial({color:0x4c9dbb,roughness:.16,transparent:true,opacity:.82,clearcoat:.8,side:THREE.DoubleSide});
+ const glowBlue=mat(0xa9edff,.25,{emissive:0x3ac9f2,emissiveIntensity:2.5}),glowGold=mat(0xffe2a0,.25,{emissive:0xff9c37,emissiveIntensity:2}),glowGreen=mat(0xcaff9d,.3,{emissive:0x63e65d,emissiveIntensity:1.7});
+ [grass,forest,rock,dirt,stone,wood,darkWood,plaster,roof,water,glowBlue,glowGold,glowGreen].forEach(m=>sharedMats.add(m));
+ if(scene){scene.background=new THREE.Color(0x9cc8df);scene.fog=new THREE.Fog(0x9cc8df,9000,26000);}if(camera){camera.far=30000;camera.updateProjectionMatrix();}
+ const hemi=new THREE.HemisphereLight(0xd9efff,0x687451,1.45);world.add(hemi);
+ if(keyLight){keyLight.color.setHex(0xffe3c0);keyLight.intensity=2.4;keyLight.position.set(-250,420,220);}
+ if(rimLight){rimLight.color.setHex(0x83c9ff);rimLight.intensity=.8;}
+ const trunkGeo=new THREE.CylinderGeometry(.34,.62,7,7),crownGeo=new THREE.IcosahedronGeometry(3.8,1),grassGeo=new THREE.BufferGeometry();
+ grassGeo.setAttribute('position',new THREE.Float32BufferAttribute([-.08,0,0,.02,.82,0,.08,0,0,0,0,-.08,.02,.68,.02,0,0,.08,-.06,0,.02,.02,.56,.08,.06,0,-.02],3));grassGeo.setIndex([0,1,2,3,4,5,6,7,8]);grassGeo.computeVertexNormals();
+ const flowerGeo=new THREE.IcosahedronGeometry(.12,0),rockGeo=new THREE.IcosahedronGeometry(1,1);
+ [trunkGeo,crownGeo,grassGeo,flowerGeo,rockGeo].forEach(g=>sharedGeos.add(g));
+ const trunkMat=mat(0x705035),leafMat=mat(0xffffff,.98,{vertexColors:true}),grassMat=mat(0x8eb76c,.9,{side:THREE.DoubleSide}),flowerMat=mat(0xffe4a2,.7),rockMat=mat(0xffffff,.98,{map:tex('rock064-color.jpg',true)});
  [trunkMat,leafMat,grassMat,flowerMat,rockMat].forEach(m=>sharedMats.add(m));
  const activityDefs=ASTREA_ACTIVITIES;
  const makeTerrain=(ox,oz)=>{const n=36,p=[],norm=[],uv=[],idx=[],step=size/n;for(let z=0;z<=n;z++)for(let x=0;x<=n;x++){const wx=ox+x*step,wz=oz+z*step,y=getAstreaTerrainHeight(wx,wz),dx=getAstreaTerrainHeight(wx+2,wz)-getAstreaTerrainHeight(wx-2,wz),dz=getAstreaTerrainHeight(wx,wz+2)-getAstreaTerrainHeight(wx,wz-2),v=new THREE.Vector3(-dx/4,1,-dz/4).normalize();p.push(x*step,y,z*step);norm.push(v.x,v.y,v.z);uv.push(wx/28,wz/28);}for(let z=0;z<n;z++)for(let x=0;x<n;x++){const a=z*(n+1)+x,b=a+1,c=a+n+1,d=c+1;idx.push(a,c,b,b,c,d);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(norm,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeBoundingSphere();return g;};
