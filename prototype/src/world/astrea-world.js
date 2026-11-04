@@ -13,6 +13,29 @@ export const ASTREA_REGIONS = Object.freeze([
  {id:'marches',name:"Marches de l'Ouest",biome:'coastal',x:-340000,z:-180000,altitude:'0–1 000 m'},
  {id:'brumes',name:'Côte des Brumes',biome:'wetlands',x:-260000,z:300000,altitude:'0–450 m'}
 ]);
+export const ASTREA_ACTIVITIES=[
+  {id:'herb',x:-7,z:3,kind:'herb',prompt:'Cueillir des plantes médicinales',resource:'herbs',min:1,max:3},
+  {id:'wood',x:-145,z:75,kind:'wood',prompt:'Récupérer du bois',resource:'wood',min:1,max:3},
+  {id:'ore',x:155,z:45,kind:'ore',prompt:'Extraire du minerai',resource:'stone',min:1,max:2},
+  {id:'fish',x:riverX(65)+17,z:65,kind:'fish',prompt:'Pêcher dans la rivière',resource:'fish',min:1,max:2},
+  {id:'crops',x:-125,z:-255,kind:'crop',prompt:'Récolter les céréales',resource:'crops',min:1,max:3},
+  {id:'shrine',x:190,z:-165,kind:'relic',prompt:'Examiner le sanctuaire lumineux',resource:'relics',min:1,max:1}
+ ,
+ {id:'sylve-herb',x:-160080,z:-49920,kind:'herb',prompt:'Cueillir les simples du Bois de Sylve',resource:'herbs',min:2,max:4},
+ {id:'sylve-wood',x:-160180,z:-50090,kind:'wood',prompt:'Ramasser du bois de Sylve',resource:'wood',min:2,max:4},
+ {id:'greniers-crop',x:180090,z:25060,kind:'crop',prompt:'Récolter les céréales des Greniers d’Or',resource:'crops',min:2,max:5},
+ {id:'greniers-herb',x:180210,z:24920,kind:'herb',prompt:'Cueillir les herbes des champs',resource:'herbs',min:1,max:3},
+ {id:'veyr-ore',x:20080,z:-280100,kind:'ore',prompt:'Extraire le minerai des Hautes Terres',resource:'stone',min:2,max:4},
+ {id:'veyr-relic',x:19890,z:-279850,kind:'relic',prompt:'Étudier une rune ancienne de Veyr',resource:'relics',min:1,max:2},
+ {id:'miroirs-fish',x:260100,z:-199900,kind:'fish',prompt:'Pêcher dans le Lac des Miroirs',resource:'fish',min:2,max:4},
+ {id:'miroirs-relic',x:259850,z:-200120,kind:'relic',prompt:'Examiner le vestige immergé',resource:'relics',min:1,max:2},
+ {id:'eloria-crop',x:100100,z:220100,kind:'crop',prompt:'Récolter dans le Bassin d’Eloria',resource:'crops',min:2,max:5},
+ {id:'eloria-fish',x:99850,z:219900,kind:'fish',prompt:'Pêcher dans les eaux d’Eloria',resource:'fish',min:1,max:3},
+ {id:'marches-ore',x:-339900,z:-179900,kind:'ore',prompt:'Extraire la pierre des Marches de l’Ouest',resource:'stone',min:1,max:3},
+ {id:'marches-wood',x:-340120,z:-180100,kind:'wood',prompt:'Récupérer du bois côtier',resource:'wood',min:1,max:2},
+ {id:'brumes-herb',x:-259900,z:300100,kind:'herb',prompt:'Cueillir les plantes des marais',resource:'herbs',min:2,max:4},
+ {id:'brumes-fish',x:-260120,z:299900,kind:'fish',prompt:'Pêcher sur la Côte des Brumes',resource:'fish',min:1,max:3}
+];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
 const gauss=(d,r)=>Math.exp(-((d/r)**2));
@@ -71,29 +94,7 @@ export function createAstreaWorld(THREE,world,{scene,keyLight,rimLight,npcFactor
  [trunkGeo,crownGeo,grassGeo,flowerGeo,rockGeo].forEach(g=>sharedGeos.add(g));
  const trunkMat=mat(0x705035),leafMat=mat(0xffffff,.98,{vertexColors:true}),grassMat=mat(0x8eb76c,.9,{side:THREE.DoubleSide}),flowerMat=mat(0xffe4a2,.7),rockMat=mat(0xffffff,.98,{map:tex('rock064-color.jpg',true)});
  [trunkMat,leafMat,grassMat,flowerMat,rockMat].forEach(m=>sharedMats.add(m));
- const activityDefs=[
-  {id:'herb',x:-7,z:3,kind:'herb',prompt:'Cueillir des plantes médicinales',resource:'herbs',min:1,max:3},
-  {id:'wood',x:-145,z:75,kind:'wood',prompt:'Récupérer du bois',resource:'wood',min:1,max:3},
-  {id:'ore',x:155,z:45,kind:'ore',prompt:'Extraire du minerai',resource:'stone',min:1,max:2},
-  {id:'fish',x:riverX(65)+17,z:65,kind:'fish',prompt:'Pêcher dans la rivière',resource:'fish',min:1,max:2},
-  {id:'crops',x:-125,z:-255,kind:'crop',prompt:'Récolter les céréales',resource:'crops',min:1,max:3},
-  {id:'shrine',x:190,z:-165,kind:'relic',prompt:'Examiner le sanctuaire lumineux',resource:'relics',min:1,max:1}
- ,
- {id:'sylve-herb',x:-160080,z:-49920,kind:'herb',prompt:'Cueillir les simples du Bois de Sylve',resource:'herbs',min:2,max:4},
- {id:'sylve-wood',x:-160180,z:-50090,kind:'wood',prompt:'Ramasser du bois de Sylve',resource:'wood',min:2,max:4},
- {id:'greniers-crop',x:180090,z:25060,kind:'crop',prompt:'Récolter les céréales des Greniers d’Or',resource:'crops',min:2,max:5},
- {id:'greniers-herb',x:180210,z:24920,kind:'herb',prompt:'Cueillir les herbes des champs',resource:'herbs',min:1,max:3},
- {id:'veyr-ore',x:20080,z:-280100,kind:'ore',prompt:'Extraire le minerai des Hautes Terres',resource:'stone',min:2,max:4},
- {id:'veyr-relic',x:19890,z:-279850,kind:'relic',prompt:'Étudier une rune ancienne de Veyr',resource:'relics',min:1,max:2},
- {id:'miroirs-fish',x:260100,z:-199900,kind:'fish',prompt:'Pêcher dans le Lac des Miroirs',resource:'fish',min:2,max:4},
- {id:'miroirs-relic',x:259850,z:-200120,kind:'relic',prompt:'Examiner le vestige immergé',resource:'relics',min:1,max:2},
- {id:'eloria-crop',x:100100,z:220100,kind:'crop',prompt:'Récolter dans le Bassin d’Eloria',resource:'crops',min:2,max:5},
- {id:'eloria-fish',x:99850,z:219900,kind:'fish',prompt:'Pêcher dans les eaux d’Eloria',resource:'fish',min:1,max:3},
- {id:'marches-ore',x:-339900,z:-179900,kind:'ore',prompt:'Extraire la pierre des Marches de l’Ouest',resource:'stone',min:1,max:3},
- {id:'marches-wood',x:-340120,z:-180100,kind:'wood',prompt:'Récupérer du bois côtier',resource:'wood',min:1,max:2},
- {id:'brumes-herb',x:-259900,z:300100,kind:'herb',prompt:'Cueillir les plantes des marais',resource:'herbs',min:2,max:4},
- {id:'brumes-fish',x:-260120,z:299900,kind:'fish',prompt:'Pêcher sur la Côte des Brumes',resource:'fish',min:1,max:3}
-];
+ const activityDefs=ASTREA_ACTIVITIES;
  const makeTerrain=(ox,oz)=>{const n=36,p=[],norm=[],uv=[],idx=[],step=size/n;for(let z=0;z<=n;z++)for(let x=0;x<=n;x++){const wx=ox+x*step,wz=oz+z*step,y=getAstreaTerrainHeight(wx,wz),dx=getAstreaTerrainHeight(wx+2,wz)-getAstreaTerrainHeight(wx-2,wz),dz=getAstreaTerrainHeight(wx,wz+2)-getAstreaTerrainHeight(wx,wz-2),v=new THREE.Vector3(-dx/4,1,-dz/4).normalize();p.push(x*step,y,z*step);norm.push(v.x,v.y,v.z);uv.push(wx/28,wz/28);}for(let z=0;z<n;z++)for(let x=0;x<n;x++){const a=z*(n+1)+x,b=a+1,c=a+n+1,d=c+1;idx.push(a,c,b,b,c,d);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(norm,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeBoundingSphere();return g;};
  const addRibbon=(group,pts,width,material,ox,oz,off=.3)=>{if(pts.length<2)return null;const p=[],uv=[],idx=[];for(let i=0;i<pts.length;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)],dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1,sx=-dz/l*width/2,sz=dx/l*width/2,q=pts[i],y=getAstreaTerrainHeight(q.x,q.z)+off;p.push(q.x-sx-ox,y,q.z-sz-oz,q.x+sx-ox,y,q.z+sz-oz);uv.push(0,i/Math.max(1,pts.length-1)*8,1,i/Math.max(1,pts.length-1)*8);if(i<pts.length-1){const k=i*2;idx.push(k,k+1,k+2,k+1,k+3,k+2);}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();const m=new THREE.Mesh(g,material);group.add(m);return m;};
  const clip=(x1,z1,x2,z2,minX,minZ,maxX,maxZ)=>{let a=0,b=1,dx=x2-x1,dz=z2-z1,pp=[-dx,dx,-dz,dz],qq=[x1-minX,maxX-x1,z1-minZ,maxZ-z1];for(let i=0;i<4;i++){if(Math.abs(pp[i])<1e-9){if(qq[i]<0)return null;}else{const r=qq[i]/pp[i];if(pp[i]<0){if(r>b)return null;if(r>a)a=r;}else{if(r<a)return null;if(r<b)b=r;}}}return[{x:x1+dx*a,z:z1+dz*a},{x:x1+dx*b,z:z1+dz*b}];};
