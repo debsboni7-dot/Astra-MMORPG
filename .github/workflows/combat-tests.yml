@@ -1,0 +1,22 @@
+name: Combat engine tests
+
+on:
+  push:
+    branches: [feature/combat-engine-core]
+  pull_request:
+    branches: [main]
+
+jobs:
+  combat-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check browser prototype syntax
+        run: node --check prototype/src/main.js && node --check prototype/src/combat/CombatEngine.js && node --check prototype/src/combat/CombatRuntime.js && node --check prototype/src/combat/EnemyAI.js && node --check server/index.js && node --check server/auth/AuthService.js && node --check server/db/PostgresRepository.js && node --check server/http/createAstreaHttpServer.js && node --check server/progression/WeaponProgressionService.js && node --check server/progression/MagicProgressionService.js && node --check prototype/src/magic/MagicSkillTree.js && node --check server/characters/CharacterService.js
+      - name: Run combat engine and runtime tests
+        run: node --test tests/*.test.js
