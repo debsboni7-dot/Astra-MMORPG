@@ -13,3 +13,16 @@ export function getMovementAxes({ keyboardForward = 0, keyboardSide = 0, gamePad
     forward: keyboardForward - gamePadY + touchForward
   };
 }
+
+/** Compute a dodge endpoint once; the character must remain at this endpoint. */
+export function getDodgeDestination({ x = 0, z = 0, side = 0, forward = 0, cameraYaw = 0, facingYaw = Math.PI, distance = 2.15 } = {}) {
+  let dx = side * Math.cos(cameraYaw) + forward * Math.sin(cameraYaw);
+  let dz = -side * Math.sin(cameraYaw) + forward * Math.cos(cameraYaw);
+  let length = Math.hypot(dx, dz);
+  if (length < 0.08) {
+    dx = -Math.sin(facingYaw);
+    dz = -Math.cos(facingYaw);
+    length = Math.hypot(dx, dz) || 1;
+  }
+  return { x: x + dx / length * distance, z: z + dz / length * distance };
+}
