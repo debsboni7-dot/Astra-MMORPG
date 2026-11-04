@@ -48,3 +48,6 @@ Le pack Quaternius Standard (20 pièces glTF indépendantes, buffers et textures
 ## Provenance
 
 La licence CC0 et le fichier Readme du pack Quaternius Standard sont conservés dans `assets/quaternius/`. Les 20 modèles, buffers et textures sont servis depuis une archive distante d’environ 34 Mo, chargée par le navigateur à la première utilisation de la garde-robe. Le navigateur peut la conserver dans son cache. Les personnages ASTREA sont servis depuis l'hébergement d'assets référencé dans `src/main.js`.
+
+## Environnement du continent ASTREA
+La géographie de conception couvre 1 200 × 900 km et huit régions. Le prototype génère le terrain en cellules de 1 km autour du joueur. La première zone aménagée est la Plaine d'Aube : fleuve, pont, routes, village médiéval, marché, forge, fontaine lumineuse, PNJ, végétation instanciée et activités de cueillette, bois, minerai, pêche, récolte et sanctuaire. Les ressources récoltées sont sauvegardées localement. Voir [la documentation environnementale](../docs/astrea-environment.md) et [les sources des textures](../assets/textures/astrea/ASSET_SOURCES.md).
