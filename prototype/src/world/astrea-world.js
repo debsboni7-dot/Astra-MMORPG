@@ -25,7 +25,7 @@ export function getAstreaTerrainHeight(x,z){
  h-=13*gauss(Math.abs(x-riverX(z)),210);
  if(biome==='forest')h+=28+Math.sin(x*.0008)*24+Math.cos(z*.0007)*18;
  if(biome==='farmland')h+=8+Math.sin(x*.0004)*7+Math.cos(z*.0005)*6;
- if(biome==='highlands'){const north=smooth(150000,430000,-z),ridge=.25+.75*gauss(x-(20000+Math.sin(z*.000018)*72000),150000),peaks=Math.pow(Math.abs(Math.sin(x*.000021+z*.000013)*Math.cos(z*.000017)),1.35);h+=north*ridge*(220+peaks*3150);}
+ if(biome==='highlands'){const north=smooth(120000,310000,-z),ridge=.25+.75*gauss(x-(20000+Math.sin(z*.000018)*72000),150000),peaks=Math.pow(Math.abs(Math.sin(x*.000021+z*.000013)*Math.cos(z*.000017)),1.35);h+=north*ridge*(950+peaks*2700);}
  if(biome==='lake')h-=75*gauss(Math.hypot(x-260000,z+200000),80000);
  if(biome==='riverlands')h-=20*gauss(Math.abs(x-riverX(z)),900);
  if(biome==='coastal')h+=80*gauss(x+340000,100000)+45*Math.sin(z*.00045);
