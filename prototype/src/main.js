@@ -230,7 +230,7 @@ function createTrainingDummy(){
  const crossbar=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,1.25,8),dark);crossbar.rotation.z=Math.PI/2;crossbar.position.y=1.42;group.add(crossbar);
  const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,2.2,8),dark);post.position.y=.15;group.add(post);
  const base=new THREE.Mesh(new THREE.CylinderGeometry(.48,.55,.18,10),dark);base.position.y=-.04;group.add(base);
- group.position.set(0,0,-2.8);group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(group);trainingDummyMesh=group;
+ group.position.set(0,world.userData.getHeightAt?.(0,-2.8)??0,-2.8);group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(group);trainingDummyMesh=group;
  updateCombatHud();
 }
 function createTrainingEnemy(){
@@ -252,7 +252,7 @@ function createTrainingEnemy(){
  const legL=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.55,3,6),leather);legL.position.set(-.18,.43,0);group.add(legL);
  const legR=legL.clone();legR.position.x=.18;group.add(legR);
  for(const x of [-.105,.105]){const e=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),eye);e.position.set(x,1.84,.235);group.add(e);}
- group.position.set(1.7,0,-6.2);group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(group);enemyMesh=group;
+ group.position.set(1.7,world.userData.getHeightAt?.(1.7,-6.2)??0,-6.2);enemyBaseY=group.position.y;group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});world.add(group);enemyMesh=group;
  enemyTelegraph=new THREE.Mesh(new THREE.RingGeometry(.62,.78,40),new THREE.MeshBasicMaterial({color:0xff553e,transparent:true,opacity:.85,side:THREE.DoubleSide}));enemyTelegraph.rotation.x=-Math.PI/2;enemyTelegraph.position.y=.025;enemyTelegraph.visible=false;group.add(enemyTelegraph);
  updateCombatHud();
 }
