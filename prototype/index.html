@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <meta name="theme-color" content="#080d17"><title>ASTREA — MMORPG</title><link rel="stylesheet" href="./style.css">
+  <meta name="theme-color" content="#f5f8ee"><title>ASTREA — MMORPG</title><link rel="stylesheet" href="./style.css">
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
 </head>
@@ -48,7 +48,15 @@
       </div>
       <footer class="creator-footer"><span><b>✕</b> VALIDER <b>○</b> RETOUR <b>L1 / R1</b> CHANGER DE CATÉGORIE</span><span>INTERFACE INSPIRÉE PLAYSTATION</span></footer>
     </section>
-    <section id="game-hud" class="game-hud" hidden><div class="hud-brand">ASTREA <span>MMORPG</span></div><div class="hud-player" id="hud-player"></div><div class="world-location" id="world-location">PLAINE D’AUBE · CONTINENT ASTREA</div><div class="world-resources" id="world-resources"></div><div class="world-interact-hint" id="world-interact-hint" hidden></div><button type="button" class="world-interact-button" id="world-interact" hidden>INTERAGIR</button><div class="world-toast" id="world-toast" aria-live="polite"></div><div class="hud-help">JOYSTICK : DÉPLACER · GLISSER : ORIENTER LA CAMÉRA</div><div id="touch-controls" class="touch-controls" aria-label="Commandes tactiles"><div id="move-stick" class="move-stick"><div class="stick-base"><div id="stick-knob" class="stick-knob"></div></div><span>DÉPLACER</span></div><div class="touch-actions"><button type="button" data-action="attack">ATTAQUE</button><button type="button" data-action="charged_spell_cast">MAGIE</button><button type="button" data-action="jump">SAUT</button><button type="button" data-action="block">GARDE</button><button type="button" data-action="dodge_roll">ESQUIVE</button></div></div></section>
+    <section id="game-hud" class="game-hud" hidden><div class="hud-brand">ASTREA <span>MMORPG</span></div><button id="settings-open" class="settings-open" type="button" aria-label="Ouvrir les paramètres">⚙ PARAMÈTRES</button><div class="hud-player" id="hud-player"></div><div class="world-location" id="world-location">PLAINE D’AUBE · CONTINENT ASTREA</div><div class="world-resources" id="world-resources"></div><div class="world-interact-hint" id="world-interact-hint" hidden></div><button type="button" class="world-interact-button" id="world-interact" hidden>INTERAGIR</button><div class="world-toast" id="world-toast" aria-live="polite"></div><div class="hud-help">JOYSTICK : DÉPLACER · GLISSER : ORIENTER LA CAMÉRA</div><div id="touch-controls" class="touch-controls" aria-label="Commandes tactiles"><div id="move-stick" class="move-stick"><div class="stick-base"><div id="stick-knob" class="stick-knob"></div></div><span>DÉPLACER</span></div><div class="touch-actions"><button type="button" data-action="attack">ATTAQUE</button><button type="button" data-action="charged_spell_cast">MAGIE</button><button type="button" data-action="jump">SAUT</button><button type="button" data-action="block">GARDE</button><button type="button" data-action="dodge_roll">ESQUIVE</button></div></div></section>
+    <section id="settings-screen" class="settings-screen" hidden aria-label="Paramètres ASTREA">
+      <div class="settings-shell">
+        <header class="settings-header"><div><span class="settings-kicker">ASTREA MMORPG · MENU SYSTÈME</span><h2>Paramètres du jeu</h2></div><button id="settings-close" class="settings-close" type="button">REPRENDRE</button></header>
+        <nav id="settings-tabs" class="settings-tabs" aria-label="Catégories"><button data-tab="graphics" class="active">Graphismes</button><button data-tab="controls">Commandes</button><button data-tab="audio">Audio</button><button data-tab="gameplay">Gameplay</button><button data-tab="accessibility">Accessibilité</button><button data-tab="systems">Systèmes</button></nav>
+        <div id="settings-content" class="settings-content"></div>
+        <footer class="settings-footer"><span id="settings-saved">Paramètres enregistrés localement</span><button id="settings-reset" type="button">RÉINITIALISER</button></footer>
+      </div>
+    </section>
     <div class="loading" id="loading">Initialisation d'ASTREA…</div><div class="error" id="error" hidden></div>
   </main>
   <script type="module" src="./src/main.js"></script>

@@ -5,7 +5,9 @@ import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAtta
 import { createEnemyAI, updateEnemyAI, staggerEnemyAI } from './combat/EnemyAI.js';
 import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery, createControlDiminishingState, applyControlDiminishing, applyWeaponHitProfile } from './combat/CombatTechniques.js';
 import { createAstreaWorld } from './world/astrea-world.js';
-import { normalizeTouchStick, getMovementAxes, getDodgeDestination } from './input/movement.js';
+import { normalizeTouchStick, getMovementAxes, getDodgeDestination, getWorldMovementDirection, getFacingYaw, rotateAngleTowards } from './input/movement.js';
+import { DEFAULT_SETTINGS, loadSettings, saveSettings, validateSettings } from './settings.js';
+import { MAGIC_SCHOOLS } from './magic/MagicSkillTree.js';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
@@ -90,21 +92,21 @@ let comboTargetId = null;
 let enemyBaseY = 0;
 let combatUiTimer = 0;
 let combatClockMs = 0;
-const state = {race:'human',gender:'male',category:'appearance',name:'',alias:'',screen:'menu',model:null,mixer:null,actions:{},currentAction:'idle',actionOneShot:false,dodgeMotion:null,zipCache:new Map(),loadToken:0,gameYaw:0,gamePos:new THREE.Vector3(0,0,0),keys:new Set(),drag:false,lastX:0,previewYaw:0,previewDistance:4.8,wardrobe:Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,''])),wardrobeObjects:{},wardrobeToken:0,wardrobeSlotTokens:{}};
+const state = {settingsOpen:false,settings:loadSettings(),race:'human',gender:'male',category:'appearance',name:'',alias:'',screen:'menu',model:null,mixer:null,actions:{},currentAction:'idle',actionOneShot:false,dodgeMotion:null,zipCache:new Map(),loadToken:0,gameYaw:0,gamePos:new THREE.Vector3(0,0,0),keys:new Set(),drag:false,lastX:0,previewYaw:0,previewDistance:4.8,wardrobe:Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,''])),wardrobeObjects:{},wardrobeToken:0,wardrobeSlotTokens:{}};
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111c2a);
-scene.fog = new THREE.Fog(0x111c2a, 90, 420);
+scene.background = new THREE.Color(0xc5e5bd);
+scene.fog = new THREE.Fog(0xc5e5bd, 90, 420);
 const camera = new THREE.PerspectiveCamera(38,1,.1,700); camera.position.set(0,1.45,4.7);
 const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7)); renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.setPixelRatio(Math.min((devicePixelRatio||1)*state.settings.resolutionScale/100,1.7)); renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.shadowMap.enabled=state.settings.shadows;
 renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
-scene.add(new THREE.HemisphereLight(0xcfe8ff,0x25202a,2.0));
-const keyLight=new THREE.DirectionalLight(0xffe3c0,3.2);keyLight.position.set(-3,6,4);scene.add(keyLight);
-const rimLight=new THREE.DirectionalLight(0x5abfff,2.2);rimLight.position.set(4,3,-4);scene.add(rimLight);
-const ground=new THREE.Mesh(new THREE.CircleGeometry(2.4,64),new THREE.MeshStandardMaterial({color:0x172638,roughness:.88,metalness:.18}));ground.rotation.x=-Math.PI/2;ground.position.y=-.025;scene.add(ground);
-const ring=new THREE.Mesh(new THREE.RingGeometry(2.38,2.42,80),new THREE.MeshBasicMaterial({color:0x56bfff,transparent:true,opacity:.5,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=-.012;scene.add(ring);
-const grid=new THREE.GridHelper(30,30,0x2b4964,0x1b3045);grid.position.y=-.04;scene.add(grid);
+scene.add(new THREE.HemisphereLight(0xf1fff0,0x526b45,2.15));
+const keyLight=new THREE.DirectionalLight(0xfff1d6,3.35);keyLight.position.set(-3,6,4);scene.add(keyLight);
+const rimLight=new THREE.DirectionalLight(0x8bdc91,1.8);rimLight.position.set(4,3,-4);scene.add(rimLight);
+const ground=new THREE.Mesh(new THREE.CircleGeometry(2.4,64),new THREE.MeshStandardMaterial({color:0x9fcf82,roughness:.92,metalness:0}));ground.rotation.x=-Math.PI/2;ground.position.y=-.025;scene.add(ground);
+const ring=new THREE.Mesh(new THREE.RingGeometry(2.38,2.42,80),new THREE.MeshBasicMaterial({color:0xeaffdf,transparent:true,opacity:.78,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=-.012;scene.add(ring);
+const grid=new THREE.GridHelper(30,30,0xa8d39a,0xc3dfb9);grid.position.y=-.04;scene.add(grid);
 const world=new THREE.Group();scene.add(world);
 let worldGround=null;
 const combatVfx=[];
@@ -270,7 +272,7 @@ function ensureCombatHud(){
   equipTrainingWeapon(selectedWeaponCategory);
   updateWeaponProgressionHud();
  }
- panel.hidden=false;
+ panel.hidden=true;
 }
 function selectCombatWeapon(category){
  if(!WEAPON_UI[category])return;
@@ -397,7 +399,63 @@ function loadWorldResources(){try{const saved=JSON.parse(localStorage.getItem('a
 function updateWorldHud(){if(state.screen!=='game'||!state.model)return;const r=world.userData.getRegionAt?.(state.model.position.x,state.model.position.z);const loc=$('#world-location');if(loc&&r)loc.textContent=r.name.toUpperCase()+' · CONTINENT ASTREA';const near=world.userData.getNearbyActivity?.(state.model.position);const hint=$('#world-interact-hint'),button=$('#world-interact');if(hint){hint.hidden=!near;hint.textContent=near?'E · '+near.prompt:'';}if(button)button.hidden=!near;const resources=$('#world-resources');if(resources)resources.textContent='HERBES '+worldResources.herbs+' · BOIS '+worldResources.wood+' · MINERAI '+worldResources.stone+' · POISSON '+worldResources.fish+' · RÉCOLTES '+worldResources.crops+' · RELIQUES '+worldResources.relics;}
 function interactWithWorld(){if(state.screen!=='game'||!state.model)return;const r=world.userData.interact?.(state.model.position);const toast=$('#world-toast');if(!r){if(toast)toast.textContent='Aucune activité à proximité.';return;}worldResources[r.resource]=(worldResources[r.resource]||0)+r.amount;localStorage.setItem('astrea-world-resources',JSON.stringify(worldResources));if(toast)toast.textContent=r.message+'  +'+r.amount;updateWorldHud();}
 function setStatus(text,good=false){$('#model-status').textContent=text;$('#model-status').style.color=good?'#77d8a0':'#f1c77a';}
-function setScreen(name){state.screen=name;menu.hidden=name!=='menu';creator.hidden=name!=='creator';gameHud.hidden=name!=='game';canvas.style.opacity=name==='menu'?'0.38':'1';if(name==='creator'){camera.position.set(0,1.45,4.7);camera.lookAt(0,1,0);}if(name==='game'){makeWorld();createTrainingDummy();createTrainingEnemy();ensureCombatHud();const spawnHeight=world.userData.getHeightAt?.(0,0)??0;camera.position.set(0,spawnHeight+4.8,-7);camera.lookAt(0,spawnHeight+1,0);}}
+
+const settingsScreen=$('#settings-screen'),settingsContent=$('#settings-content');
+let activeSettingsTab='graphics';
+const settingDefinitions={
+ graphics:[['Rendu',[
+  ['Qualité graphique','select','quality',[['low','Économie'],['medium','Équilibré'],['high','Élevé']]],
+  ['FPS cible','select','targetFps',[[30,'30 FPS'],[40,'40 FPS'],[60,'60 FPS']]],
+  ['Échelle de résolution','range','resolutionScale',50,100,'%'],['Ombres dynamiques','toggle','shadows']
+ ]]],
+ controls:[['Déplacement',[
+  ['Taille du joystick','range','joystickSize',70,140,'%'],['Taille des boutons','range','buttonSize',70,140,'%'],
+  ['Sensibilité caméra','range','cameraSensitivity',10,100,'%'],['Suivi caméra','toggle','cameraFollow']
+ ]]],
+ audio:[['Volume',[
+  ['Volume général','range','masterVolume',0,100,'%'],['Musique','range','musicVolume',0,100,'%'],
+  ['Effets sonores','range','effectsVolume',0,100,'%'],['Voix','range','voiceVolume',0,100,'%']
+ ]]],
+ gameplay:[['Interface',[
+  ['Langue','select','language',[['fr','Français'],['en','English']]],['Sous-titres','toggle','subtitles'],
+  ['Chiffres de dégâts','toggle','damageNumbers'],['Marqueurs de quête','toggle','questMarkers']
+ ]]],
+ accessibility:[['Confort',[
+  ['Échelle interface','range','uiScale',85,125,'%'],['Réduire les animations','toggle','reduceMotion'],['Contraste élevé','toggle','highContrast']
+ ]]]
+};
+function settingRow(label,type,key,extra=[]){
+ const value=state.settings[key];let control='';
+ if(type==='range'){const [min,max,unit]=extra;control=`<input type="range" min="${min}" max="${max}" step="5" value="${value}" data-setting="${key}"><output>${value}${unit||''}</output>`;}
+ else if(type==='toggle')control=`<input type="checkbox" data-setting="${key}" ${value?'checked':''}>`;
+ else {const options=Array.isArray(extra[0])?extra[0]:extra;control=`<select data-setting="${key}">${options.map(([v,l])=>`<option value="${v}" ${String(v)===String(value)?'selected':''}>${l}</option>`).join('')}</select>`;}
+ return `<label class="setting-row"><span>${label}</span>${control}</label>`;
+}
+function renderSettingsTab(){
+ if(!settingsContent)return;
+ if(activeSettingsTab==='systems'){
+  const cards=[['Personnage','Races, apparence, équipement et progression.','Actif'],['Magie',`${MAGIC_SCHOOLS.length} écoles élémentaires et spécialisations. Le système de progression existe dans le code, son interface complète reste à relier.`,'Prototype'],['Compétences','Maîtrise des armes, techniques et progression par utilisation.','Prototype'],['Inventaire','Objets, ressources, équipements et artisanat.','À construire'],['Quêtes','Missions, objectifs et récompenses.','À construire'],['Guildes','Création de guilde, rangs, membres et coffre commun.','À construire'],['Royaumes','Territoires, souverain, ministères, taxes et lois.','À construire'],['Carte','Continents, régions, villes et points d’intérêt.','Prototype'],['Social','Amis, groupes, échanges et messagerie.','À construire']];
+  settingsContent.innerHTML=`<div class="setting-card"><h3>Univers ASTREA</h3><p>Les modules indiqués Prototype ou À construire ne sont pas encore des services multijoueurs opérationnels.</p></div><div class="system-grid">${cards.map(([n,d,s])=>`<article class="system-card"><b>${n}</b><p>${d}</p><em>${s.toUpperCase()}</em></article>`).join('')}</div>`;return;
+ }
+ const groups=settingDefinitions[activeSettingsTab]||[];settingsContent.innerHTML=groups.map(([title,rows])=>`<section class="setting-card"><h3>${title}</h3>${rows.map(([label,type,key,...extra])=>settingRow(label,type,key,extra)).join('')}</section>`).join('');
+}
+function applySettings(){
+ renderer.setPixelRatio(Math.min((devicePixelRatio||1)*state.settings.resolutionScale/100,1.7));renderer.shadowMap.enabled=state.settings.shadows;resize();
+ stickRootStyle();document.documentElement.style.setProperty('--astrea-ui-scale',String(state.settings.uiScale/100));document.body.classList.toggle('astrea-high-contrast',state.settings.highContrast);document.body.classList.toggle('astrea-reduce-motion',state.settings.reduceMotion);
+}
+function stickRootStyle(){const stick=$('#move-stick'),actions=$('.touch-actions');if(stick){stick.style.transform=`scale(${state.settings.joystickSize/100})`;stick.style.transformOrigin='bottom left';}if(actions){actions.style.transform=`scale(${state.settings.buttonSize/100})`;actions.style.transformOrigin='bottom right';}}
+function setSetting(key,value){const checked=validateSettings({...state.settings,[key]:value});state.settings=checked.settings;saveSettings(state.settings);applySettings();const out=settingsContent?.querySelector(`[data-setting="${key}"]`)?.parentElement?.querySelector('output');if(out)out.textContent=state.settings[key]+(key==='resolutionScale'||key==='joystickSize'||key==='buttonSize'||key==='cameraSensitivity'||key==='masterVolume'||key==='musicVolume'||key==='effectsVolume'||key==='voiceVolume'||key==='uiScale'?'%':'');const label=$('#settings-saved');if(label)label.textContent='Modifications enregistrées';}
+function openSettings(){if(state.screen!=='game')return;state.settingsOpen=true;settingsScreen.hidden=false;$('#settings-open').hidden=true;state.keys.clear();state.touchX=state.touchY=0;renderSettingsTab();}
+function closeSettings(){state.settingsOpen=false;settingsScreen.hidden=true;$('#settings-open').hidden=false;}
+$('#settings-open')?.addEventListener('click',openSettings);$('#settings-close')?.addEventListener('click',closeSettings);
+$('#settings-tabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;activeSettingsTab=b.dataset.tab;document.querySelectorAll('#settings-tabs button').forEach(x=>x.classList.toggle('active',x===b));renderSettingsTab();});
+settingsContent?.addEventListener('input',e=>{const el=e.target.closest('[data-setting]');if(!el)return;setSetting(el.dataset.setting,el.type==='checkbox'?el.checked:el.type==='range'?Number(el.value):el.value);const output=el.parentElement.querySelector('output');if(output&&el.type==='range')output.textContent=el.value+'%';});
+settingsContent?.addEventListener('change',e=>{const el=e.target.closest('[data-setting]');if(!el)return;setSetting(el.dataset.setting,el.type==='checkbox'?el.checked:el.type==='range'?Number(el.value):el.value);});
+$('#settings-reset')?.addEventListener('click',()=>{state.settings={...DEFAULT_SETTINGS};saveSettings(state.settings);applySettings();renderSettingsTab();$('#settings-saved').textContent='Valeurs par défaut restaurées';});
+applySettings();
+
+
+function setScreen(name){if(name!=='game')closeSettings();state.screen=name;menu.hidden=name!=='menu';creator.hidden=name!=='creator';gameHud.hidden=name!=='game';canvas.style.opacity=name==='menu'?'0.38':'1';if(name==='creator'){camera.position.set(0,1.45,4.7);camera.lookAt(0,1,0);}if(name==='game'){makeWorld();createTrainingDummy();createTrainingEnemy();ensureCombatHud();const spawnHeight=world.userData.getHeightAt?.(0,0)??0;camera.position.set(0,spawnHeight+4.8,-7);camera.lookAt(0,spawnHeight+1,0);}}
 function createRaceButtons(){const root=$('#race-options');root.innerHTML='';for(const [id,label] of RACES){const b=document.createElement('button');b.className='race-choice'+(id===state.race?' selected':'');b.textContent=label;b.dataset.race=id;b.addEventListener('click',()=>{state.race=id;updateSelection();loadSelectedCharacter();});root.append(b);}}
 function updateSelection(){document.querySelectorAll('.race-choice').forEach(b=>b.classList.toggle('selected',b.dataset.race===state.race));document.querySelectorAll('[data-gender]').forEach(b=>b.classList.toggle('selected',b.dataset.gender===state.gender));$('#preview-name').textContent=`${RACES.find(x=>x[0]===state.race)[1].toUpperCase()} · ${state.gender==='male'?'MASCULIN':'FÉMININ'}`;}
 function archiveKey(){return `${state.race}_${state.gender}`;}
@@ -462,7 +520,7 @@ let gamepadPrev={};function triggerAction(name){if(state.screen!=='game')return;
 function pollGamepad(){const pads=navigator.getGamepads?.()||[];const pad=[...pads].find(Boolean);if(!pad)return;const pressed=(i)=>!!pad.buttons[i]?.pressed;const edge=(key,down)=>{const was=!!gamepadPrev[key];gamepadPrev[key]=down;return down&&!was;};if(edge('up',pressed(12)))moveFocus(-1);if(edge('down',pressed(13)))moveFocus(1);if(edge('left',pressed(14))&&state.screen==='creator')cycleRace(-1);if(edge('right',pressed(15))&&state.screen==='creator')cycleRace(1);if(edge('cross',pressed(0))){if(state.screen==='game')triggerAction('jump');else document.activeElement?.click?.();}if(edge('circle',pressed(1))){if(state.screen==='game')triggerAction('dodge_roll');else backAction();}if(edge('square',pressed(2)))triggerAction('attack');if(edge('triangle',pressed(3)))triggerAction('charged_spell_cast');if(edge('l1',pressed(4))){if(state.screen==='creator')cycleCategory(-1);else triggerAction('block');}if(edge('r1',pressed(5))){if(state.screen==='creator')cycleCategory(1);else triggerAction('attack');}if(edge('r2',pressed(7)))triggerAction('charged_spell_cast');if(state.screen==='game'){const x=pad.axes?.[0]||0,y=pad.axes?.[1]||0;if(Math.abs(x)>.15||Math.abs(y)>.15){state.gamePadX=x;state.gamePadY=y;}else{state.gamePadX=0;state.gamePadY=0;}}}
 function cycleRace(dir){const i=RACES.findIndex(x=>x[0]===state.race);state.race=RACES[(i+dir+RACES.length)%RACES.length][0];updateSelection();loadSelectedCharacter();}
 function cycleCategory(dir){const buttons=[...document.querySelectorAll('.category')];const i=buttons.findIndex(x=>x.dataset.category===state.category);buttons[(i+dir+buttons.length)%buttons.length]?.click();}
-let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(state.screen==='game'&&e.pointerType==='mouse'){mouseDown=true;lastMouseX=e.clientX;}});addEventListener('pointerup',()=>mouseDown=false);addEventListener('pointermove',e=>{if(mouseDown&&state.screen==='game'){state.gameYaw-=(e.clientX-lastMouseX)*.006;lastMouseX=e.clientX;}});
+let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(state.screen==='game'&&e.pointerType==='mouse'){mouseDown=true;lastMouseX=e.clientX;}});addEventListener('pointerup',()=>mouseDown=false);addEventListener('pointermove',e=>{if(mouseDown&&state.screen==='game'){state.gameYaw-=(e.clientX-lastMouseX)*.006*(state.settings.cameraSensitivity/60);lastMouseX=e.clientX;}});
 
 
  // Commandes tactiles : joystick gauche et actions à droite.
@@ -475,12 +533,12 @@ let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(st
  document.querySelectorAll('.touch-actions [data-action]').forEach(button=>{button.addEventListener('pointerdown',e=>{e.preventDefault();triggerAction(button.dataset.action);});});
   $('#world-interact')?.addEventListener('pointerdown',e=>{e.preventDefault();interactWithWorld();});
 
-let lastTime=performance.now();let currentMode='';let worldHudTimer=0;
+let lastTime=performance.now();let currentMode='';let worldHudTimer=0;let lastRenderTime=0;
 function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);regenerateStamina(enemyCombatant,dt,true);combatClockMs+=dt*1000;updateEnemyEncounter(dt,combatClockMs);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
  if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
  if(mode==='game'&&state.model){world.userData.updateStreaming?.(state.model.position);state.model.position.y=world.userData.getHeightAt?.(state.model.position.x,state.model.position.z)??state.model.position.y;worldHudTimer+=dt;if(worldHudTimer>=.25){worldHudTimer=0;updateWorldHud();}}
-  if(world.userData.updateVFX)world.userData.updateVFX(now,dt);updateCombatVfx(dt);if(mode==='game'&&state.model){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const keyboardSide=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0);const axes=getMovementAxes({keyboardForward:forward,keyboardSide,gamePadX:state.gamePadX||0,gamePadY:state.gamePadY||0,touchX:state.touchX||0,touchForward:state.touchY||0});const side=axes.side,actualForward=axes.forward;const moving=Math.hypot(actualForward,side)>.05;if(state.dodgeMotion){const motion=state.dodgeMotion;motion.elapsed=Math.min(motion.duration,motion.elapsed+dt);const t=motion.elapsed/motion.duration,ease=1-Math.pow(1-t,3);state.model.position.lerpVectors(motion.from,motion.to,ease);if(t>=1){state.model.position.copy(motion.to);state.dodgeMotion=null;}}else if(moving){const dx=side*Math.cos(state.gameYaw)+actualForward*Math.sin(state.gameYaw),dz=-side*Math.sin(state.gameYaw)+actualForward*Math.cos(state.gameYaw);const len=Math.hypot(dx,dz)||1;const run=state.keys.has('shift');state.model.position.x+=dx/len*(run?5.6:2.8)*dt;state.model.position.z+=dz/len*(run?5.6:2.8)*dt;state.model.rotation.y=Math.atan2(dx/len,dz/len)+Math.PI;if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*7,target.y+3.8,target.z-Math.cos(state.gameYaw)*7);camera.position.lerp(desired,.08);camera.lookAt(target);}
- renderer.render(scene,camera);
+  if(world.userData.updateVFX)world.userData.updateVFX(now,dt);updateCombatVfx(dt);if(mode==='game'&&state.model&&!state.settingsOpen){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const keyboardSide=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0);const axes=getMovementAxes({keyboardForward:forward,keyboardSide,gamePadX:state.gamePadX||0,gamePadY:state.gamePadY||0,touchX:state.touchX||0,touchForward:state.touchY||0});const side=axes.side,actualForward=axes.forward;const moving=Math.hypot(actualForward,side)>.05;if(state.dodgeMotion){const motion=state.dodgeMotion;motion.elapsed=Math.min(motion.duration,motion.elapsed+dt);const t=motion.elapsed/motion.duration,ease=1-Math.pow(1-t,3);state.model.position.lerpVectors(motion.from,motion.to,ease);if(t>=1){state.model.position.copy(motion.to);state.dodgeMotion=null;}}else if(moving){const direction=getWorldMovementDirection(side,actualForward,state.gameYaw);const dx=direction.x,dz=direction.z;const run=state.keys.has('shift');state.model.position.x+=dx*(run?5.6:2.8)*dt;state.model.position.z+=dz*(run?5.6:2.8)*dt;const targetYaw=getFacingYaw(dx,dz);state.model.rotation.y=rotateAngleTowards(state.model.rotation.y,targetYaw,dt*9);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*7,target.y+3.8,target.z-Math.cos(state.gameYaw)*7);if(state.settings.cameraFollow)camera.position.lerp(desired,.08);camera.lookAt(target);}
+ if(now-lastRenderTime>=1000/state.settings.targetFps){renderer.render(scene,camera);lastRenderTime=now;}
 }
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
 addEventListener('resize',resize);resize();loading.hidden=true;setScreen('menu');

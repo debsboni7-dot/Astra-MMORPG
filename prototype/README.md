@@ -29,6 +29,16 @@ Le pack Quaternius Standard (20 pièces glTF indépendantes, buffers et textures
 
 **Limites actuelles à connaître :** les pièces Quaternius sont activées uniquement pour les personnages humains. Leur adaptation aux six autres races reste à vérifier. Le squelette Quaternius (65 os) est raccordé en première approche au squelette ASTREA (24 os), mais le rendu et les poids doivent encore être contrôlés visuellement sur toutes les animations. Enfin, les vêtements d'origine des 14 personnages ASTREA sont fusionnés dans leur mesh de corps : les nouvelles pièces peuvent donc se superposer ou intersecter avec les vêtements intégrés. Une vraie suppression/remplacement de tenue exige des corps neutres ou des zones de corps masquables, ainsi qu'un ajustement par morphologie.
 
+## Interface et paramètres ASTREA
+
+Le prototype comprend maintenant une interface claire blanc ivoire / vert herbe fraîche, avec panneaux translucides et accents émeraude, dans une direction fantasy anime semi-réaliste. Le HUD d’entraînement situé en haut à droite est retiré de l’écran ; les actions restent accessibles par les commandes tactiles et le clavier.
+
+Le menu Paramètres propose les graphismes (préréglage, 30/40/60 FPS, résolution, ombres), commandes tactiles (taille du joystick et des boutons, sensibilité caméra, suivi), volumes, options de gameplay et accessibilité. Les réglages sont validés et enregistrés localement. Les options FPS, résolution, ombres, taille des commandes et sensibilité sont appliquées au prototype ; les volumes restent mémorisés en attendant l’intégration d’un moteur audio.
+
+Un onglet Systèmes présente personnage, magie, compétences, inventaire, quêtes, guildes, royaumes, carte et social. Les éléments non encore développés sont explicitement marqués comme prototypes ou à construire ; il ne s’agit pas de services multijoueurs déjà en production. Le code de progression magique existe déjà dans `src/magic/` et côté serveur, mais son interface complète reste à connecter.
+
+Le déplacement utilise désormais une direction monde normalisée relative à la caméra, une orientation du personnage lissée vers le vecteur de déplacement et l’animation marche/course dans les quatre directions cardinales et les diagonales.
+
 ## Ce qui reste avant un MMORPG complet
 
 - Valider visuellement les vêtements, les proportions et les animations sur les personnages humains ; corriger les intersections et la correspondance des os.
