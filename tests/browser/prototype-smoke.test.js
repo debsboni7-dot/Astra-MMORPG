@@ -99,6 +99,7 @@ test('commandes tactiles en jeu : déplacement, caméra et remise à zéro aprè
     assert.equal(blurred.touchY, 0);
     assert.equal(blurred.keys, 0);
     assert.equal(blurred.knob, 'matrix(1, 0, 0, 1, 0, 0)', 'le joystick visuel doit revenir au centre après perte de focus');
+    await cdp.send('Input.dispatchTouchEvent', {type:'touchCancel',touchPoints:[]});
 
     const canvas = await page.locator('#viewport').boundingBox();
     const yawBefore = blurred.yaw;
