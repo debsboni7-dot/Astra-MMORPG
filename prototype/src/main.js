@@ -507,9 +507,35 @@ function renderSettingsTab(){
 }
 function applySettings(){
  renderer.setPixelRatio(Math.min((devicePixelRatio||1)*state.settings.resolutionScale/100,1.7));renderer.shadowMap.enabled=state.settings.shadows;resize();
- stickRootStyle();document.documentElement.style.setProperty('--astrea-ui-scale',String(state.settings.uiScale/100));document.body.classList.toggle('astrea-high-contrast',state.settings.highContrast);document.body.classList.toggle('astrea-reduce-motion',state.settings.reduc
-…[1 chars truncated — re-run with head/grep/tail for full output]…
-n await window.JSZip.loadAsync(await response.arrayBuffer());})();}
+ stickRootStyle();document.documentElement.style.setProperty('--astrea-ui-scale',String(state.settings.uiScale/100));document.body.classList.toggle('astrea-high-contrast',state.settings.highContrast);document.body.classList.toggle('astrea-reduce-motion',state.settings.reduceMotion);
+}
+function stickRootStyle(){const stick=$('#move-stick'),actions=$('.touch-actions');if(stick){stick.style.transform=`scale(${state.settings.joystickSize/100})`;stick.style.transformOrigin='bottom left';}if(actions){actions.style.transform=`scale(${state.settings.buttonSize/100})`;actions.style.transformOrigin='bottom right';}}
+function setSetting(key,value){const checked=validateSettings({...state.settings,[key]:value});state.settings=checked.settings;saveSettings(state.settings);applySettings();const out=settingsContent?.querySelector(`[data-setting="${key}"]`)?.parentElement?.querySelector('output');if(out)out.textContent=state.settings[key]+(key==='resolutionScale'||key==='joystickSize'||key==='buttonSize'||key==='cameraSensitivity'||key==='masterVolume'||key==='musicVolume'||key==='effectsVolume'||key==='voiceVolume'||key==='uiScale'?'%':'');const label=$('#settings-saved');if(label)label.textContent='Modifications enregistrées';}
+function openSettings(){if(state.screen!=='game')return;state.settingsOpen=true;settingsScreen.hidden=false;$('#settings-open').hidden=true;state.keys.clear();state.touchX=state.touchY=0;renderSettingsTab();}
+function closeSettings(){state.settingsOpen=false;settingsScreen.hidden=true;$('#settings-open').hidden=false;}
+$('#settings-open')?.addEventListener('click',openSettings);$('#settings-close')?.addEventListener('click',closeSettings);
+$('#settings-tabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;activeSettingsTab=b.dataset.tab;document.querySelectorAll('#settings-tabs button').forEach(x=>x.classList.toggle('active',x===b));renderSettingsTab();});
+settingsContent?.addEventListener('click',e=>{
+ const system=e.target.closest('[data-system]');
+ if(system?.dataset.system==='Magie'){selectedMagicSchool=state.selectedMagicSchool;activeSettingsTab='magic';renderSettingsTab();return;}
+ const back=e.target.closest('[data-magic-back]');if(back){activeSettingsTab='systems';renderSettingsTab();return;}
+ const school=e.target.closest('[data-magic-school]');if(school){selectedMagicSchool=school.dataset.magicSchool;state.selectedMagicSchool=selectedMagicSchool;renderMagicSystem();return;}
+ const equip=e.target.closest('[data-equip-skill]');if(equip){const result=equipMagicTechnique(state.magicProgression,selectedMagicSchool,equip.dataset.equipSkill,equip.dataset.slotType,Number(equip.dataset.slotIndex));if(result.equipped){state.magicProgression=result.progression;saveMagicProgression();}renderMagicSystem();return;}
+});
+settingsContent?.addEventListener('input',e=>{const el=e.target.closest('[data-setting]');if(!el)return;setSetting(el.dataset.setting,el.type==='checkbox'?el.checked:el.type==='range'?Number(el.value):el.value);const output=el.parentElement.querySelector('output');if(output&&el.type==='range')output.textContent=el.value+'%';});
+settingsContent?.addEventListener('change',e=>{const el=e.target.closest('[data-setting]');if(!el)return;setSetting(el.dataset.setting,el.type==='checkbox'?el.checked:el.type==='range'?Number(el.value):el.value);});
+$('#settings-reset')?.addEventListener('click',()=>{state.settings={...DEFAULT_SETTINGS};saveSettings(state.settings);applySettings();renderSettingsTab();$('#settings-saved').textContent='Valeurs par défaut restaurées';});
+applySettings();
+
+
+function setScreen(name){if(name!=='game')closeSettings();state.screen=name;menu.hidden=name!=='menu';creator.hidden=name!=='creator';gameHud.hidden=name!=='game';canvas.style.opacity=name==='menu'?'0.38':'1';if(name==='creator'){camera.position.set(0,1.45,4.7);camera.lookAt(0,1,0);}if(name==='game'){makeWorld();createTrainingDummy();createTrainingEnemy();ensureCombatHud();const spawnHeight=world.userData.getHeightAt?.(0,0)??0;camera.position.set(0,spawnHeight+4.8,-7);camera.lookAt(0,spawnHeight+1,0);}}
+function createRaceButtons(){const root=$('#race-options');root.innerHTML='';for(const [id,label] of RACES){const b=document.createElement('button');b.className='race-choice'+(id===state.race?' selected':'');b.textContent=label;b.dataset.race=id;b.addEventListener('click',()=>{state.race=id;updateSelection();loadSelectedCharacter();});root.append(b);}}
+function updateSelection(){document.querySelectorAll('.race-choice').forEach(b=>b.classList.toggle('selected',b.dataset.race===state.race));document.querySelectorAll('[data-gender]').forEach(b=>b.classList.toggle('selected',b.dataset.gender===state.gender));$('#preview-name').textContent=`${RACES.find(x=>x[0]===state.race)[1].toUpperCase()} · ${state.gender==='male'?'MASCULIN':'FÉMININ'}`;}
+function archiveKey(){return `${state.race}_${state.gender}`;}
+async function getArchive(key){if(state.zipCache.has(key))return state.zipCache.get(key);const url=ZIP_URLS[key];if(!url)throw new Error(`Aucun pack 3D disponible pour ${key}`);const promise=(async()=>{const response=await fetch(url);if(!response.ok)throw new Error(`Téléchargement du pack ${key}: HTTP ${response.status}`);const bytes=await response.arrayBuffer();return await window.JSZip.loadAsync(bytes);})();state.zipCache.set(key,promise);try{return await promise;}catch(e){state.zipCache.delete(key);throw e;}}
+async function parseGLB(zip,path){const file=zip.file(path);if(!file)throw new Error(`Fichier manquant dans le pack : ${path}`);const data=await file.async('arraybuffer');return await loader.parseAsync(data,'');}
+async function getQuaterniusZip(){
+ if(!quaterniusZipPromise){quaterniusZipPromise=(async()=>{const response=await fetch(QUATERNIUS_ARCHIVE_URL,{cache:'force-cache'});if(!response.ok)throw new Error(`Pack de vêtements Quaternius : HTTP ${response.status}`);return await window.JSZip.loadAsync(await response.arrayBuffer());})();}
  try{return await quaterniusZipPromise;}catch(error){quaterniusZipPromise=null;throw error;}
 }
 async function loadQuaterniusGLTF(assetUrl){
