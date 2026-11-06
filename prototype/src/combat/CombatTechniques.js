@@ -14,6 +14,7 @@ export const RACE_COMBO_PROFILES = Object.freeze({
   angel: { style:'precise', physical:'radiant-lance', magic:'seraph-weave', hybrid:'judgement-chain', tempo:1.08 },
   orc: { style:'brutal', physical:'crusher', magic:'ember-burst', hybrid:'warfire-crash', tempo:.94 },
   dragonoid: { style:'bestial', physical:'drake-claw', magic:'dragon-breath', hybrid:'wyrm-combo', tempo:1.02 },
+  draconoid: { style:'bestial', physical:'drake-claw', magic:'dragon-breath', hybrid:'wyrm-combo', tempo:1.02 },
 });
 
 export function advanceCombo(combo, now, { inputWindowMs = combo.inputWindowMs, resetAfterMs = combo.resetAfterMs, inputType = 'physical', race = combo.race || 'human' } = {}) {
