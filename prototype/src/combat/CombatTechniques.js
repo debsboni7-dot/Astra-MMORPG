@@ -3,17 +3,36 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, finite(value)));
 
 /** A combo is a timed input chain, independent from animation playback. */
 export function createComboState({ maxStage = 3, inputWindowMs = 720, resetAfterMs = 1450 } = {}) {
-  return { stage: 0, lastInputAt: -Infinity, maxStage: Math.max(1, Math.floor(maxStage)), inputWindowMs: Math.max(0, inputWindowMs), resetAfterMs: Math.max(inputWindowMs, resetAfterMs), totalHits: 0 };
+  return { stage: 0, lastInputAt: -Infinity, maxStage: Math.max(1, Math.floor(maxStage)), inputWindowMs: Math.max(0, inputWindowMs), resetAfterMs: Math.max(inputWindowMs, resetAfterMs), totalHits: 0, lastInputType: null, sequence: [], race: 'human' };
 }
 
-export function advanceCombo(combo, now, { inputWindowMs = combo.inputWindowMs, resetAfterMs = combo.resetAfterMs } = {}) {
+export const RACE_COMBO_PROFILES = Object.freeze({
+  human: { style:'versatile', physical:'balanced-strike', magic:'quick-weave', hybrid:'spellblade-link', tempo:1 },
+  elf: { style:'agile', physical:'flowing-cut', magic:'nature-weave', hybrid:'windstep-weave', tempo:1.12 },
+  dwarf: { style:'heavy', physical:'stonebreaker', magic:'rune-impact', hybrid:'rune-smash', tempo:.88 },
+  demon: { style:'aggressive', physical:'savage-rend', magic:'abyssal-burst', hybrid:'hellchain', tempo:1.04 },
+  angel: { style:'precise', physical:'radiant-lance', magic:'seraph-weave', hybrid:'judgement-chain', tempo:1.08 },
+  orc: { style:'brutal', physical:'crusher', magic:'ember-burst', hybrid:'warfire-crash', tempo:.94 },
+  dragonoid: { style:'bestial', physical:'drake-claw', magic:'dragon-breath', hybrid:'wyrm-combo', tempo:1.02 },
+  draconoid: { style:'bestial', physical:'drake-claw', magic:'dragon-breath', hybrid:'wyrm-combo', tempo:1.02 },
+});
+
+export function advanceCombo(combo, now, { inputWindowMs = combo.inputWindowMs, resetAfterMs = combo.resetAfterMs, inputType = 'physical', race = combo.race || 'human' } = {}) {
   const time = finite(now);
   const elapsed = time - combo.lastInputAt;
   if (elapsed > resetAfterMs || elapsed < 0) combo.stage = 0;
   else if (elapsed > inputWindowMs) combo.stage = 0;
+  if (elapsed > resetAfterMs || elapsed < 0 || elapsed > inputWindowMs) { combo.sequence = []; combo.lastInputType = null; }
+  const previousInput = combo.lastInputType;
   combo.stage = combo.stage >= combo.maxStage ? 1 : combo.stage + 1;
   combo.lastInputAt = time;
   combo.totalHits += 1;
+  combo.race = RACE_COMBO_PROFILES[race] ? race : 'human';
+  combo.lastInputType = inputType === 'magic' ? 'magic' : 'physical';
+  combo.sequence.push(combo.lastInputType);
+  if (combo.sequence.length > combo.maxStage) combo.sequence.shift();
+  const profile = RACE_COMBO_PROFILES[combo.race];
+  const hybrid = previousInput !== null && previousInput !== combo.lastInputType;
   const multipliers = [1, 1.12, 1.3, 1.48];
   const costs = [0, 3, 6, 10];
   return {
@@ -24,12 +43,22 @@ export function advanceCombo(combo, now, { inputWindowMs = combo.inputWindowMs, 
     finisher: combo.stage === combo.maxStage,
     nextInputWindowMs: inputWindowMs,
     totalHits: combo.totalHits,
+    inputType: combo.lastInputType,
+    previousInputType: previousInput,
+    hybrid,
+    sequence: [...combo.sequence],
+    race: combo.race,
+    raceStyle: profile.style,
+    signature: hybrid ? profile.hybrid : (combo.lastInputType === 'magic' ? profile.magic : profile.physical),
+    tempo: profile.tempo,
   };
 }
 
 export function resetCombo(combo) {
   combo.stage = 0;
   combo.lastInputAt = -Infinity;
+  combo.lastInputType = null;
+  combo.sequence = [];
   return combo;
 }
 

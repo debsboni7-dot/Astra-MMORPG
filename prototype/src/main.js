@@ -344,6 +344,18 @@ const MAGIC_LABELS={fire:'Feu',water:'Eau',wind:'Vent',earth:'Terre',ice:'Glace'
 const MAGIC_COLORS={fire:0xff713b,water:0x53b8ed,wind:0xc9f3dd,earth:0xb88b58,ice:0x9ce9ff,lightning:0xffed62,nature:0x75d66e,light:0xfff3b0,demonic:0x9c68d8};
 function loadMagicProgression(){try{state.magicProgression=sanitizeMagicProgression(JSON.parse(localStorage.getItem('astrea.magic.v2')||'{}'),state.race);}catch{state.magicProgression=createMagicProgression(state.race);}playerCombatant.fireMastery=state.magicProgression.schools.fire.level;saveMagicProgression();}
 function saveMagicProgression(){localStorage.setItem('astrea.magic.v2',JSON.stringify(state.magicProgression));}
+function playComboAction(combo,inputType){
+ const race=combo?.race||state.race||'human';
+ const stage=combo?.stage||1;
+ const candidates=combo?.hybrid
+  ? [`combo_${race}_hybrid_${stage}`,`combo_${race}_hybrid`,`combo_hybrid_${stage}`]
+  : [`combo_${race}_${inputType}_${stage}`,`combo_${race}_${inputType}`,`combo_${inputType}_${stage}`];
+ const actionName=candidates.find(name=>state.actions[name])||(inputType==='magic'?'charged_spell_cast':'attack');
+ playAction(actionName,true);
+ const action=state.actions[actionName];
+ if(action&&combo)action.timeScale=combo.tempo*(combo.hybrid?1.04:1);
+}
+
 function performMagicCast(){
  const school=state.selectedMagicSchool||'fire';
  if(!state.model){combatMessage('Personnage indisponible.');return;}
@@ -356,7 +368,9 @@ function performMagicCast(){
  }
  const result=castMagicSpell(playerCombatant,selfCast?null:targets,school,{now:combatClockMs});
  if(!result.executed){const messages={'race-school-restriction':'Cette école est interdite à ta race.','target-required':school==='wind'?'Aucune cible dans la zone de l’onde.':'Rapproche-toi d’une cible.','insufficient-mana':'Pas assez de mana.','cooldown':'Ce sort est encore en recharge.','target-at-full-health':'Tes PV sont déjà au maximum.'};combatMessage(messages[result.reason]||'Sort impossible : '+result.reason);updateMagicHud();return;}
- playAction('charged_spell_cast',true);
+ const magicCombo=advanceCombo(comboState,combatClockMs,{inputType:'magic',race:state.race});
+ if(!selfCast&&targets.length)comboTargetId=targets[0].id;
+ playComboAction(magicCombo,'magic');
  const origin=state.model.position.clone().add(new THREE.Vector3(0,1.15,0));
  const affected=result.targets.map(item=>allTargets.find(entry=>entry.combatant.id===item.targetId)).filter(Boolean);
  let destination=origin.clone();
@@ -365,7 +379,7 @@ function performMagicCast(){
  if(result.knockback>0){for(const item of affected){if(item.combatant.id==='forest-raider'){const dx=item.mesh.position.x-state.model.position.x,dz=item.mesh.position.z-state.model.position.z,len=Math.hypot(dx,dz)||1;item.mesh.position.x+=dx/len*result.knockback;item.mesh.position.z+=dz/len*result.knockback;}}}
  if(result.hit){const equipped=state.magicProgression.equippedTechniques.normal.find(id=>id?.startsWith(school+':'))||null;const progress=recordMagicSkillUse(state.magicProgression,state.race,school,equipped);if(progress.recorded){state.magicProgression=progress.progression;playerCombatant.fireMastery=state.magicProgression.schools.fire.level;saveMagicProgression();}}
  const detail=result.damage>0?Math.round(result.damage)+' dégâts':result.healing>0?Math.round(result.healing)+' PV restaurés':result.shield?'bouclier de '+result.shield.remaining+' PV':result.purified>0?result.purified+' effet(s) purifié(s)':'effet appliqué';
- combatMessage(MAGIC_LABELS[school]+' · '+result.spell.name+' : '+detail+'.');
+ combatMessage(MAGIC_LABELS[school]+' · '+result.spell.name+' : '+detail+(magicCombo.stage>1?' · COMBO '+magicCombo.stage+'/3':'')+(magicCombo.hybrid?' · COMBO PHYSIQUE + MAGIE':'')+'.');
  updateCombatHud();
 }
 function performPlayerAttack(kind='physical'){
@@ -380,11 +394,11 @@ function performPlayerAttack(kind='physical'){
  const distance=targetMesh?state.model.position.distanceTo(targetMesh.position):Infinity;
  if(!target||target.defeated){combatMessage('Aucune cible disponible.');return;}
  if(distance>3.35){combatMessage('Rapproche-toi de la cible.');return;}
- const combo=advanceCombo(comboState,combatClockMs);
+ const combo=advanceCombo(comboState,combatClockMs,{inputType:'physical',race:state.race});
  const attack={id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':combo.stage===2?'launcher':'light',techniqueId:selectedTechniqueId||undefined};
  const result=executeAttack(playerCombatant,target,attack,{now:combatClockMs});
  if(!result.executed){if(kind!=='magic'){resetCombo(comboState);comboTargetId=null;}combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
- playAction('attack',true);
+ playComboAction(combo,'physical');
  let reaction=null;
  if(kind==='physical'){if(combo.finisher)comboTargetId=null;else if(combo.stage===1)comboTargetId=target.id;}
  if(targetIsEnemy&&result.executed){reaction=resolveHitReaction({impact:attack.impact??result.damage,targetPoise:enemyCombatant.poise,targetMass:enemyCombatant.mass,controlResistance:enemyCombatant.controlResistance,attackType:attack.attackType||'magic'});if(attack.kind==='physical'&&(result.weaponCategory||attack.weaponCategory))reaction=applyWeaponHitProfile(reaction,result.weaponCategory||attack.weaponCategory);reaction=applyControlDiminishing(enemyControlDiminishing,reaction,combatClockMs);if(reaction.staggerMs>0)staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+reaction.staggerMs;enemyKnockdownUntil=reaction.knockdown?enemyStaggerUntil:0;
@@ -392,7 +406,7 @@ function performPlayerAttack(kind='physical'){
   if(reaction.knockback>0){const dx=enemyMesh.position.x-state.model.position.x,dz=enemyMesh.position.z-state.model.position.z,len=Math.hypot(dx,dz)||1;const displacement=reaction.knockback*(attack.attackType==='finisher'?1:.22);enemyMesh.position.x+=dx/len*displacement;enemyMesh.position.z+=dz/len*displacement;}
   if(reaction.knockdown)enemyMesh.rotation.x=-Math.PI/2;
  }
- const comboText=combo?(combo.finisher?' · FINISHER':` · COMBO ${combo.stage}/3`):'';
+ const comboText=combo?(combo.finisher?' · FINISHER':` · COMBO ${combo.stage}/3`)+(combo.hybrid?' · ENCHAÎNEMENT MIXTE':''):'';
  const reactionText=reaction?' · '+reaction.reaction.toUpperCase():'';
  spawnCombatBurst(targetMesh.position.clone().add(new THREE.Vector3(0,1,0)),0xffd18a,32);
  combatMessage('Attaque'+comboText+reactionText+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
@@ -562,7 +576,7 @@ async function loadQuaterniusGLTF(assetUrl){
 }
 function clearCurrentModel(){if(state.mixer){state.mixer.stopAllAction();state.mixer=null;}if(state.model){scene.remove(state.model);state.model.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();}});state.model=null;}state.actions={};}
 async function loadSelectedCharacter(){const token=++state.loadToken,key=archiveKey();setStatus('CHARGEMENT…');$('#category-note').textContent='Chargement du véritable modèle 3D et de ses animations…';try{const zip=await getArchive(key);if(token!==state.loadToken)return false;const gltf=await parseGLB(zip,'model.glb');if(token!==state.loadToken)return false;resetWardrobe();clearCurrentModel();const model=gltf.scene;model.name=key;const box=new THREE.Box3().setFromObject(model);const size=box.getSize(new THREE.Vector3());const center=box.getCenter(new THREE.Vector3());const height=size.y||1.8;model.scale.setScalar(1.78/height);model.position.set(1.15-center.x*model.scale.x,-box.min.y*model.scale.y,-center.z*model.scale.z);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material.side=THREE.DoubleSide;}}});scene.add(model);state.model=model;
-  const animationNames=['idle','walking','running','jump','attack','charged_spell_cast','block','hit_reaction','dodge_roll'];state.mixer=new THREE.AnimationMixer(model);state.mixer.addEventListener('finished',()=>{state.actionOneShot=false;if(state.screen==='game')playAction('idle');});for(const name of animationNames){try{const anim=await parseGLB(zip,`animations/${name}.glb`);if(token!==state.loadToken)return false;const clip=anim.animations?.[0];if(clip){if(name==='dodge_roll'){clip.tracks=clip.tracks.filter(track=>!/(?:^|[|.])(?:mixamorig)?(?:Hips|Root)\.position$/i.test(track.name));}state.actions[name]=state.mixer.clipAction(clip);}}catch(e){console.warn(`Animation ${name} indisponible pour ${key}`,e);}}
+  const animationNames=['idle','walking','running','jump','attack','charged_spell_cast','block','hit_reaction','dodge_roll'];const comboAnimationNames=['physical','magic','hybrid'].flatMap(type=>[1,2,3].flatMap(stage=>[`combo_${state.race}_${type}_${stage}`,`combo_${type}_${stage}`])).concat(['physical','magic','hybrid'].map(type=>`combo_${state.race}_${type}`));animationNames.push(...comboAnimationNames);state.mixer=new THREE.AnimationMixer(model);state.mixer.addEventListener('finished',()=>{state.actionOneShot=false;if(state.screen==='game')playAction('idle');});for(const name of animationNames){try{const animationPath=`animations/${name}.glb`;if(name.startsWith('combo_')&&!zip.file(animationPath))continue;const anim=await parseGLB(zip,animationPath);if(token!==state.loadToken)return false;const clip=anim.animations?.[0];if(clip){if(name==='dodge_roll'){clip.tracks=clip.tracks.filter(track=>!/(?:^|[|.])(?:mixamorig)?(?:Hips|Root)\.position$/i.test(track.name));}state.actions[name]=state.mixer.clipAction(clip);}}catch(e){console.warn(`Animation ${name} indisponible pour ${key}`,e);}}
   buildWardrobeUI();playAction('idle');setStatus('MODÈLE CHARGÉ',true);$('#category-note').textContent=`Modèle ${RACES.find(x=>x[0]===state.race)[1]} ${state.gender==='male'?'masculin':'féminin'} chargé. Aperçu 3D réel.`;return true;
  }catch(err){console.error(err);if(token===state.loadToken){setStatus('ERREUR DE CHARGEMENT');$('#category-note').textContent=err.message;showError(`Impossible de charger le personnage ${key}.\n${err.message}`);}return false;}}
 function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning()&&!oneShot)return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;if(oneShot){const duration=name==='attack'?.52:name==='charged_spell_cast'?.82:name==='dodge_roll'?.42:.62;next.setDuration(duration);}else next.timeScale=1;state.actionOneShot=oneShot;next.fadeIn(.08).play();if(previous&&previous!==next)previous.fadeOut(.08);state.currentAction=name;}
