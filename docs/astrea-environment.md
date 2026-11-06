@@ -9,5 +9,10 @@
 - Cycle jour/nuit, eau animée et sources lumineuses locales.
 - Commandes tactiles : axe vertical normalisé une seule fois (haut = avancer, bas = reculer) ; axes tactiles testés indépendamment des axes clavier et manette.
 - Textures PBR 512 px issues d'ambientCG : Grass 004, Ground 106 et Rock 064, licence CC0 1.0. Voir `assets/textures/astrea/ASSET_SOURCES.md`.
+- Refonte de la Plaine d'Aube : terrain à 64 segments par cellule ; tapis d'herbe en touffes instanciées, fleurs, buissons, arbres, rochers et galets. La densité varie par biome et reste plafonnée à 6 200 instances par cellule pour préserver les appareils mobiles.
+- Les zones de départ, la place du village, les routes et le couloir du fleuve gardent des marges sans gros éléments de décor pour éviter les obstructions visuelles.
+- Deux parcelles agricoles clôturées, avec rangées de cultures et bottes de foin, complètent les abords du village.
+- Les placements naturels utilisent la graine déterministe de chaque cellule : un rechargement de zone conserve la même disposition. Les maillages instanciés sont libérés avec leur cellule.
+- Caméra de jeu initialisée au-dessus et derrière le personnage ; mannequin et pillard d'entraînement placés devant le point d'apparition pour dégager la vue.
 
-La géographie, le streaming et des activités de collecte propres aux huit régions sont intégrés. Les sept régions éloignées disposent désormais chacune d’un monument identifiable et de points de collecte, mais pas encore de villes complètes ni de chaînes artisanales avancées. Les saisons, la météo, les sons d'ambiance et les grands sites scénarisés restent à développer.
+La géographie, le streaming et des activités de collecte propres aux huit régions sont intégrés. La Plaine d'Aube dispose désormais d'un habillage naturel plus dense et de parcelles agricoles ; les sept régions éloignées disposent chacune d'un monument identifiable et de points de collecte, mais pas encore de villes complètes ni de chaînes artisanales avancées. Les saisons, la météo, les sons d'ambiance et les grands sites scénarisés restent à développer. Les performances doivent encore être mesurées sur de vrais téléphones Android et appareils PC.
