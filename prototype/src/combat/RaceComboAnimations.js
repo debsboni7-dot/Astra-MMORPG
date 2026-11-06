@@ -82,7 +82,7 @@ function poseFor(mode, stage, profile, race) {
   return pose;
 }
 
-export function createRaceComboAnimations(THREE, model, race = 'human') {
+export function createRaceComboAnimations(THREE, model, mixer, race = 'human') {
   const profile = RACE_COMBO_ANIMATION_PROFILES[race] || RACE_COMBO_ANIMATION_PROFILES.human;
   const bones = findRigBones(model);
   const actions = {};
@@ -109,7 +109,7 @@ export function createRaceComboAnimations(THREE, model, race = 'human') {
       if (!tracks.length) continue;
       const name = `combo_${race}_${mode}_${stage}`;
       const clip = new THREE.AnimationClip(name, .72, tracks);
-      actions[name] = new THREE.AnimationMixer(model).clipAction(clip);
+      actions[name] = mixer.clipAction(clip);
     }
   }
   return actions;
