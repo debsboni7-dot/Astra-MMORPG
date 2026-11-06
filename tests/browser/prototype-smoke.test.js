@@ -70,7 +70,7 @@ test('commandes tactiles en jeu : déplacement, caméra et remise à zéro aprè
   await page.route('**/src/main.js', async route => {
     const response = await route.fetch();
     const source = await response.text();
-    await route.fulfill({ response, body:source + "\\nwindow.__astreaTestState=()=>({x:state.model?.position.x,z:state.model?.position.z,yaw:state.gameYaw,touchX:state.touchX,touchY:state.touchY,keys:state.keys.size});" });
+    await route.fulfill({ response, body:source + "\nwindow.__astreaTestState=()=>({x:state.model?.position.x,z:state.model?.position.z,yaw:state.gameYaw,touchX:state.touchX,touchY:state.touchY,keys:state.keys.size});" });
   });
   try {
     await page.goto('http://127.0.0.1:4173/', {waitUntil:'domcontentloaded'});
