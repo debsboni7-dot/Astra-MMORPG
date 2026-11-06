@@ -345,16 +345,22 @@ const MAGIC_LABELS={fire:'Feu',water:'Eau',wind:'Vent',earth:'Terre',ice:'Glace'
 const MAGIC_COLORS={fire:0xff713b,water:0x53b8ed,wind:0xc9f3dd,earth:0xb88b58,ice:0x9ce9ff,lightning:0xffed62,nature:0x75d66e,light:0xfff3b0,demonic:0x9c68d8};
 function loadMagicProgression(){try{state.magicProgression=sanitizeMagicProgression(JSON.parse(localStorage.getItem('astrea.magic.v2')||'{}'),state.race);}catch{state.magicProgression=createMagicProgression(state.race);}playerCombatant.fireMastery=state.magicProgression.schools.fire.level;saveMagicProgression();}
 function saveMagicProgression(){localStorage.setItem('astrea.magic.v2',JSON.stringify(state.magicProgression));}
-function playComboAction(combo,inputType){
+function playComboAction(combo,inputType,weaponCategory=null){
  const race=combo?.race||state.race||'human';
  const stage=combo?.stage||1;
- const candidates=combo?.hybrid
-  ? [`combo_${race}_hybrid_${stage}`,`combo_${race}_hybrid`,`combo_hybrid_${stage}`]
-  : [`combo_${race}_${inputType}_${stage}`,`combo_${race}_${inputType}`,`combo_${inputType}_${stage}`];
+ const hybrid=!!combo?.hybrid;
+ const finisher=!!combo?.finisher||stage===3;
+ const candidates=[];
+ if(finisher){
+  if(weaponCategory)candidates.push(`combo_${race}_${weaponCategory}_finisher`,`combo_${race}_${weaponCategory}_hybrid_finisher`);
+  candidates.push(`combo_${race}_${hybrid?'hybrid':inputType}_finisher`,`combo_${race}_finisher`,`combo_${hybrid?'hybrid':inputType}_finisher`);
+ }
+ if(hybrid)candidates.push(`combo_${race}_hybrid_${stage}`,`combo_${race}_hybrid`,`combo_hybrid_${stage}`);
+ else candidates.push(`combo_${race}_${inputType}_${stage}`,`combo_${race}_${inputType}`,`combo_${inputType}_${stage}`);
  const actionName=candidates.find(name=>state.actions[name])||(inputType==='magic'?'charged_spell_cast':'attack');
- playAction(actionName,true);
+ playAction(actionName,true,finisher?.18:.13);
  const action=state.actions[actionName];
- if(action&&combo)action.timeScale=combo.tempo*(combo.hybrid?1.04:1);
+ if(action&&combo)action.timeScale=combo.tempo*(hybrid?1.04:1);
 }
 
 function performMagicCast(){
@@ -399,7 +405,7 @@ function performPlayerAttack(kind='physical'){
  const attack={id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':combo.stage===2?'launcher':'light',techniqueId:selectedTechniqueId||undefined};
  const result=executeAttack(playerCombatant,target,attack,{now:combatClockMs});
  if(!result.executed){if(kind!=='magic'){resetCombo(comboState);comboTargetId=null;}combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
- playComboAction(combo,'physical');
+ playComboAction(combo,'physical',result.weaponCategory||playerCombatant.equipment?.weapon?.category||selectedWeaponCategory);
  let reaction=null;
  if(kind==='physical'){if(combo.finisher)comboTargetId=null;else if(combo.stage===1)comboTargetId=target.id;}
  if(targetIsEnemy&&result.executed){reaction=resolveHitReaction({impact:attack.impact??result.damage,targetPoise:enemyCombatant.poise,targetMass:enemyCombatant.mass,controlResistance:enemyCombatant.controlResistance,attackType:attack.attackType||'magic'});if(attack.kind==='physical'&&(result.weaponCategory||attack.weaponCategory))reaction=applyWeaponHitProfile(reaction,result.weaponCategory||attack.weaponCategory);reaction=applyControlDiminishing(enemyControlDiminishing,reaction,combatClockMs);if(reaction.staggerMs>0)staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+reaction.staggerMs;enemyKnockdownUntil=reaction.knockdown?enemyStaggerUntil:0;
@@ -580,7 +586,7 @@ async function loadSelectedCharacter(){const token=++state.loadToken,key=archive
   const animationNames=['idle','walking','running','jump','attack','charged_spell_cast','block','hit_reaction','dodge_roll'];const comboAnimationNames=['physical','magic','hybrid'].flatMap(type=>[1,2,3].flatMap(stage=>[`combo_${state.race}_${type}_${stage}`,`combo_${type}_${stage}`])).concat(['physical','magic','hybrid'].map(type=>`combo_${state.race}_${type}`));animationNames.push(...comboAnimationNames);state.mixer=new THREE.AnimationMixer(model);state.mixer.addEventListener('finished',()=>{state.actionOneShot=false;if(state.screen==='game')playAction('idle');});for(const name of animationNames){try{const animationPath=`animations/${name}.glb`;if(name.startsWith('combo_')&&!zip.file(animationPath))continue;const anim=await parseGLB(zip,animationPath);if(token!==state.loadToken)return false;const clip=anim.animations?.[0];if(clip){if(name==='dodge_roll'){clip.tracks=clip.tracks.filter(track=>!/(?:^|[|.])(?:mixamorig)?(?:Hips|Root)\.position$/i.test(track.name));}state.actions[name]=state.mixer.clipAction(clip);}}catch(e){console.warn(`Animation ${name} indisponible pour ${key}`,e);}}
   for(const [name,action] of Object.entries(createRaceComboAnimations(THREE,model,state.mixer,state.race))){if(!state.actions[name])state.actions[name]=action;}buildWardrobeUI();playAction('idle');setStatus('MODÈLE CHARGÉ',true);$('#category-note').textContent=`Modèle ${RACES.find(x=>x[0]===state.race)[1]} ${state.gender==='male'?'masculin':'féminin'} chargé. Aperçu 3D réel.`;return true;
  }catch(err){console.error(err);if(token===state.loadToken){setStatus('ERREUR DE CHARGEMENT');$('#category-note').textContent=err.message;showError(`Impossible de charger le personnage ${key}.\n${err.message}`);}return false;}}
-function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning()&&!oneShot)return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;if(oneShot){const duration=name==='attack'?.52:name==='charged_spell_cast'?.82:name==='dodge_roll'?.42:.62;next.setDuration(duration);}else next.timeScale=1;state.actionOneShot=oneShot;next.fadeIn(.08).play();if(previous&&previous!==next)previous.fadeOut(.08);state.currentAction=name;}
+function playAction(name,oneShot=false,fadeDuration=.14){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning()&&!oneShot)return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;if(oneShot){const duration=name==='attack'?.52:name==='charged_spell_cast'?.82:name==='dodge_roll'?.42:.62;next.setDuration(duration);}else next.timeScale=1;state.actionOneShot=oneShot;next.fadeIn(fadeDuration).play();if(previous&&previous!==next){if(previous.crossFadeTo)previous.crossFadeTo(next,fadeDuration,false);else previous.fadeOut(fadeDuration);}state.currentAction=name;}
 async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}const raceStats=getMagicRaceStatModifiers(state.race);playerCombatant=createCombatant({id:'player',name:state.name,race:state.race,physicalStrength:10*raceStats.physicalStrength,defense:10*raceStats.defense,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));loadMagicProgression();$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=Math.PI;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
 function showError(message){errorBox.hidden=false;errorBox.textContent=message;setTimeout(()=>{errorBox.hidden=true;},9000);}
 createRaceButtons();updateSelection();buildWardrobeUI();loadWorldResources();
