@@ -161,3 +161,12 @@ test('hybrid combo resets after its input window expires', () => {
   assert.equal(next.hybrid, false);
   assert.deepEqual(next.sequence, ['magic']);
 });
+
+
+test('the repository race identifier draconoid receives the dragonoid combo profile', () => {
+  const combo = createComboState();
+  advanceCombo(combo, 0, { inputType:'physical', race:'draconoid' });
+  const hybrid = advanceCombo(combo, 200, { inputType:'magic', race:'draconoid' });
+  assert.equal(hybrid.race, 'draconoid');
+  assert.equal(hybrid.signature, 'wyrm-combo');
+});
