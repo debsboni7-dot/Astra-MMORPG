@@ -16,3 +16,13 @@ test('les quatre directions cardinales du joystick orientent le personnage dans 
 });
 test('les directions diagonales restent normalisées avec la caméra tournée',()=>{const d=getWorldMovementDirection(1,1,Math.PI/3);assert.ok(Math.abs(Math.hypot(d.x,d.z)-1)<1e-9);});
 test('rotation interpolée suit le chemin angulaire le plus court',()=>{const next=rotateAngleTowards(3.1,-3.1,.1);assert.ok(next>3.1);assert.ok(Math.abs(Math.atan2(Math.sin(-3.1-next),Math.cos(-3.1-next)))<Math.PI);});
+
+test('les diagonales clavier, manette et tactile combinées ne dépassent pas la vitesse normale',()=>{
+ const diagonal=getMovementAxes({keyboardForward:1,keyboardSide:1});
+ assert.ok(Math.abs(Math.hypot(diagonal.side,diagonal.forward)-1)<1e-9);
+ const mixed=getMovementAxes({gamePadX:1,touchForward:1});
+ assert.ok(Math.abs(Math.hypot(mixed.side,mixed.forward)-1)<1e-9);
+});
+test('les entrées opposées s’annulent',()=>{
+ assert.deepEqual(getMovementAxes({keyboardForward:1,gamePadY:1}),{side:0,forward:0});
+});
