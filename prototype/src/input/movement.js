@@ -8,10 +8,11 @@ export function normalizeTouchStick(dx, dy, limit) {
 
 /** Merge keyboard, gamepad and touch inputs without reversing touch twice. */
 export function getMovementAxes({ keyboardForward = 0, keyboardSide = 0, gamePadX = 0, gamePadY = 0, touchX = 0, touchForward = 0 } = {}) {
-  return {
-    side: keyboardSide + gamePadX + touchX,
-    forward: keyboardForward - gamePadY + touchForward
-  };
+  const side = keyboardSide + gamePadX + touchX;
+  const forward = keyboardForward - gamePadY + touchForward;
+  const length = Math.hypot(side, forward);
+  const scale = length > 1 ? 1 / length : 1;
+  return { side: side * scale, forward: forward * scale };
 }
 
 /** Compute a dodge endpoint once; the character must remain at this endpoint. */
