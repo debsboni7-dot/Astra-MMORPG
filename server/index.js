@@ -2,6 +2,7 @@ import { createAuthService } from './auth/AuthService.js';
 import { createPostgresRepository } from './db/PostgresRepository.js';
 import { createWeaponProgressionService } from './progression/WeaponProgressionService.js';
 import { createMagicProgressionService } from './progression/MagicProgressionService.js';
+import { createMagicCombatService } from './combat/MagicCombatService.js';
 import { createCharacterService } from './characters/CharacterService.js';
 import { createAstreaHttpServer } from './http/createAstreaHttpServer.js';
 
@@ -12,8 +13,9 @@ const repository = createPostgresRepository(pool);
 const authService = createAuthService(repository);
 const progressionService = createWeaponProgressionService(repository);
 const magicProgressionService = createMagicProgressionService(repository);
+const magicCombatService = createMagicCombatService(repository);
 const characterService = createCharacterService(repository);
-const server = createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService });
+const server = createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService, magicCombatService });
 const port = Number(process.env.PORT || 3000);
 server.listen(port, '0.0.0.0', () => process.stdout.write(`ASTREA API listening on :${port}\n`));
 for (const signal of ['SIGINT', 'SIGTERM']) {

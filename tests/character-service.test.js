@@ -5,8 +5,8 @@ import { createCharacterService } from '../server/characters/CharacterService.js
 test('characters are created and listed only within the authenticated account scope', async () => {
   const rows = [];
   const repository = {
-    async createCharacter(accountId, displayName) {
-      const row = { id: String(rows.length + 1), accountId, displayName };
+    async createCharacter(accountId, displayName, race) {
+      const row = { id: String(rows.length + 1), accountId, displayName, race };
       rows.push(row);
       return row;
     },
@@ -17,6 +17,7 @@ test('characters are created and listed only within the authenticated account sc
   await service.create('account-B', 'Mage');
   assert.equal((await service.list('account-A')).length, 1);
   assert.equal((await service.list('account-A'))[0].displayName, 'Chevalier');
+  assert.equal(rows[0].race, 'human');
 });
 
 test('character names are normalized, bounded and validated', async () => {
@@ -25,4 +26,12 @@ test('character names are normalized, bounded and validated', async () => {
   assert.equal((await service.create('account-A', '  Éowyn  ')).displayName, 'Éowyn');
   await assert.rejects(service.create('account-A', 'ab'), /3 à 24/);
   await assert.rejects(service.create('account-A', '<script>'), /3 à 24/);
+});
+
+test('character race is validated and passed to persistence', async () => {
+  const rows=[];
+  const service=createCharacterService({async createCharacter(accountId,displayName,race){const row={accountId,displayName,race};rows.push(row);return row;},async listCharacters(){return rows;}});
+  await service.create('account-A','Sylve','elf');
+  assert.equal(rows[0].race,'elf');
+  await assert.rejects(service.create('account-A','Mage','undead'),/Race de personnage invalide/);
 });

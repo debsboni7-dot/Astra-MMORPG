@@ -4,7 +4,7 @@ import { createMagicProgression } from '../prototype/src/magic/MagicSkillTree.js
 import { createMagicProgressionService } from '../server/progression/MagicProgressionService.js';
 
 function fixture(race = 'human') {
-  const characters = new Map([['char-1', { id:'char-1', accountId:'account-1', race, magicProgression:createMagicProgression(race) }]]);
+  const characters = new Map([['char-1', { id:'char-1', accountId:'account-1', race, characterData:{race}, magicProgression:createMagicProgression(race) }]]);
   const repository = {
     async withCharacterTransaction(accountId, characterId, callback) {
       const character = characters.get(characterId);

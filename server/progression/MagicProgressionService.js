@@ -14,7 +14,7 @@ export function createMagicProgressionService(repository) {
     if (!accountId || !characterId) throw new Error('Authenticated account and character are required.');
     return repository.withCharacterTransaction(accountId, characterId, async (character, saveProgression) => {
       if (!character || character.accountId !== accountId || character.id !== characterId) throw new Error('Character ownership validation failed.');
-      const race = character.race || character.profile?.race || character.magicProgression?.race || 'human';
+      const race = character.characterData?.race || character.race || character.profile?.race || character.magicProgression?.race || 'human';
       const progression = sanitizeMagicProgression(character.magicProgression || createMagicProgression(race), race);
       const result = await operation(progression, race);
       if (result.persist !== false) {
