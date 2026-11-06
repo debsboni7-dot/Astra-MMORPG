@@ -1,13 +1,13 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/utils/SkeletonUtils.js';
-import { createCombatant, regenerateStamina, beginBlock, beginDodge, executeAttack, resolveIncomingAttack, equipWeapon, getWeaponProgression } from './combat/CombatRuntime.js';
+import { createCombatant, regenerateStamina, regenerateMana, updateCombatantEffects, castMagicSpell, beginBlock, beginDodge, executeAttack, resolveIncomingAttack, equipWeapon, getWeaponProgression } from './combat/CombatRuntime.js';
 import { createEnemyAI, updateEnemyAI, staggerEnemyAI } from './combat/EnemyAI.js';
 import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery, createControlDiminishingState, applyControlDiminishing, applyWeaponHitProfile } from './combat/CombatTechniques.js';
 import { createAstreaWorld } from './world/astrea-world.js';
 import { normalizeTouchStick, getMovementAxes, getDodgeDestination, getWorldMovementDirection, getFacingYaw, rotateAngleTowards } from './input/movement.js';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, validateSettings } from './settings.js';
-import { MAGIC_SCHOOLS, MAGIC_RACE_RULES, createMagicProgression, sanitizeMagicProgression, getMagicSkillTree, recordMagicSkillUse, equipMagicTechnique, getMagicCastMultiplier, getMagicRaceStatModifiers } from './magic/MagicSkillTree.js';
+import { MAGIC_SCHOOLS, MAGIC_RACE_RULES, createMagicProgression, sanitizeMagicProgression, getMagicSkillTree, recordMagicSkillUse, equipMagicTechnique, getMagicRaceStatModifiers } from './magic/MagicSkillTree.js';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
@@ -73,7 +73,7 @@ const QUATERNIUS_ITEMS=[
  qItem('ranger_f_pauldron','Ranger · Épaulières','accessory','female','Female_Ranger_Acc_Pauldrons')
 ];
 const WARDROBE_CATALOG=Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,QUATERNIUS_ITEMS.filter(item=>item.slot===slot.id)]));
-let playerCombatant = createCombatant({ id: 'player', name: 'Joueur', physicalStrength: 10, fireMastery: 1, weaponMastery: 0 });
+let playerCombatant = createCombatant({ id: 'player', name: 'Joueur', race:'human', physicalStrength: 10, fireMastery: 1, weaponMastery: 0 });
 const WEAPON_UI = { sword:{label:'Épée',power:8},axe:{label:'Hache',power:11},hammer:{label:'Marteau',power:13},polearm:{label:'Arme d’hast',power:9} };
 let selectedWeaponCategory='sword',selectedTechniqueId='';
 function equipTrainingWeapon(category=selectedWeaponCategory){const def=WEAPON_UI[category];if(!def)return false;const result=equipWeapon(playerCombatant,{id:'training-'+category,category,power:def.power,requiredStrength:1,requiredMastery:0});return result.equipped;}
@@ -120,8 +120,21 @@ function spawnCombatBurst(position,color=0xffa34d,count=34){
  ring.rotation.x=Math.PI/2;ring.position.copy(position);world.add(ring);
  combatVfx.push({geometry,material,particles,ring,velocities,age:0,duration:.62});
 }
+function spawnMagicVfx(school,origin,destination){
+ const color=MAGIC_COLORS[school]||0xffffff;
+ const projectile=['fire','water','ice','lightning','demonic'].includes(school);
+ const geometry=school==='ice'?new THREE.OctahedronGeometry(.22,0):school==='lightning'?new THREE.TetrahedronGeometry(.24,0):school==='demonic'?new THREE.DodecahedronGeometry(.2,0):new THREE.SphereGeometry(.17,12,8);
+ const material=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.95,wireframe:school==='lightning',blending:THREE.AdditiveBlending,depthWrite:false});
+ const mesh=new THREE.Mesh(geometry,material);
+ if(projectile){mesh.position.copy(origin);world.add(mesh);combatVfx.push({kind:'magic-projectile',mesh,geometry,material,from:origin.clone(),to:destination.clone(),age:0,duration:.28});}
+ else{mesh.position.copy(destination);mesh.position.y+=school==='earth'?.85:.08;if(school==='earth')mesh.scale.set(1.2,1.4,1.2);world.add(mesh);combatVfx.push({kind:'magic-shape',mesh,geometry,material,startScale:school==='earth'?1.0:.55,age:0,duration:school==='earth'?1.1:.72});}
+ spawnCombatBurst(destination.clone(),color,school==='wind'?52:30);
+}
 function updateCombatVfx(dt){
- for(let i=combatVfx.length-1;i>=0;i--){const fx=combatVfx[i];fx.age+=dt;const t=fx.age/fx.duration;const p=fx.geometry.attributes.position;
+ for(let i=combatVfx.length-1;i>=0;i--){const fx=combatVfx[i];fx.age+=dt;const t=Math.min(1,fx.age/fx.duration);
+  if(fx.kind==='magic-projectile'){fx.mesh.position.lerpVectors(fx.from,fx.to,t);fx.mesh.rotation.x+=dt*7;fx.mesh.rotation.y+=dt*9;fx.material.opacity=1-t;if(t>=1){world.remove(fx.mesh);fx.geometry.dispose();fx.material.dispose();combatVfx.splice(i,1);}continue;}
+  if(fx.kind==='magic-shape'){fx.mesh.scale.setScalar(fx.startScale*(.7+t*1.3));fx.material.opacity=Math.max(0,1-t);fx.mesh.rotation.y+=dt*1.8;if(t>=1){world.remove(fx.mesh);fx.geometry.dispose();fx.material.dispose();combatVfx.splice(i,1);}continue;}
+  const p=fx.geometry.attributes.position;
   for(let j=0;j<fx.velocities.length;j++){const v=fx.velocities[j];p.array[j*3]+=v.x*dt;p.array[j*3+1]+=v.y*dt-1.6*dt*dt;p.array[j*3+2]+=v.z*dt;}
   p.needsUpdate=true;fx.material.opacity=Math.max(0,1-t);fx.material.size=.13*(1-t*.45);fx.ring.scale.setScalar(1+t*5);fx.ring.material.opacity=Math.max(0,.9-t);
   if(t>=1){world.remove(fx.particles,fx.ring);fx.geometry.dispose();fx.material.dispose();fx.ring.geometry.dispose();fx.ring.material.dispose();combatVfx.splice(i,1);}
@@ -303,12 +316,23 @@ function updateWeaponProgressionHud(){
 }
 function combatMessage(message){
  const el=$('#combat-message');if(el)el.textContent=message;
+ const toast=$('#world-toast');if(toast)toast.textContent=message;
+}
+function updateMagicHud(){
+ const update=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
+ const bar=$('#magic-mana-bar');if(bar)bar.style.width=(playerCombatant.maxMana>0?playerCombatant.mana/playerCombatant.maxMana*100:0)+'%';
+ update('#magic-mana-value',Math.ceil(playerCombatant.mana)+' / '+playerCombatant.maxMana);
+ update('#magic-school-label',MAGIC_LABELS[state.selectedMagicSchool]||'Feu');
+ const select=$('#magic-school-quick-select');if(select){select.value=state.selectedMagicSchool;for(const option of select.options)option.disabled=!MAGIC_RACE_RULES[state.race]?.allowed.includes(option.value);if(select.selectedOptions[0]?.disabled){state.selectedMagicSchool=MAGIC_SCHOOLS.find(school=>MAGIC_RACE_RULES[state.race]?.allowed.includes(school))||'fire';select.value=state.selectedMagicSchool;}}
+ const remaining=Math.max(0,(playerCombatant.cooldowns['magic:'+state.selectedMagicSchool]||0)-combatClockMs);
+ update('#magic-cooldown',remaining>0?'RECHARGE '+(remaining/1000).toFixed(1)+' s':'PRÊT');
 }
 function updateCombatHud(){
  const update=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
  const bar=(id,value,max)=>{const el=$(id);if(el)el.style.width=(max>0?Math.max(0,Math.min(100,value/max*100)):0)+'%';}; if(!playerCombatant||!trainingDummyCombatant)return;
  update('#combat-player-hp',Math.ceil(playerCombatant.hp)+' / '+playerCombatant.maxHp);
  update('#combat-player-stamina',Math.floor(playerCombatant.stamina)+' / '+playerCombatant.maxStamina);
+ updateMagicHud();
  update('#combat-target-hp',Math.ceil(trainingDummyCombatant.hp)+' / '+trainingDummyCombatant.maxHp);
  if(enemyCombatant){update('#combat-enemy-hp',Math.ceil(enemyCombatant.hp)+' / '+enemyCombatant.maxHp);update('#combat-enemy-state',(enemyAI?.state||'approach').toUpperCase());}
  bar('#combat-player-hp-bar',playerCombatant.hp,playerCombatant.maxHp);
@@ -320,7 +344,32 @@ const MAGIC_LABELS={fire:'Feu',water:'Eau',wind:'Vent',earth:'Terre',ice:'Glace'
 const MAGIC_COLORS={fire:0xff713b,water:0x53b8ed,wind:0xc9f3dd,earth:0xb88b58,ice:0x9ce9ff,lightning:0xffed62,nature:0x75d66e,light:0xfff3b0,demonic:0x9c68d8};
 function loadMagicProgression(){try{state.magicProgression=sanitizeMagicProgression(JSON.parse(localStorage.getItem('astrea.magic.v2')||'{}'),state.race);}catch{state.magicProgression=createMagicProgression(state.race);}playerCombatant.fireMastery=state.magicProgression.schools.fire.level;saveMagicProgression();}
 function saveMagicProgression(){localStorage.setItem('astrea.magic.v2',JSON.stringify(state.magicProgression));}
+function performMagicCast(){
+ const school=state.selectedMagicSchool||'fire';
+ if(!state.model){combatMessage('Personnage indisponible.');return;}
+ const selfCast=['earth','nature','light'].includes(school);
+ const allTargets=[{combatant:enemyCombatant,mesh:enemyMesh},{combatant:trainingDummyCombatant,mesh:trainingDummyMesh}].filter(item=>item.combatant&&!item.combatant.defeated&&item.mesh);
+ let targets=[];
+ if(!selfCast){
+  if(school==='wind')targets=allTargets.filter(item=>state.model.position.distanceTo(item.mesh.position)<=4.5).map(item=>item.combatant);
+  else{const closest=allTargets.sort((a,b)=>state.model.position.distanceTo(a.mesh.position)-state.model.position.distanceTo(b.mesh.position))[0];if(closest&&state.model.position.distanceTo(closest.mesh.position)<=3.35)targets=[closest.combatant];}
+ }
+ const result=castMagicSpell(playerCombatant,selfCast?null:targets,school,{now:combatClockMs});
+ if(!result.executed){const messages={'race-school-restriction':'Cette école est interdite à ta race.','target-required':school==='wind'?'Aucune cible dans la zone de l’onde.':'Rapproche-toi d’une cible.','insufficient-mana':'Pas assez de mana.','cooldown':'Ce sort est encore en recharge.','target-at-full-health':'Tes PV sont déjà au maximum.'};combatMessage(messages[result.reason]||'Sort impossible : '+result.reason);updateMagicHud();return;}
+ playAction('charged_spell_cast',true);
+ const origin=state.model.position.clone().add(new THREE.Vector3(0,1.15,0));
+ const affected=result.targets.map(item=>allTargets.find(entry=>entry.combatant.id===item.targetId)).filter(Boolean);
+ let destination=origin.clone();
+ if(affected.length){destination=affected.reduce((sum,item)=>sum.add(item.mesh.position.clone().add(new THREE.Vector3(0,1,0))),new THREE.Vector3()).multiplyScalar(1/affected.length);}
+ spawnMagicVfx(school,origin,destination);
+ if(result.knockback>0){for(const item of affected){if(item.combatant.id==='forest-raider'){const dx=item.mesh.position.x-state.model.position.x,dz=item.mesh.position.z-state.model.position.z,len=Math.hypot(dx,dz)||1;item.mesh.position.x+=dx/len*result.knockback;item.mesh.position.z+=dz/len*result.knockback;}}}
+ if(result.hit){const equipped=state.magicProgression.equippedTechniques.normal.find(id=>id?.startsWith(school+':'))||null;const progress=recordMagicSkillUse(state.magicProgression,state.race,school,equipped);if(progress.recorded){state.magicProgression=progress.progression;playerCombatant.fireMastery=state.magicProgression.schools.fire.level;saveMagicProgression();}}
+ const detail=result.damage>0?Math.round(result.damage)+' dégâts':result.healing>0?Math.round(result.healing)+' PV restaurés':result.shield?'bouclier de '+result.shield.remaining+' PV':result.purified>0?result.purified+' effet(s) purifié(s)':'effet appliqué';
+ combatMessage(MAGIC_LABELS[school]+' · '+result.spell.name+' : '+detail+'.');
+ updateCombatHud();
+}
 function performPlayerAttack(kind='physical'){
+ if(kind==='magic'){performMagicCast();return;}
  if(!state.model){combatMessage('Personnage indisponible.');return;}
  const dummyDistance=trainingDummyMesh?state.model.position.distanceTo(trainingDummyMesh.position):Infinity;
  const enemyDistance=enemyMesh&&enemyCombatant&&!enemyCombatant.defeated?state.model.position.distanceTo(enemyMesh.position):Infinity;
@@ -331,16 +380,11 @@ function performPlayerAttack(kind='physical'){
  const distance=targetMesh?state.model.position.distanceTo(targetMesh.position):Infinity;
  if(!target||target.defeated){combatMessage('Aucune cible disponible.');return;}
  if(distance>3.35){combatMessage('Rapproche-toi de la cible.');return;}
- const combo=kind==='magic'?null:advanceCombo(comboState,combatClockMs);
- const magicSchool=state.selectedMagicSchool||'fire';
- if(kind==='magic'&&!MAGIC_RACE_RULES[state.race]?.allowed.includes(magicSchool)){combatMessage('Cette école est interdite à ta race.');return;}
- const magicMultiplier=kind==='magic'?getMagicCastMultiplier(state.race,magicSchool,'offense'):1;
- const attack=kind==='magic'
-  ? {id:'training-'+magicSchool+'-spell',kind:'magic',element:magicSchool,base:24*magicMultiplier,relevantPower:0,powerCoefficient:0,techniqueMultiplier:1,schoolMasteryMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:12}
-  : {id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':combo.stage===2?'launcher':'light',techniqueId:selectedTechniqueId||undefined};
+ const combo=advanceCombo(comboState,combatClockMs);
+ const attack={id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':combo.stage===2?'launcher':'light',techniqueId:selectedTechniqueId||undefined};
  const result=executeAttack(playerCombatant,target,attack,{now:combatClockMs});
  if(!result.executed){if(kind!=='magic'){resetCombo(comboState);comboTargetId=null;}combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
- playAction(kind==='magic'?'charged_spell_cast':'attack',true);
+ playAction('attack',true);
  let reaction=null;
  if(kind==='physical'){if(combo.finisher)comboTargetId=null;else if(combo.stage===1)comboTargetId=target.id;}
  if(targetIsEnemy&&result.executed){reaction=resolveHitReaction({impact:attack.impact??result.damage,targetPoise:enemyCombatant.poise,targetMass:enemyCombatant.mass,controlResistance:enemyCombatant.controlResistance,attackType:attack.attackType||'magic'});if(attack.kind==='physical'&&(result.weaponCategory||attack.weaponCategory))reaction=applyWeaponHitProfile(reaction,result.weaponCategory||attack.weaponCategory);reaction=applyControlDiminishing(enemyControlDiminishing,reaction,combatClockMs);if(reaction.staggerMs>0)staggerEnemyAI(enemyAI);enemyStaggerUntil=combatClockMs+reaction.staggerMs;enemyKnockdownUntil=reaction.knockdown?enemyStaggerUntil:0;
@@ -350,9 +394,8 @@ function performPlayerAttack(kind='physical'){
  }
  const comboText=combo?(combo.finisher?' · FINISHER':` · COMBO ${combo.stage}/3`):'';
  const reactionText=reaction?' · '+reaction.reaction.toUpperCase():'';
- spawnCombatBurst(targetMesh.position.clone().add(new THREE.Vector3(0,1,0)),kind==='magic'?MAGIC_COLORS[magicSchool]:0xffd18a,kind==='magic'?52:32);
- if(kind==='magic'&&result.hit!==false){const equipped=state.magicProgression.equippedTechniques.normal.find(id=>id?.startsWith(magicSchool+':'))||null;const progress=recordMagicSkillUse(state.magicProgression,state.race,magicSchool,equipped);if(progress.recorded){state.magicProgression=progress.progression;playerCombatant.fireMastery=state.magicProgression.schools.fire.level;saveMagicProgression();}}
- combatMessage((kind==='magic'?'Sort de '+MAGIC_LABELS[magicSchool]:'Attaque')+comboText+reactionText+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
+ spawnCombatBurst(targetMesh.position.clone().add(new THREE.Vector3(0,1,0)),0xffd18a,32);
+ combatMessage('Attaque'+comboText+reactionText+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
  if(target.defeated)combatMessage(targetIsEnemy?'Pillard vaincu !':'Mannequin détruit ! Tu peux le réinitialiser.');
  updateCombatHud();updateWeaponProgressionHud();
 }
@@ -369,7 +412,7 @@ function combatAction(action){
   if(result.started){const dodgeAxes=getMovementAxes({gamePadX:state.gamePadX||0,gamePadY:state.gamePadY||0,touchX:state.touchX||0,touchForward:state.touchY||0});const destination=getDodgeDestination({x:state.model.position.x,z:state.model.position.z,side:dodgeAxes.side,forward:dodgeAxes.forward,cameraYaw:state.gameYaw,facingYaw:state.model.rotation.y,distance:2.15});state.dodgeMotion={from:state.model.position.clone(),to:new THREE.Vector3(destination.x,state.model.position.y,destination.z),elapsed:0,duration:.42};playAction('dodge_roll',true);combatMessage('Esquive : déplacement et invulnérabilité temporaire.');}
   else combatMessage('Pas assez d’endurance pour esquiver.');
  }else if(action==='reset'){
-  playerCombatant=createCombatant({id:'player',name:state.name||'Joueur',physicalStrength:10,fireMastery:1,weaponMastery:0});equipTrainingWeapon(selectedWeaponCategory);selectedTechniqueId='';resetCombo(comboState);comboTargetId=null;
+  playerCombatant=createCombatant({id:'player',name:state.name||'Joueur',race:state.race,physicalStrength:10*getMagicRaceStatModifiers(state.race).physicalStrength,defense:10*getMagicRaceStatModifiers(state.race).defense,fireMastery:state.magicProgression.schools.fire.level,weaponMastery:0});equipTrainingWeapon(selectedWeaponCategory);selectedTechniqueId='';resetCombo(comboState);comboTargetId=null;
   createTrainingDummy();createTrainingEnemy();combatMessage('Combat réinitialisé : PV, endurance et ennemis restaurés.');
  }
  updateCombatHud();updateWeaponProgressionHud();
@@ -381,8 +424,10 @@ function updateEnemyEncounter(dt,now){
  const distance=Math.hypot(dx,dz);
  const recoveryPose=updateHitRecovery(enemyRecovery,now);
  const recovering=recoveryPose.phase==='airborne'||recoveryPose.phase==='down'||recoveryPose.phase==='getting-up';
- const result=updateEnemyAI(enemyAI,{deltaSeconds:dt,distance,defeated:enemyCombatant.defeated,staggered:now<enemyStaggerUntil||recovering});
- if(result.canMove&&distance>enemyAI.attackRange*.88){const step=Math.min(distance-enemyAI.attackRange*.88,2.15*dt);enemyMesh.position.x+=dx/(distance||1)*step;enemyMesh.position.z+=dz/(distance||1)*step;}
+ const activeStatuses=enemyCombatant.statusEffects.filter(effect=>effect.expiresAt>now);
+ const frozen=enemyCombatant.frozenUntil>now,stunned=enemyCombatant.stunnedUntil>now,slowed=activeStatuses.some(effect=>effect.id==='soaked');
+ const result=updateEnemyAI(enemyAI,{deltaSeconds:dt,distance,defeated:enemyCombatant.defeated,staggered:now<enemyStaggerUntil||recovering||frozen||stunned});
+ if(result.canMove&&distance>enemyAI.attackRange*.88&&!frozen&&!stunned){const step=Math.min(distance-enemyAI.attackRange*.88,2.15*dt*(slowed?.65:1));enemyMesh.position.x+=dx/(distance||1)*step;enemyMesh.position.z+=dz/(distance||1)*step;}
  if(distance>.08)enemyMesh.rotation.y=Math.atan2(dx,dz);
  if(enemyMesh&&enemyCombatant&&!enemyCombatant.defeated){
   if(recoveryPose.phase==='airborne'){enemyMesh.rotation.x=-.18;enemyMesh.position.y=recoveryPose.height;}
@@ -521,16 +566,17 @@ async function loadSelectedCharacter(){const token=++state.loadToken,key=archive
   buildWardrobeUI();playAction('idle');setStatus('MODÈLE CHARGÉ',true);$('#category-note').textContent=`Modèle ${RACES.find(x=>x[0]===state.race)[1]} ${state.gender==='male'?'masculin':'féminin'} chargé. Aperçu 3D réel.`;return true;
  }catch(err){console.error(err);if(token===state.loadToken){setStatus('ERREUR DE CHARGEMENT');$('#category-note').textContent=err.message;showError(`Impossible de charger le personnage ${key}.\n${err.message}`);}return false;}}
 function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning()&&!oneShot)return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;if(oneShot){const duration=name==='attack'?.52:name==='charged_spell_cast'?.82:name==='dodge_roll'?.42:.62;next.setDuration(duration);}else next.timeScale=1;state.actionOneShot=oneShot;next.fadeIn(.08).play();if(previous&&previous!==next)previous.fadeOut(.08);state.currentAction=name;}
-async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}const raceStats=getMagicRaceStatModifiers(state.race);playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10*raceStats.physicalStrength,defense:10*raceStats.defense,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));loadMagicProgression();$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=Math.PI;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
+async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}const raceStats=getMagicRaceStatModifiers(state.race);playerCombatant=createCombatant({id:'player',name:state.name,race:state.race,physicalStrength:10*raceStats.physicalStrength,defense:10*raceStats.defense,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));loadMagicProgression();$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=Math.PI;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
 function showError(message){errorBox.hidden=false;errorBox.textContent=message;setTimeout(()=>{errorBox.hidden=true;},9000);}
 createRaceButtons();updateSelection();buildWardrobeUI();loadWorldResources();
 $('#race-options').addEventListener('click',()=>{});
 document.querySelectorAll('[data-gender]').forEach(b=>b.addEventListener('click',()=>{state.gender=b.dataset.gender;updateSelection();loadSelectedCharacter();}));
 document.querySelectorAll('.category').forEach(b=>b.addEventListener('click',()=>{state.category=b.dataset.category;document.querySelectorAll('.category').forEach(x=>x.classList.toggle('selected',x===b));const messages={appearance:'Le modèle de base de la race et du sexe sélectionnés est affiché.',hair:'Les variantes de coiffure ne sont pas encore séparées en pièces sélectionnables.',outfit:'20 pièces Quaternius disponibles pour les personnages humains : torse, bras, jambes, pieds, capuche et épaulières.',accessories:'Les accessoires personnalisables seront ajoutés à cette catégorie.'};$('#category-note').textContent=messages[state.category];}));
 $('#new-game-btn').addEventListener('click',()=>{setScreen('creator');loadSelectedCharacter();});
-$('#continue-btn').addEventListener('click',async()=>{const saved=localStorage.getItem('astrea-character');if(!saved){$('#new-game-btn').click();return;}try{const data=JSON.parse(saved);state.race=data.race;state.gender=data.gender;state.name=data.name;state.alias=data.alias;const raceStats=getMagicRaceStatModifiers(state.race);playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10*raceStats.physicalStrength,defense:10*raceStats.defense,fireMastery:1,weaponMastery:0});loadMagicProgression();updateSelection();$('#character-name').value=state.name;$('#player-alias').value=state.alias;$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;const loaded=await loadSelectedCharacter();if(!loaded)return;restoreWardrobe(data.wardrobe||{});setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}catch(err){showError('La sauvegarde du personnage est illisible.');console.error(err);}});
+$('#continue-btn').addEventListener('click',async()=>{const saved=localStorage.getItem('astrea-character');if(!saved){$('#new-game-btn').click();return;}try{const data=JSON.parse(saved);state.race=data.race;state.gender=data.gender;state.name=data.name;state.alias=data.alias;const raceStats=getMagicRaceStatModifiers(state.race);playerCombatant=createCombatant({id:'player',name:state.name,race:state.race,physicalStrength:10*raceStats.physicalStrength,defense:10*raceStats.defense,fireMastery:1,weaponMastery:0});loadMagicProgression();updateSelection();$('#character-name').value=state.name;$('#player-alias').value=state.alias;$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;const loaded=await loadSelectedCharacter();if(!loaded)return;restoreWardrobe(data.wardrobe||{});setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}catch(err){showError('La sauvegarde du personnage est illisible.');console.error(err);}});
 $('#back-menu').addEventListener('click',()=>setScreen('menu'));
 $('#create-character').addEventListener('click',saveCharacter);
+$('#magic-school-quick-select')?.addEventListener('change',e=>{state.selectedMagicSchool=e.target.value;updateMagicHud();});
 
 
 canvas.addEventListener('pointerdown',e=>{if(state.screen==='creator'){state.drag=true;state.lastX=e.clientX;canvas.setPointerCapture(e.pointerId);}});
@@ -562,7 +608,7 @@ let mouseDown=false,lastMouseX=0;canvas.addEventListener('pointerdown',e=>{if(st
   $('#world-interact')?.addEventListener('pointerdown',e=>{e.preventDefault();interactWithWorld();});
 
 let lastTime=performance.now();let currentMode='';let worldHudTimer=0;let lastRenderTime=0;
-function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);regenerateStamina(enemyCombatant,dt,true);combatClockMs+=dt*1000;updateEnemyEncounter(dt,combatClockMs);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
+function animate(now){requestAnimationFrame(animate);if(pauseRenderForWardrobe)return;const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;pollGamepad();const mode=state.screen;if(mode!==currentMode){currentMode=mode;}if(state.mixer)state.mixer.update(dt);if(mode==='game'){regenerateStamina(playerCombatant,dt,true);regenerateStamina(enemyCombatant,dt,true);regenerateMana(playerCombatant,dt);combatClockMs+=dt*1000;updateCombatantEffects(playerCombatant,combatClockMs);updateCombatantEffects(enemyCombatant,combatClockMs);updateCombatantEffects(trainingDummyCombatant,combatClockMs);updateEnemyEncounter(dt,combatClockMs);combatUiTimer+=dt;if(combatUiTimer>=.12){combatUiTimer=0;updateCombatHud();}}
  if(mode==='creator'||mode==='menu'){camera.position.lerp(new THREE.Vector3(0,1.45,state.previewDistance),.08);camera.lookAt(0,.92,0);if(state.model)state.model.rotation.y=state.previewYaw;}
  if(mode==='game'&&state.model){world.userData.updateStreaming?.(state.model.position);state.model.position.y=world.userData.getHeightAt?.(state.model.position.x,state.model.position.z)??state.model.position.y;worldHudTimer+=dt;if(worldHudTimer>=.25){worldHudTimer=0;updateWorldHud();}}
   if(world.userData.updateVFX)world.userData.updateVFX(now,dt);updateCombatVfx(dt);if(mode==='game'&&state.model&&!state.settingsOpen){const forward=(state.keys.has('w')||state.keys.has('z')||state.keys.has('arrowup')?1:0)-(state.keys.has('s')||state.keys.has('arrowdown')?1:0);const keyboardSide=(state.keys.has('d')||state.keys.has('arrowright')?1:0)-(state.keys.has('a')||state.keys.has('q')||state.keys.has('arrowleft')?1:0);const axes=getMovementAxes({keyboardForward:forward,keyboardSide,gamePadX:state.gamePadX||0,gamePadY:state.gamePadY||0,touchX:state.touchX||0,touchForward:state.touchY||0});const side=axes.side,actualForward=axes.forward;const moving=Math.hypot(actualForward,side)>.05;if(state.dodgeMotion){const motion=state.dodgeMotion;motion.elapsed=Math.min(motion.duration,motion.elapsed+dt);const t=motion.elapsed/motion.duration,ease=1-Math.pow(1-t,3);state.model.position.lerpVectors(motion.from,motion.to,ease);if(t>=1){state.model.position.copy(motion.to);state.dodgeMotion=null;}}else if(moving){const direction=getWorldMovementDirection(side,actualForward,state.gameYaw);const dx=direction.x,dz=direction.z;const run=state.keys.has('shift');state.model.position.x+=dx*(run?5.6:2.8)*dt;state.model.position.z+=dz*(run?5.6:2.8)*dt;const targetYaw=getFacingYaw(dx,dz);state.model.rotation.y=rotateAngleTowards(state.model.rotation.y,targetYaw,dt*9);if(!state.actionOneShot)playAction(run?'running':'walking');}else if(!state.actionOneShot)playAction('idle');const target=state.model.position.clone().add(new THREE.Vector3(0,1,0));const desired=new THREE.Vector3(target.x-Math.sin(state.gameYaw)*7,target.y+3.8,target.z-Math.cos(state.gameYaw)*7);if(state.settings.cameraFollow)camera.position.lerp(desired,.08);camera.lookAt(target);}
