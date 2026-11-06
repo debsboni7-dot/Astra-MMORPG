@@ -9,7 +9,7 @@
 - [ ] **À développer** : fonctionnalité définie ou souhaitée, mais pas encore implémentée de manière exploitable.
 - [?] **À vérifier** : le code ou les assets sont référencés, mais leur fonctionnement/qualité doit être confirmé dans le jeu ou sur appareils réels.
 
-Ne jamais passer un élément à « intégré » sur la seule présence d'un document, d'une interface fictive ou d'un module isolé. Ajouter une preuve (test, capture, scénario de jeu ou déploiement) lors de chaque changement de statut.
+Ne jamais passer un élément à « intégré » sur la seule présence d'un document, d'une interface fictive ou d'un module isolé. Ajouter une preuve (test, capture, scénario de jeu ou déploiement) lors de chaque changement de statut. Les tests Chromium automatisés couvrent des viewports desktop et mobile émulé ; ils ne remplacent pas la validation sur téléphone physique.
 
 ## Décisions de conception à préserver
 
@@ -31,7 +31,7 @@ Ne jamais passer un élément à « intégré » sur la seule présence d'un doc
 ## P0 — Fiabiliser le prototype jouable
 
 ### Client, contrôles et caméra
-- [~] Prototype navigateur Three.js et chargement du créateur de personnage.
+- [x] Prototype navigateur Three.js et chargement du créateur de personnage — validé en Chromium desktop et mobile (412 × 915) : HTTP 200, menu, ouverture du créateur, sept races, modèle GLB chargé, absence d’erreur JavaScript/console et absence de débordement du viewport. Test automatisé ajouté dans `tests/browser/prototype-smoke.test.js` et exécuté par GitHub Actions.
 - [~] Déplacement clavier, manette et tactile raccordé.
 - [?] Vérifier sur téléphone réel : joystick haut = avancer, bas = reculer, gauche/droite cohérents.
 - [?] Vérifier caméra, orientation, saut, collisions, limites du monde et retour après perte de focus.
