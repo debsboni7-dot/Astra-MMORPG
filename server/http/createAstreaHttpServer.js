@@ -20,7 +20,7 @@ function bearer(request) {
   return match?.[1] || null;
 }
 
-export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null }) {
+export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null }) {
   if (!authService || !characterService || !progressionService) throw new TypeError('Auth, character and progression services are required');
   return createServer(async (request, response) => {
     try {
@@ -42,7 +42,7 @@ export function createAstreaHttpServer({ authService, characterService, progress
         const account = await authService.authenticate(bearer(request));
         if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
         const body = await readJson(request);
-        const character = await characterService.create(account.id, body.displayName);
+        const character = await characterService.create(account.id, body.displayName, body.race || 'human');
         return send(response, 201, { character });
       }
       if (request.method === 'POST' && url.pathname === '/v1/auth/logout') {
@@ -50,6 +50,10 @@ export function createAstreaHttpServer({ authService, characterService, progress
         return send(response, 204, {});
       }
       const pathSegments = url.pathname.split('/');
+      const isMagicCombatSnapshot = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
+        pathSegments.length === 6 && pathSegments[4] === 'combat' && pathSegments[5] === 'magic';
+      const isMagicCombatCast = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
+        pathSegments.length === 7 && pathSegments[4] === 'combat' && pathSegments[5] === 'magic' && pathSegments[6] === 'cast';
       const isMagicSnapshot = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
         pathSegments.length === 6 && pathSegments[4] === 'progression' && pathSegments[5] === 'magic';
       const isMagicSchool = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
@@ -58,6 +62,20 @@ export function createAstreaHttpServer({ authService, characterService, progress
       const isMagicEquip = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
         pathSegments.length === 7 && pathSegments[4] === 'progression' && pathSegments[5] === 'magic' &&
         pathSegments[6] === 'equip';
+      if (magicCombatService && request.method === 'GET' && isMagicCombatSnapshot) {
+        const account = await authService.authenticate(bearer(request));
+        if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
+        const characterId = decodeURIComponent(pathSegments[3]);
+        return send(response, 200, await magicCombatService.getSnapshot(account.id, characterId));
+      }
+      if (magicCombatService && request.method === 'POST' && isMagicCombatCast) {
+        const account = await authService.authenticate(bearer(request));
+        if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
+        const characterId = decodeURIComponent(pathSegments[3]);
+        const body = await readJson(request);
+        const result = await magicCombatService.castSpell({ accountId:account.id, characterId, school:body.school, targetId:body.targetId || null, requestId:body.requestId });
+        return send(response, result.cast?.executed ? 200 : 409, result);
+      }
       if (magicProgressionService && request.method === 'GET' && isMagicSnapshot) {
         const account = await authService.authenticate(bearer(request));
         if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });

@@ -12,6 +12,10 @@ async function withServer(run) {
     },
     characterService: { async list() { return []; }, async create() { return {}; } },
     progressionService: { async getSnapshot() { return {}; } },
+    magicCombatService: {
+      async getSnapshot(accountId, characterId) { calls.push({ action:'combat-snapshot', accountId, characterId }); return { combat:{ mana:100 } }; },
+      async castSpell(input) { calls.push({ action:'combat-cast', ...input }); return { cast:{ executed:true, damage:18 } }; },
+    },
     magicProgressionService: {
       async getSnapshot(accountId, characterId) {
         calls.push({ action: 'snapshot', accountId, characterId });
@@ -72,5 +76,23 @@ test('magic equip route uses authenticated account rather than client account id
     assert.equal(call.characterId, 'char-1');
     assert.equal(call.school, 'water');
     assert.equal(call.slotType, 'normal');
+  });
+});
+
+
+test('magic combat routes require authentication and never accept client damage or account data', async () => {
+  await withServer(async (base, calls) => {
+    const denied = await fetch(base + '/v1/characters/char-1/combat/magic/cast', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({school:'fire',requestId:'request-123'}) });
+    assert.equal(denied.status,401);
+    const snapshot = await fetch(base + '/v1/characters/char-1/combat/magic', { headers:{authorization:'Bearer '+token} });
+    assert.equal(snapshot.status,200);
+    assert.deepEqual(await snapshot.json(),{combat:{mana:100}});
+    const response = await fetch(base + '/v1/characters/char-1/combat/magic/cast', {
+      method:'POST', headers:{authorization:'Bearer '+token,'content-type':'application/json'},
+      body:JSON.stringify({accountId:'attacker-account',school:'fire',targetId:'enemy-1',requestId:'request-123',damage:999999,mana:999999,target:{hp:1}}),
+    });
+    assert.equal(response.status,200);
+    const call = calls.find(item=>item.action==='combat-cast');
+    assert.deepEqual(call,{action:'combat-cast',accountId:'account-owner',characterId:'char-1',school:'fire',targetId:'enemy-1',requestId:'request-123'});
   });
 });

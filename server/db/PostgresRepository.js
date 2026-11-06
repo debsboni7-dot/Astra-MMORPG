@@ -12,16 +12,16 @@ export function createPostgresRepository(pool) {
       const { rows } = await pool.query('SELECT id,email,password_hash AS "passwordHash",password_salt AS "passwordSalt" FROM accounts WHERE email=$1', [email]);
       return rows[0] || null;
     },
-    async createCharacter(accountId, displayName) {
+    async createCharacter(accountId, displayName, race = 'human') {
       const { rows } = await pool.query(
-        'INSERT INTO characters (account_id,display_name) VALUES ($1,$2) RETURNING id,display_name AS "displayName",created_at AS "createdAt"',
-        [accountId, displayName],
+        `INSERT INTO characters (account_id,display_name,character_data) VALUES ($1,$2,$3::jsonb) RETURNING id,display_name AS "displayName",character_data AS "characterData",COALESCE(character_data->>'race','human') AS race,created_at AS "createdAt"`,
+        [accountId, displayName, JSON.stringify({ race })],
       );
       return rows[0];
     },
     async listCharacters(accountId) {
       const { rows } = await pool.query(
-        'SELECT id,display_name AS "displayName",created_at AS "createdAt" FROM characters WHERE account_id=$1 ORDER BY created_at,id',
+        `SELECT id,display_name AS "displayName",COALESCE(character_data->>'race','human') AS race,created_at AS "createdAt" FROM characters WHERE account_id=$1 ORDER BY created_at,id`,
         [accountId],
       );
       return rows;
@@ -41,7 +41,7 @@ export function createPostgresRepository(pool) {
       try {
         await client.query('BEGIN');
         const { rows } = await client.query(
-          'SELECT id,account_id AS "accountId",weapon_progression AS "weaponProgression",magic_progression AS "magicProgression" FROM characters WHERE id=$1 AND account_id=$2 FOR UPDATE',
+          'SELECT id,account_id AS "accountId",character_data AS "characterData",weapon_progression AS "weaponProgression",magic_progression AS "magicProgression",magic_combat_state AS "magicCombatState" FROM characters WHERE id=$1 AND account_id=$2 FOR UPDATE',
           [characterId, accountId],
         );
         if (!rows[0]) throw Object.assign(new Error('Personnage introuvable ou non autorisé'), { code: 'CHARACTER_NOT_FOUND' });
@@ -51,7 +51,10 @@ export function createPostgresRepository(pool) {
           if (!column) throw new TypeError('Unknown progression storage kind');
           await client.query(`UPDATE characters SET ${column}=$1::jsonb WHERE id=$2`, [JSON.stringify(progression), characterId]);
         };
-        const result = await callback(character, saveProgression);
+        const saveCombatState = async state => {
+          await client.query('UPDATE characters SET magic_combat_state=$1::jsonb,updated_at=NOW() WHERE id=$2', [JSON.stringify(state), characterId]);
+        };
+        const result = await callback(character, saveProgression, saveCombatState);
         await client.query('COMMIT');
         return result;
       } catch (error) {
