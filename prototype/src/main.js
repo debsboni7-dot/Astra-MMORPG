@@ -7,7 +7,7 @@ import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createH
 import { createAstreaWorld } from './world/astrea-world.js';
 import { normalizeTouchStick, getMovementAxes, getDodgeDestination, getWorldMovementDirection, getFacingYaw, rotateAngleTowards } from './input/movement.js';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, validateSettings } from './settings.js';
-import { MAGIC_SCHOOLS } from './magic/MagicSkillTree.js';
+import { MAGIC_SCHOOLS, MAGIC_RACE_RULES, createMagicProgression, sanitizeMagicProgression, getMagicSkillTree, recordMagicSkillUse, equipMagicTechnique, getMagicCastMultiplier, getMagicRaceStatModifiers } from './magic/MagicSkillTree.js';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#viewport'), loading = $('#loading'), errorBox = $('#error');
@@ -92,7 +92,7 @@ let comboTargetId = null;
 let enemyBaseY = 0;
 let combatUiTimer = 0;
 let combatClockMs = 0;
-const state = {settingsOpen:false,settings:loadSettings(),race:'human',gender:'male',category:'appearance',name:'',alias:'',screen:'menu',model:null,mixer:null,actions:{},currentAction:'idle',actionOneShot:false,dodgeMotion:null,zipCache:new Map(),loadToken:0,gameYaw:0,gamePos:new THREE.Vector3(0,0,0),keys:new Set(),drag:false,lastX:0,previewYaw:0,previewDistance:4.8,wardrobe:Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,''])),wardrobeObjects:{},wardrobeToken:0,wardrobeSlotTokens:{}};
+const state = {settingsOpen:false,settings:loadSettings(),magicProgression:createMagicProgression('human'),selectedMagicSchool:'fire',race:'human',gender:'male',category:'appearance',name:'',alias:'',screen:'menu',model:null,mixer:null,actions:{},currentAction:'idle',actionOneShot:false,dodgeMotion:null,zipCache:new Map(),loadToken:0,gameYaw:0,gamePos:new THREE.Vector3(0,0,0),keys:new Set(),drag:false,lastX:0,previewYaw:0,previewDistance:4.8,wardrobe:Object.fromEntries(WARDROBE_SLOTS.map(slot=>[slot.id,''])),wardrobeObjects:{},wardrobeToken:0,wardrobeSlotTokens:{}};
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xc5e5bd);
@@ -316,6 +316,10 @@ function updateCombatHud(){
  bar('#combat-target-hp-bar',trainingDummyCombatant.hp,trainingDummyCombatant.maxHp);
  if(enemyCombatant)bar('#combat-enemy-hp-bar',enemyCombatant.hp,enemyCombatant.maxHp);
 }
+const MAGIC_LABELS={fire:'Feu',water:'Eau',wind:'Vent',earth:'Terre',ice:'Glace',lightning:'Foudre',nature:'Nature',light:'Lumière',demonic:'Démoniaque'};
+const MAGIC_COLORS={fire:0xff713b,water:0x53b8ed,wind:0xc9f3dd,earth:0xb88b58,ice:0x9ce9ff,lightning:0xffed62,nature:0x75d66e,light:0xfff3b0,demonic:0x9c68d8};
+function loadMagicProgression(){try{state.magicProgression=sanitizeMagicProgression(JSON.parse(localStorage.getItem('astrea.magic.v2')||'{}'),state.race);}catch{state.magicProgression=createMagicProgression(state.race);}playerCombatant.fireMastery=state.magicProgression.schools.fire.level;saveMagicProgression();}
+function saveMagicProgression(){localStorage.setItem('astrea.magic.v2',JSON.stringify(state.magicProgression));}
 function performPlayerAttack(kind='physical'){
  if(!state.model){combatMessage('Personnage indisponible.');return;}
  const dummyDistance=trainingDummyMesh?state.model.position.distanceTo(trainingDummyMesh.position):Infinity;
@@ -328,8 +332,11 @@ function performPlayerAttack(kind='physical'){
  if(!target||target.defeated){combatMessage('Aucune cible disponible.');return;}
  if(distance>3.35){combatMessage('Rapproche-toi de la cible.');return;}
  const combo=kind==='magic'?null:advanceCombo(comboState,combatClockMs);
+ const magicSchool=state.selectedMagicSchool||'fire';
+ if(kind==='magic'&&!MAGIC_RACE_RULES[state.race]?.allowed.includes(magicSchool)){combatMessage('Cette école est interdite à ta race.');return;}
+ const magicMultiplier=kind==='magic'?getMagicCastMultiplier(state.race,magicSchool,'offense'):1;
  const attack=kind==='magic'
-  ? {id:'training-fire-bolt',kind:'magic',element:'fire',base:24,relevantPower:0,powerCoefficient:0,techniqueMultiplier:1,schoolMasteryMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:12}
+  ? {id:'training-'+magicSchool+'-spell',kind:'magic',element:magicSchool,base:24*magicMultiplier,relevantPower:0,powerCoefficient:0,techniqueMultiplier:1,schoolMasteryMultiplier:1,executionQuality:1,criticalChance:0,staminaCost:12}
   : {id:'training-combo-'+combo.stage,kind:'physical',base:16,strength:playerCombatant.physicalStrength,strengthCoefficient:.25,techniqueMultiplier:combo.multiplier,executionQuality:1,criticalChance:0,staminaCost:combo.staminaCost,impact:24+combo.stage*18,attackType:combo.finisher?'finisher':combo.stage===2?'launcher':'light',techniqueId:selectedTechniqueId||undefined};
  const result=executeAttack(playerCombatant,target,attack,{now:combatClockMs});
  if(!result.executed){if(kind!=='magic'){resetCombo(comboState);comboTargetId=null;}combatMessage(result.reason==='insufficient-stamina'?'Pas assez d’endurance.':'Attaque impossible : '+result.reason);return;}
@@ -343,8 +350,9 @@ function performPlayerAttack(kind='physical'){
  }
  const comboText=combo?(combo.finisher?' · FINISHER':` · COMBO ${combo.stage}/3`):'';
  const reactionText=reaction?' · '+reaction.reaction.toUpperCase():'';
- spawnCombatBurst(targetMesh.position.clone().add(new THREE.Vector3(0,1,0)),kind==='magic'?0xff632e:0xffd18a,kind==='magic'?52:32);
- combatMessage((kind==='magic'?'Sort de feu':'Attaque')+comboText+reactionText+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
+ spawnCombatBurst(targetMesh.position.clone().add(new THREE.Vector3(0,1,0)),kind==='magic'?MAGIC_COLORS[magicSchool]:0xffd18a,kind==='magic'?52:32);
+ if(kind==='magic'&&result.hit!==false){const equipped=state.magicProgression.equippedTechniques.normal.find(id=>id?.startsWith(magicSchool+':'))||null;const progress=recordMagicSkillUse(state.magicProgression,state.race,magicSchool,equipped);if(progress.recorded){state.magicProgression=progress.progression;playerCombatant.fireMastery=state.magicProgression.schools.fire.level;saveMagicProgression();}}
+ combatMessage((kind==='magic'?'Sort de '+MAGIC_LABELS[magicSchool]:'Attaque')+comboText+reactionText+' : '+Math.round(result.damage)+' dégâts infligés à '+target.name+'.');
  if(target.defeated)combatMessage(targetIsEnemy?'Pillard vaincu !':'Mannequin détruit ! Tu peux le réinitialiser.');
  updateCombatHud();updateWeaponProgressionHud();
 }
@@ -431,11 +439,24 @@ function settingRow(label,type,key,extra=[]){
  else {const options=Array.isArray(extra[0])?extra[0]:extra;control=`<select data-setting="${key}">${options.map(([v,l])=>`<option value="${v}" ${String(v)===String(value)?'selected':''}>${l}</option>`).join('')}</select>`;}
  return `<label class="setting-row"><span>${label}</span>${control}</label>`;
 }
+let selectedMagicSchool='fire';
+function renderMagicSystem(){
+ const progression=state.magicProgression;
+ const allowed=MAGIC_RACE_RULES[state.race]?.allowed||[];
+ const school=selectedMagicSchool;
+ const schoolState=progression.schools[school];
+ const tree=getMagicSkillTree(school,progression);
+ const slots=[...progression.equippedTechniques.normal.map((id,i)=>({id,type:'normal',index:i,label:'Normale '+(i+1)})),...progression.equippedTechniques.ultimate.map((id,i)=>({id,type:'ultimate',index:i,label:'Ultime '+(i+1)}))];
+ const schoolCards=MAGIC_SCHOOLS.map(key=>`<button type="button" class="magic-school ${school===key?'selected':''} ${allowed.includes(key)?'':'locked'}" data-magic-school="${key}" ${allowed.includes(key)?'':'disabled'}><b>${MAGIC_LABELS[key]}</b><small>${allowed.includes(key)?'NIVEAU '+progression.schools[key].level:'INTERDITE À TA RACE'}</small></button>`).join('');
+ const nodes=tree.nodes.filter(node=>node.unlocked).slice(0,20).map(node=>`<article class="magic-skill"><div><b>${node.id}</b><small>${node.branch.toUpperCase()} · PALIER ${node.tier} · MAÎTRISE ${node.masteryLevel}/5</small></div><div class="magic-equip">${(node.branch==='ultimate'?slots.filter(x=>x.type==='ultimate'):slots.filter(x=>x.type==='normal')).map(slot=>`<button type="button" data-equip-skill="${node.id}" data-slot-type="${slot.type}" data-slot-index="${slot.index}">${slot.id===node.id?'✓ ':''}${slot.label}</button>`).join('')}</div></article>`).join('');
+ settingsContent.innerHTML=`<div class="magic-heading"><button type="button" data-magic-back>← SYSTÈMES</button><div><h3>MAGIE · ${MAGIC_LABELS[school].toUpperCase()}</h3><p>Progression par utilisation réussie · aucune dépense de points</p></div></div><div class="magic-school-grid">${schoolCards}</div><section class="setting-card magic-progress"><h3>Progression · ${MAGIC_LABELS[school]}</h3><div class="magic-progress-row"><b>Niveau ${schoolState.level}/100</b><span>${schoolState.xp} XP · ${schoolState.successfulCasts} lancements réussis</span></div><div class="magic-progress-track"><i style="width:${Math.round((schoolState.xp%Math.max(1,20+4*schoolState.level))/Math.max(1,20+4*schoolState.level)*100)}%"></i></div><p>Les techniques se débloquent automatiquement en utilisant cette école.</p></section><section class="setting-card"><h3>Techniques équipées</h3><div class="magic-slots">${slots.map(slot=>`<div><small>${slot.label}</small><b>${slot.id||'Emplacement vide'}</b></div>`).join('')}</div></section><section class="setting-card"><h3>Techniques débloquées (${tree.nodes.filter(n=>n.unlocked).length}/75)</h3>${nodes||'<p class="magic-empty">Aucune technique débloquée. Utilise cette école en combat pour progresser.</p>'}</section><p class="magic-disclaimer">Prototype local : la progression est sauvegardée sur cet appareil. La synchronisation serveur et le combat multijoueur restent à connecter.</p>`;
+}
 function renderSettingsTab(){
  if(!settingsContent)return;
+ if(activeSettingsTab==='magic'){renderMagicSystem();return;}
  if(activeSettingsTab==='systems'){
-  const cards=[['Personnage','Races, apparence, équipement et progression.','Actif'],['Magie',`${MAGIC_SCHOOLS.length} écoles élémentaires et spécialisations. Le système de progression existe dans le code, son interface complète reste à relier.`,'Prototype'],['Compétences','Maîtrise des armes, techniques et progression par utilisation.','Prototype'],['Inventaire','Objets, ressources, équipements et artisanat.','À construire'],['Quêtes','Missions, objectifs et récompenses.','À construire'],['Guildes','Création de guilde, rangs, membres et coffre commun.','À construire'],['Royaumes','Territoires, souverain, ministères, taxes et lois.','À construire'],['Carte','Continents, régions, villes et points d’intérêt.','Prototype'],['Social','Amis, groupes, échanges et messagerie.','À construire']];
-  settingsContent.innerHTML=`<div class="setting-card"><h3>Univers ASTREA</h3><p>Les modules indiqués Prototype ou À construire ne sont pas encore des services multijoueurs opérationnels.</p></div><div class="system-grid">${cards.map(([n,d,s])=>`<article class="system-card"><b>${n}</b><p>${d}</p><em>${s.toUpperCase()}</em></article>`).join('')}</div>`;return;
+  const cards=[['Personnage','Races, apparence, équipement et progression.','Actif'],['Magie',`${MAGIC_SCHOOLS.length} écoles · progression par utilisation réussie · restrictions selon la race · 3 techniques normales et 2 ultimes.`,'Prototype'],['Compétences','Maîtrise des armes, techniques et progression par utilisation.','Prototype'],['Inventaire','Objets, ressources, équipements et artisanat.','À construire'],['Quêtes','Missions, objectifs et récompenses.','À construire'],['Guildes','Création de guilde, rangs, membres et coffre commun.','À construire'],['Royaumes','Territoires, souverain, ministères, taxes et lois.','À construire'],['Carte','Continents, régions, villes et points d’intérêt.','Prototype'],['Social','Amis, groupes, échanges et messagerie.','À construire']];
+  settingsContent.innerHTML=`<div class="setting-card"><h3>Univers ASTREA</h3><p>Les modules indiqués Prototype ou À construire ne sont pas encore des services multijoueurs opérationnels.</p></div><div class="system-grid">${cards.map(([n,d,s])=>`<button type="button" class="system-card" data-system="${n}"><b>${n}</b><p>${d}</p><em>${s.toUpperCase()}</em></button>`).join('')}</div>`;return;
  }
  const groups=settingDefinitions[activeSettingsTab]||[];settingsContent.innerHTML=groups.map(([title,rows])=>`<section class="setting-card"><h3>${title}</h3>${rows.map(([label,type,key,...extra])=>settingRow(label,type,key,extra)).join('')}</section>`).join('');
 }
@@ -449,6 +470,13 @@ function openSettings(){if(state.screen!=='game')return;state.settingsOpen=true;
 function closeSettings(){state.settingsOpen=false;settingsScreen.hidden=true;$('#settings-open').hidden=false;}
 $('#settings-open')?.addEventListener('click',openSettings);$('#settings-close')?.addEventListener('click',closeSettings);
 $('#settings-tabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;activeSettingsTab=b.dataset.tab;document.querySelectorAll('#settings-tabs button').forEach(x=>x.classList.toggle('active',x===b));renderSettingsTab();});
+settingsContent?.addEventListener('click',e=>{
+ const system=e.target.closest('[data-system]');
+ if(system?.dataset.system==='Magie'){selectedMagicSchool=state.selectedMagicSchool;activeSettingsTab='magic';renderSettingsTab();return;}
+ const back=e.target.closest('[data-magic-back]');if(back){activeSettingsTab='systems';renderSettingsTab();return;}
+ const school=e.target.closest('[data-magic-school]');if(school){selectedMagicSchool=school.dataset.magicSchool;state.selectedMagicSchool=selectedMagicSchool;renderMagicSystem();return;}
+ const equip=e.target.closest('[data-equip-skill]');if(equip){const result=equipMagicTechnique(state.magicProgression,selectedMagicSchool,equip.dataset.equipSkill,equip.dataset.slotType,Number(equip.dataset.slotIndex));if(result.equipped){state.magicProgression=result.progression;saveMagicProgression();}renderMagicSystem();return;}
+});
 settingsContent?.addEventListener('input',e=>{const el=e.target.closest('[data-setting]');if(!el)return;setSetting(el.dataset.setting,el.type==='checkbox'?el.checked:el.type==='range'?Number(el.value):el.value);const output=el.parentElement.querySelector('output');if(output&&el.type==='range')output.textContent=el.value+'%';});
 settingsContent?.addEventListener('change',e=>{const el=e.target.closest('[data-setting]');if(!el)return;setSetting(el.dataset.setting,el.type==='checkbox'?el.checked:el.type==='range'?Number(el.value):el.value);});
 $('#settings-reset')?.addEventListener('click',()=>{state.settings={...DEFAULT_SETTINGS};saveSettings(state.settings);applySettings();renderSettingsTab();$('#settings-saved').textContent='Valeurs par défaut restaurées';});
@@ -493,14 +521,14 @@ async function loadSelectedCharacter(){const token=++state.loadToken,key=archive
   buildWardrobeUI();playAction('idle');setStatus('MODÈLE CHARGÉ',true);$('#category-note').textContent=`Modèle ${RACES.find(x=>x[0]===state.race)[1]} ${state.gender==='male'?'masculin':'féminin'} chargé. Aperçu 3D réel.`;return true;
  }catch(err){console.error(err);if(token===state.loadToken){setStatus('ERREUR DE CHARGEMENT');$('#category-note').textContent=err.message;showError(`Impossible de charger le personnage ${key}.\n${err.message}`);}return false;}}
 function playAction(name,oneShot=false){if(!state.mixer||!state.actions[name])return;const next=state.actions[name];if(state.currentAction===name&&next.isRunning()&&!oneShot)return;const previous=state.actions[state.currentAction];next.reset();next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);next.clampWhenFinished=oneShot;if(oneShot){const duration=name==='attack'?.52:name==='charged_spell_cast'?.82:name==='dodge_roll'?.42:.62;next.setDuration(duration);}else next.timeScale=1;state.actionOneShot=oneShot;next.fadeIn(.08).play();if(previous&&previous!==next)previous.fadeOut(.08);state.currentAction=name;}
-async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=Math.PI;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
+async function saveCharacter(){state.name=$('#character-name').value.trim();state.alias=$('#player-alias').value.trim();if(!state.name||!state.alias){$('#category-note').textContent='Renseigne le nom du personnage et ton pseudonyme avant de continuer.';(!state.name?$('#character-name'):$('#player-alias')).focus();return;}const raceStats=getMagicRaceStatModifiers(state.race);playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10*raceStats.physicalStrength,defense:10*raceStats.defense,fireMastery:1,weaponMastery:0});const button=$('#create-character');button.disabled=true;button.textContent='CHARGEMENT…';try{if(!state.model||state.model.name!==archiveKey()){const loaded=await loadSelectedCharacter();if(!loaded||!state.model||state.model.name!==archiveKey())return;}const data={race:state.race,gender:state.gender,name:state.name,alias:state.alias,wardrobe:{...state.wardrobe}};localStorage.setItem('astrea-character',JSON.stringify(data));loadMagicProgression();$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=Math.PI;state.previewYaw=0;playAction('idle');}finally{button.disabled=false;button.textContent='CRÉER LE PERSONNAGE';}}
 function showError(message){errorBox.hidden=false;errorBox.textContent=message;setTimeout(()=>{errorBox.hidden=true;},9000);}
 createRaceButtons();updateSelection();buildWardrobeUI();loadWorldResources();
 $('#race-options').addEventListener('click',()=>{});
 document.querySelectorAll('[data-gender]').forEach(b=>b.addEventListener('click',()=>{state.gender=b.dataset.gender;updateSelection();loadSelectedCharacter();}));
 document.querySelectorAll('.category').forEach(b=>b.addEventListener('click',()=>{state.category=b.dataset.category;document.querySelectorAll('.category').forEach(x=>x.classList.toggle('selected',x===b));const messages={appearance:'Le modèle de base de la race et du sexe sélectionnés est affiché.',hair:'Les variantes de coiffure ne sont pas encore séparées en pièces sélectionnables.',outfit:'20 pièces Quaternius disponibles pour les personnages humains : torse, bras, jambes, pieds, capuche et épaulières.',accessories:'Les accessoires personnalisables seront ajoutés à cette catégorie.'};$('#category-note').textContent=messages[state.category];}));
 $('#new-game-btn').addEventListener('click',()=>{setScreen('creator');loadSelectedCharacter();});
-$('#continue-btn').addEventListener('click',async()=>{const saved=localStorage.getItem('astrea-character');if(!saved){$('#new-game-btn').click();return;}try{const data=JSON.parse(saved);state.race=data.race;state.gender=data.gender;state.name=data.name;state.alias=data.alias;updateSelection();$('#character-name').value=state.name;$('#player-alias').value=state.alias;$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;const loaded=await loadSelectedCharacter();if(!loaded)return;restoreWardrobe(data.wardrobe||{});setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}catch(err){showError('La sauvegarde du personnage est illisible.');console.error(err);}});
+$('#continue-btn').addEventListener('click',async()=>{const saved=localStorage.getItem('astrea-character');if(!saved){$('#new-game-btn').click();return;}try{const data=JSON.parse(saved);state.race=data.race;state.gender=data.gender;state.name=data.name;state.alias=data.alias;const raceStats=getMagicRaceStatModifiers(state.race);playerCombatant=createCombatant({id:'player',name:state.name,physicalStrength:10*raceStats.physicalStrength,defense:10*raceStats.defense,fireMastery:1,weaponMastery:0});loadMagicProgression();updateSelection();$('#character-name').value=state.name;$('#player-alias').value=state.alias;$('#hud-player').textContent=`${state.name} · ${state.alias} · ${RACES.find(x=>x[0]===state.race)[1]}`;const loaded=await loadSelectedCharacter();if(!loaded)return;restoreWardrobe(data.wardrobe||{});setScreen('game');state.model.position.set(0,0,0);state.model.rotation.y=0;state.previewYaw=0;playAction('idle');}catch(err){showError('La sauvegarde du personnage est illisible.');console.error(err);}});
 $('#back-menu').addEventListener('click',()=>setScreen('menu'));
 $('#create-character').addEventListener('click',saveCharacter);
 

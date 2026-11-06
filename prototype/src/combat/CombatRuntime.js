@@ -15,6 +15,7 @@ export function createCombatant(config = {}) {
     staminaRegenCombat: Math.max(0, number(config.staminaRegenCombat, 8)),
     staminaRegenRest: Math.max(0, number(config.staminaRegenRest, 18)),
     physicalStrength: Math.max(0, number(config.physicalStrength, 10)),
+    defense: Math.max(0, number(config.defense, 0)),
     fireMastery: Math.max(0, number(config.fireMastery, 0)),
     weapon: config.weapon || null,
     weaponMastery: Math.max(0, number(config.weaponMastery, 0)),

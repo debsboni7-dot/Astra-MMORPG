@@ -21,9 +21,9 @@ async function withServer(run) {
         calls.push({ action: 'tree', accountId, characterId, school });
         return { school, nodes: [] };
       },
-      async unlockSkill(input) {
-        calls.push({ action: 'unlock', ...input });
-        return { unlocked: true, skill: { id: input.school + ':' + input.branch + ':' + input.index } };
+      async equipTechnique(input) {
+        calls.push({ action: 'equip', ...input });
+        return { equipped: true };
       },
     },
   });
@@ -59,17 +59,18 @@ test('magic school tree route returns the requested school', async () => {
   });
 });
 
-test('magic unlock route uses authenticated account rather than client account id', async () => {
+test('magic equip route uses authenticated account rather than client account id', async () => {
   await withServer(async (base, calls) => {
-    const response = await fetch(base + '/v1/characters/char-1/progression/magic/unlock', {
+    const response = await fetch(base + '/v1/characters/char-1/progression/magic/equip', {
       method: 'POST',
       headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
-      body: JSON.stringify({ accountId: 'attacker-account', school: 'water', branch: 'defense', index: 0 }),
+      body: JSON.stringify({ accountId: 'attacker-account', school: 'water', skillId: 'water:offense:1', slotType: 'normal', slotIndex: 0 }),
     });
     assert.equal(response.status, 200);
     const call = calls[0];
     assert.equal(call.accountId, 'account-owner');
     assert.equal(call.characterId, 'char-1');
     assert.equal(call.school, 'water');
+    assert.equal(call.slotType, 'normal');
   });
 });
