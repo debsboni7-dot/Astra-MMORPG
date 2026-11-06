@@ -1,23 +1,28 @@
-# Sauvegarde serveur de la progression magique
+# ASTREA — persistance serveur de la magie v2
 
-Le moteur partagé est défini dans `prototype/src/magic/MagicSkillTree.js`. Le service serveur est `server/progression/MagicProgressionService.js`.
+Le moteur partagé est `prototype/src/magic/MagicSkillTree.js`. Le service transactionnel est `server/progression/MagicProgressionService.js`.
 
-## Contrat de persistance
+## Contrat
 
-L'adaptateur doit fournir :
-- `withCharacterTransaction(accountId, characterId, callback)` : authentifie le propriétaire via l'identité de session, verrouille le personnage et valide la transaction ;
-- `saveMagicProgression(characterId, progression)` : écrit le JSON validé dans `characters.magic_progression`.
+L'adaptateur de dépôt doit fournir `withCharacterTransaction(accountId, characterId, callback)`, vérifier la propriété du personnage et sauvegarder le JSON de progression dans la transaction. La race est lue depuis la fiche du personnage ; à défaut, la valeur de race déjà contenue dans la progression est conservée.
 
-L'identifiant du compte doit provenir de la session authentifiée, jamais du corps de requête. Les identifiants de compétences, points et XP envoyés par un client ne constituent jamais une preuve d'acquisition.
+## Progression autorisée
 
-## Événements autorisés
+- `recordSuccessfulCast` est appelé seulement après validation et résolution d'un sort réussi par le moteur de combat serveur.
+- L'identifiant d'événement est obligatoire et les événements rejoués sont ignorés.
+- L'école est validée contre les restrictions de race avant tout gain d'XP.
+- Les techniques se débloquent automatiquement à travers les utilisations confirmées et les niveaux d'école. Aucun point de compétence n'existe.
+- `equipTechnique` ne permet d'équiper qu'une technique déjà débloquée dans un emplacement de catégorie correspondante.
+- Le client ne peut pas envoyer de montant d'XP, de niveau ou de progression.
 
-- `unlockSkill` vérifie niveau d'école, points disponibles et prérequis avant de sauvegarder.
-- `grantPointsFromServerEvent` doit être appelé uniquement par le système de progression de confiance, avec un identifiant d'événement serveur.
-- `recordSuccessfulCast` est appelé après validation et résolution du sort par le serveur. Il n'accepte aucun montant d'XP venant du client.
-- Les identifiants d'événements déjà traités sont conservés dans un journal borné afin qu'une répétition réseau ne donne pas deux fois les mêmes points, XP ou maîtrises. L'adaptateur transactionnel doit sérialiser les modifications d'un personnage.
-- `getSnapshot` et `getTree` lisent les données du personnage après vérification de propriété.
+## API HTTP
 
-## Limite actuelle
+- `GET /v1/characters/:id/progression/magic` : snapshot après authentification et vérification de propriété.
+- `GET /v1/characters/:id/progression/magic/:school` : arbre d'une école.
+- `POST /v1/characters/:id/progression/magic/equip` : équipement d'une technique déjà acquise. Le compte vient de la session authentifiée.
 
-Le service et la migration PostgreSQL sont des éléments d'intégration. Le dépôt ne possède pas encore d'adaptateur PostgreSQL opérationnel ni de serveur de jeu multijoueur déployé. Il ne faut donc pas présenter cette progression comme déjà synchronisée en production.
+Le gain d'expérience par sort réussi doit rester un appel interne du moteur de combat serveur, pas une route publique contrôlée par le client.
+
+## Limite de déploiement
+
+Le service et les tests de contrat sont dans le dépôt, mais l'adaptateur PostgreSQL complet et le serveur de simulation multijoueur ne sont pas déployés. Le prototype web actuel utilise une sauvegarde locale pour permettre l'essai des règles sans prétendre à une synchronisation multijoueur.

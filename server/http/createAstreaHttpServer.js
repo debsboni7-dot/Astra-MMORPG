@@ -55,9 +55,9 @@ export function createAstreaHttpServer({ authService, characterService, progress
       const isMagicSchool = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
         pathSegments.length === 7 && pathSegments[4] === 'progression' && pathSegments[5] === 'magic' &&
         pathSegments[6] !== 'unlock';
-      const isMagicUnlock = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
+      const isMagicEquip = pathSegments[1] === 'v1' && pathSegments[2] === 'characters' &&
         pathSegments.length === 7 && pathSegments[4] === 'progression' && pathSegments[5] === 'magic' &&
-        pathSegments[6] === 'unlock';
+        pathSegments[6] === 'equip';
       if (magicProgressionService && request.method === 'GET' && isMagicSnapshot) {
         const account = await authService.authenticate(bearer(request));
         if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
@@ -71,16 +71,16 @@ export function createAstreaHttpServer({ authService, characterService, progress
         const school = decodeURIComponent(pathSegments[6]);
         return send(response, 200, await magicProgressionService.getTree(account.id, characterId, school));
       }
-      if (magicProgressionService && request.method === 'POST' && isMagicUnlock) {
+      if (magicProgressionService && request.method === 'POST' && isMagicEquip) {
         const account = await authService.authenticate(bearer(request));
         if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
         const characterId = decodeURIComponent(pathSegments[3]);
         const body = await readJson(request);
-        const result = await magicProgressionService.unlockSkill({
-          accountId: account.id, characterId, school: body.school,
-          branch: body.branch, index: body.index,
+        const result = await magicProgressionService.equipTechnique({
+          accountId: account.id, characterId, school: body.school, skillId: body.skillId,
+          slotType: body.slotType, slotIndex: body.slotIndex,
         });
-        return send(response, result.unlocked ? 200 : 409, result);
+        return send(response, result.equipped ? 200 : 409, result);
       }
       if (request.method === 'GET' && /^\/v1\/characters\/[^/]+\/progression\/weapons$/.test(url.pathname)) {
         const account = await authService.authenticate(bearer(request));
