@@ -127,3 +127,37 @@ test('weapon categories produce distinct hit-control signatures', () => {
   assert.equal(applyWeaponHitProfile(base, 'unknown').weaponCategory, 'unarmed');
   assert.equal(applyWeaponHitProfile(base, 'unarmed').knockback, base.knockback);
 });
+
+
+test('physical and magic inputs remain in one hybrid combo chain', () => {
+  const combo = createComboState({ maxStage: 3, inputWindowMs: 800 });
+  const first = advanceCombo(combo, 1000, { inputType: 'physical', race: 'human' });
+  const second = advanceCombo(combo, 1450, { inputType: 'magic', race: 'human' });
+  const third = advanceCombo(combo, 1800, { inputType: 'physical', race: 'human' });
+  assert.equal(first.hybrid, false);
+  assert.equal(second.hybrid, true);
+  assert.equal(third.hybrid, true);
+  assert.deepEqual(third.sequence, ['physical', 'magic', 'physical']);
+  assert.equal(third.signature, 'spellblade-link');
+  assert.equal(third.finisher, true);
+});
+
+test('each race receives its own physical, magical and hybrid combo identity', () => {
+  const expected = { human:'spellblade-link', elf:'windstep-weave', dwarf:'rune-smash', demon:'hellchain', angel:'judgement-chain', orc:'warfire-crash', dragonoid:'wyrm-combo' };
+  for (const [race, signature] of Object.entries(expected)) {
+    const combo = createComboState();
+    advanceCombo(combo, 0, { inputType:'physical', race });
+    const hybrid = advanceCombo(combo, 200, { inputType:'magic', race });
+    assert.equal(hybrid.signature, signature);
+    assert.equal(hybrid.race, race);
+  }
+});
+
+test('hybrid combo resets after its input window expires', () => {
+  const combo = createComboState({ inputWindowMs: 500 });
+  advanceCombo(combo, 100, { inputType:'physical', race:'orc' });
+  const next = advanceCombo(combo, 900, { inputType:'magic', race:'orc' });
+  assert.equal(next.stage, 1);
+  assert.equal(next.hybrid, false);
+  assert.deepEqual(next.sequence, ['magic']);
+});
