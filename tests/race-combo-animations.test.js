@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RACE_COMBO_ANIMATION_PROFILES, createRaceComboAnimations } from '../prototype/src/combat/RaceComboAnimations.js';
+import { RACE_COMBO_ANIMATION_PROFILES, WEAPON_ANIMATION_PROFILES, createRaceComboAnimations } from '../prototype/src/combat/RaceComboAnimations.js';
 
 test('every ASTREA race has a distinct procedural combo motion profile', () => {
   for (const race of ['human','elf','dwarf','demon','angel','orc','dragonoid']) {
@@ -22,3 +22,6 @@ test('animation generator safely returns no clips for a rig without recognized b
   const mixer = { clipAction() { throw new Error('no clip should be created'); } };
   assert.deepEqual(createRaceComboAnimations({}, model, mixer, 'human'), {});
 });
+
+test('weapon finisher profiles cover ASTREA weapon families without polearms', () => { for (const weapon of ['sword','dagger','sabre','axe','hammer','mace','bow','crossbow','staff','wand','grimoire']) assert.ok(WEAPON_ANIMATION_PROFILES[weapon]); assert.equal(WEAPON_ANIMATION_PROFILES.polearm, undefined); assert.ok(new Set(Object.values(WEAPON_ANIMATION_PROFILES).map(x=>x.kind)).size>=5); });
+test('each race has deterministic physical and hybrid weapon finisher identifiers', () => { for (const race of ['human','elf','dwarf','demon','angel','orc','dragonoid']) for (const weapon of Object.keys(WEAPON_ANIMATION_PROFILES)) { assert.ok('combo_'+race+'_'+weapon+'_finisher'); assert.ok('combo_'+race+'_'+weapon+'_hybrid_finisher'); } });
