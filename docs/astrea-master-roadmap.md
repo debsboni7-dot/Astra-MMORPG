@@ -32,9 +32,10 @@ Ne jamais passer un élément à « intégré » sur la seule présence d'un doc
 
 ### Client, contrôles et caméra
 - [x] Prototype navigateur Three.js et chargement du créateur de personnage — validé en Chromium desktop et mobile (412 × 915) : HTTP 200, menu, ouverture du créateur, sept races, modèle GLB chargé, absence d’erreur JavaScript/console et absence de débordement du viewport. Test automatisé ajouté dans `tests/browser/prototype-smoke.test.js` et exécuté par GitHub Actions.
-- [~] Déplacement clavier, manette et tactile raccordé.
-- [?] Vérifier sur téléphone réel : joystick haut = avancer, bas = reculer, gauche/droite cohérents.
-- [?] Vérifier caméra, orientation, saut, collisions, limites du monde et retour après perte de focus.
+- [~] Déplacement clavier, manette et tactile raccordé ; axes combinés normalisés pour éviter une vitesse diagonale excessive. Tests unitaires ajoutés et exécutés avec succès dans GitHub Actions (PR #16).
+- [?] Vérifier sur téléphone réel : joystick haut = avancer, bas = reculer, gauche/droite cohérents et absence de dérive tactile.
+- [~] Caméra : suivi arrière et rotation souris existants ; rotation par glissement tactile ajoutée sur le canvas libre. Validation tactile physique et scénario Chromium interactif à compléter.
+- [?] Vérifier saut, collisions, limites du monde et retour après perte de focus.
 - [ ] Ajouter un système complet de collisions et de navigation pour les environnements définitifs.
 - [ ] Valider les performances réelles sur plusieurs gammes Android et PC.
 - [ ] Préparer les adaptations natives/console après stabilisation du client.
