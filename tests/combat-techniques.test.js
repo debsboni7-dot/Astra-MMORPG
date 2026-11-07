@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createComboState, advanceCombo, resetCombo, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery, applyWeaponHitProfile } from '../prototype/src/combat/CombatTechniques.js';
+import { createComboState, advanceCombo, resetCombo, isCurrentOneShotCompletion, resolveHitReaction, createHitRecoveryState, beginHitRecovery, updateHitRecovery, applyWeaponHitProfile } from '../prototype/src/combat/CombatTechniques.js';
 
 test('combo advances through three timed hits and marks the finisher', () => {
   const combo = createComboState({ maxStage: 3, inputWindowMs: 700 });
@@ -10,6 +10,22 @@ test('combo advances through three timed hits and marks the finisher', () => {
   assert.equal(finisher.stage, 3);
   assert.equal(finisher.finisher, true);
   assert.equal(finisher.multiplier, 1.3);
+});
+
+test('sword combo accepts the next hit through the full 720 ms window', () => {
+  const combo = createComboState({ maxStage: 3, inputWindowMs: 720, resetAfterMs: 1450 });
+  assert.equal(advanceCombo(combo, 0).stage, 1);
+  assert.equal(advanceCombo(combo, 720).stage, 2);
+  assert.equal(advanceCombo(combo, 1440).stage, 3);
+  assert.equal(advanceCombo(combo, 2161).stage, 1);
+});
+
+test('a late completion event from the previous swing cannot stop the current combo swing', () => {
+  const previousSwing = {};
+  const currentSwing = {};
+  assert.equal(isCurrentOneShotCompletion(previousSwing, currentSwing, true), false);
+  assert.equal(isCurrentOneShotCompletion(currentSwing, currentSwing, true), true);
+  assert.equal(isCurrentOneShotCompletion(currentSwing, currentSwing, false), false);
 });
 
 test('combo resets when input arrives outside the chain window', () => {
