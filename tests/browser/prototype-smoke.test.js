@@ -70,7 +70,7 @@ test('commandes tactiles en jeu : déplacement, caméra et remise à zéro aprè
   await page.route('**/src/main.js', async route => {
     const response = await route.fetch();
     const source = await response.text();
-    await route.fulfill({ response, body:source + "\nwindow.__astreaTestState=()=>({x:state.model?.position.x,z:state.model?.position.z,yaw:state.gameYaw,touchX:state.touchX,touchY:state.touchY,keys:state.keys.size});" });
+    await route.fulfill({ response, body:source + "\nwindow.__astreaTestState=()=>({x:state.model?.position.x,y:state.model?.position.y,z:state.model?.position.z,yaw:state.gameYaw,touchX:state.touchX,touchY:state.touchY,keys:state.keys.size,ground:world.userData.getHeightAt?.(state.model?.position.x||0,state.model?.position.z||0)});" });
   });
   try {
     await page.goto('http://127.0.0.1:4173/', {waitUntil:'domcontentloaded'});
@@ -81,6 +81,10 @@ test('commandes tactiles en jeu : déplacement, caméra et remise à zéro aprè
     await page.locator('#create-character').click();
     await page.waitForFunction(() => document.querySelector('#game-hud') && !document.querySelector('#game-hud').hidden);
     await page.waitForTimeout(250);
+    const spawn = await page.evaluate(() => window.__astreaTestState());
+    assert.ok(Math.abs(spawn.y-spawn.ground)<0.02, 'le personnage doit apparaître exactement à la hauteur du sol');
+    assert.ok(spawn.y>20, 'le personnage ne doit plus apparaître sous le terrain');
+    for (const asset of ['grass-color.webp','grass-normal.webp','grass-roughness.webp','dirt-color.webp','dirt-normal.webp','dirt-roughness.webp']) { const response = await page.request.get('http://127.0.0.1:4173/assets/textures/terrain/'+asset); assert.equal(response.status(),200, 'texture locale chargée: '+asset); }
 
     const cdp = await context.newCDPSession(page);
     const stick = await page.locator('#move-stick').boundingBox();
