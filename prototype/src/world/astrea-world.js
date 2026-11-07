@@ -53,6 +53,7 @@ const gauss=(d,r)=>Math.exp(-((d/r)**2));
 const riverX=z=>500+Math.sin(z/80000)*40000;
 export function getAstreaRegionAt(x,z){let best=ASTREA_REGIONS[0],d0=Infinity;for(const r of ASTREA_REGIONS){const d=Math.hypot(x-r.x,z-r.z);if(d<d0){best=r;d0=d;}}return best;}
 export function getAstreaBiomeAt(x,z){return getAstreaRegionAt(x,z).biome;}
+export const ASTREA_SPAWN_HEIGHT=29.26986426272664;
 export function getAstreaTerrainHeight(x,z){
  const biome=getAstreaBiomeAt(x,z);
  let h=17+Math.sin(x*.00125)*7+Math.cos(z*.00105)*8+Math.sin((x+z)*.00063)*4+Math.cos((x-z)*.00031)*3;
@@ -66,6 +67,8 @@ export function getAstreaTerrainHeight(x,z){
  if(biome==='wetlands')h-=15+20*gauss(z-300000,80000);
  h+=62*gauss(z+7200,4300)*(.35+.65*Math.pow(Math.sin(x*.0011),2));
  const coast=Math.min(600000-Math.abs(x),450000-Math.abs(z));if(coast<26000)h=h*smooth(-5000,26000,coast)-2;
+ // A broad, gently blended starter pad prevents the avatar from spawning on a rough slope.
+ const spawnRadius=Math.hypot(x,z);if(spawnRadius<76){const blend=smooth(20,76,spawnRadius);h=ASTREA_SPAWN_HEIGHT*(1-blend)+h*blend;}
  return clamp(h,-35,3600);
 }
 function hash(x,z){let h=Math.imul(x|0,374761393)+Math.imul(z|0,668265263);h=Math.imul(h^(h>>>13),1274126177);return(h^(h>>>16))>>>0;}
@@ -75,22 +78,12 @@ export function createAstreaWorld(THREE,world,{scene,keyLight,rimLight,npcFactor
  world.userData.dispose?.();world.clear();world.userData={};
  const size=ASTREA_CONTINENT.chunkSize,chunks=new Map(),activities=[],waterMeshes=[],glows=[],npcs=[],landmarks=[],sharedMats=new Set(),sharedGeos=new Set();
  const mat=(c,r=.95,e={})=>new THREE.MeshStandardMaterial({color:c,roughness:r,...e});
- const TEXTURE_URLS={
- 'grass004-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/2ad6d645-d90b-4c2f-94a8-b043f796601f.jpg',
- 'grass004-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/57ec646d-655f-40ce-ae8f-62f6e3259441.jpg',
- 'grass004-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/f553264c-3f61-4c18-9b41-ab903da0bd7c.jpg',
- 'ground106-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/444aba04-1b41-40cb-b6f6-963991ee224b.jpg',
- 'ground106-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/47f9616b-c63a-442e-884d-618ea8ba92b1.jpg',
- 'ground106-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/cc6ad5ab-5ad6-4ea5-be78-dad326297931.jpg',
- 'rock064-color.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/dcdc5915-52cc-4d53-9b1a-c8c143af2263.jpg',
- 'rock064-normal.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/26fced80-b920-4eb7-bc5d-92a659ce6d41.jpg',
- 'rock064-roughness.jpg':'https://d2ol7oe51mr4n9.cloudfront.net/user_3L8BH1pH0WyTHJdboyJ7rT3kcR8/6f87dfda-b6c2-4383-8a18-7eb8640aabeb.jpg'
-};
- const tex=(name,color=false)=>{const t=new THREE.TextureLoader().load(TEXTURE_URLS[name]);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;t.anisotropy=4;return t;};
- const grass=mat(0xffffff,1,{map:tex('grass004-color.jpg',true),normalMap:tex('grass004-normal.jpg'),roughnessMap:tex('grass004-roughness.jpg')});
- const forest=mat(0xffffff,1,{map:tex('ground106-color.jpg',true),normalMap:tex('ground106-normal.jpg'),roughnessMap:tex('ground106-roughness.jpg')});
- const rock=mat(0xffffff,.98,{map:tex('rock064-color.jpg',true),normalMap:tex('rock064-normal.jpg')});
- const dirt=mat(0xffffff,.98,{map:tex('ground106-color.jpg',true),normalMap:tex('ground106-normal.jpg')});
+ const textureUrl=name=>new URL(`../../assets/textures/terrain/${name}`,import.meta.url).href;
+ const tex=(name,color=false)=>{const t=new THREE.TextureLoader().load(textureUrl(name));t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;t.anisotropy=8;return t;};
+ const grass=mat(0xffffff,1,{map:tex('grass-color.webp',true),normalMap:tex('grass-normal.webp'),roughnessMap:tex('grass-roughness.webp')});
+ const forest=mat(0xffffff,1,{map:tex('dirt-color.webp',true),normalMap:tex('dirt-normal.webp'),roughnessMap:tex('dirt-roughness.webp')});
+ const rock=mat(0xb8b3a6,.98,{map:tex('dirt-color.webp',true),normalMap:tex('dirt-normal.webp'),roughnessMap:tex('dirt-roughness.webp')});
+ const dirt=mat(0xffffff,.98,{map:tex('dirt-color.webp',true),normalMap:tex('dirt-normal.webp'),roughnessMap:tex('dirt-roughness.webp')});
  const stone=mat(0x88887e),wood=mat(0x725039),darkWood=mat(0x392a20),plaster=mat(0xc5b18c),roof=mat(0x685044);
  const water=new THREE.MeshPhysicalMaterial({color:0x4c9dbb,roughness:.16,transparent:true,opacity:.82,clearcoat:.8,side:THREE.DoubleSide});
  const glowBlue=mat(0xa9edff,.25,{emissive:0x3ac9f2,emissiveIntensity:2.5}),glowGold=mat(0xffe2a0,.25,{emissive:0xff9c37,emissiveIntensity:2}),glowGreen=mat(0xcaff9d,.3,{emissive:0x63e65d,emissiveIntensity:1.7});
@@ -103,10 +96,10 @@ export function createAstreaWorld(THREE,world,{scene,keyLight,rimLight,npcFactor
  const grassGeo=(()=>{const positions=[],indices=[];for(let i=0;i<5;i++){const a=i*Math.PI/5,dx=Math.cos(a),dz=Math.sin(a),w=.075+(i%2)*.025,h=.62+(i%3)*.16,lean=.12+(i%2)*.08,k=positions.length/3;positions.push(-dz*w,0,dx*w,dz*w,0,-dx*w,dx*lean,h,dz*lean);indices.push(k,k+1,k+2);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g;})();
  const flowerGeo=new THREE.IcosahedronGeometry(.12,0),rockGeo=new THREE.IcosahedronGeometry(1,1),shrubGeo=new THREE.IcosahedronGeometry(1.2,1),pebbleGeo=new THREE.DodecahedronGeometry(.22,0);
  [trunkGeo,crownGeo,grassGeo,flowerGeo,rockGeo,shrubGeo,pebbleGeo].forEach(g=>sharedGeos.add(g));
- const trunkMat=mat(0x705035),leafMat=mat(0xffffff,.98,{vertexColors:true}),grassMat=mat(0xffffff,.92,{vertexColors:true,side:THREE.DoubleSide}),flowerMat=mat(0xffffff,.72,{vertexColors:true}),rockMat=mat(0xffffff,.98,{map:tex('rock064-color.jpg',true)}),shrubMat=mat(0xffffff,.98,{vertexColors:true}),pebbleMat=mat(0xaaa89d,.98);
+ const trunkMat=mat(0x705035),leafMat=mat(0xffffff,.98,{vertexColors:true}),grassMat=mat(0xffffff,.92,{vertexColors:true,side:THREE.DoubleSide}),flowerMat=mat(0xffffff,.72,{vertexColors:true}),rockMat=mat(0xffffff,.98,{map:tex('dirt-color.webp',true),normalMap:tex('dirt-normal.webp'),roughnessMap:tex('dirt-roughness.webp')}),shrubMat=mat(0xffffff,.98,{vertexColors:true}),pebbleMat=mat(0xaaa89d,.98);
  [trunkMat,leafMat,grassMat,flowerMat,rockMat,shrubMat,pebbleMat].forEach(m=>sharedMats.add(m));
  const activityDefs=ASTREA_ACTIVITIES;
- const makeTerrain=(ox,oz)=>{const n=ASTREA_ENVIRONMENT_PROFILE.terrainSegments,p=[],norm=[],uv=[],idx=[],step=size/n;for(let z=0;z<=n;z++)for(let x=0;x<=n;x++){const wx=ox+x*step,wz=oz+z*step,y=getAstreaTerrainHeight(wx,wz),dx=getAstreaTerrainHeight(wx+2,wz)-getAstreaTerrainHeight(wx-2,wz),dz=getAstreaTerrainHeight(wx,wz+2)-getAstreaTerrainHeight(wx,wz-2),v=new THREE.Vector3(-dx/4,1,-dz/4).normalize();p.push(x*step,y,z*step);norm.push(v.x,v.y,v.z);uv.push(wx/28,wz/28);}for(let z=0;z<n;z++)for(let x=0;x<n;x++){const a=z*(n+1)+x,b=a+1,c=a+n+1,d=c+1;idx.push(a,c,b,b,c,d);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(norm,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeBoundingSphere();return g;};
+ const makeTerrain=(ox,oz)=>{const n=ASTREA_ENVIRONMENT_PROFILE.terrainSegments,p=[],norm=[],uv=[],idx=[],step=size/n;for(let z=0;z<=n;z++)for(let x=0;x<=n;x++){const wx=ox+x*step,wz=oz+z*step,y=getAstreaTerrainHeight(wx,wz),dx=getAstreaTerrainHeight(wx+2,wz)-getAstreaTerrainHeight(wx-2,wz),dz=getAstreaTerrainHeight(wx,wz+2)-getAstreaTerrainHeight(wx,wz-2),v=new THREE.Vector3(-dx/4,1,-dz/4).normalize();p.push(x*step,y,z*step);norm.push(v.x,v.y,v.z);uv.push(wx/9,wz/9);}for(let z=0;z<n;z++)for(let x=0;x<n;x++){const a=z*(n+1)+x,b=a+1,c=a+n+1,d=c+1;idx.push(a,c,b,b,c,d);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(norm,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeBoundingSphere();return g;};
  const addRibbon=(group,pts,width,material,ox,oz,off=.3)=>{if(pts.length<2)return null;const p=[],uv=[],idx=[];for(let i=0;i<pts.length;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)],dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1,sx=-dz/l*width/2,sz=dx/l*width/2,q=pts[i],y=getAstreaTerrainHeight(q.x,q.z)+off;p.push(q.x-sx-ox,y,q.z-sz-oz,q.x+sx-ox,y,q.z+sz-oz);uv.push(0,i/Math.max(1,pts.length-1)*8,1,i/Math.max(1,pts.length-1)*8);if(i<pts.length-1){const k=i*2;idx.push(k,k+1,k+2,k+1,k+3,k+2);}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();const m=new THREE.Mesh(g,material);group.add(m);return m;};
  const clip=(x1,z1,x2,z2,minX,minZ,maxX,maxZ)=>{let a=0,b=1,dx=x2-x1,dz=z2-z1,pp=[-dx,dx,-dz,dz],qq=[x1-minX,maxX-x1,z1-minZ,maxZ-z1];for(let i=0;i<4;i++){if(Math.abs(pp[i])<1e-9){if(qq[i]<0)return null;}else{const r=qq[i]/pp[i];if(pp[i]<0){if(r>b)return null;if(r>a)a=r;}else{if(r<a)return null;if(r<b)b=r;}}}return[{x:x1+dx*a,z:z1+dz*a},{x:x1+dx*b,z:z1+dz*b}];};
  const addRoads=(g,ox,oz)=>{for(const r of ASTREA_REGIONS.filter(r=>r.id!=='aube')){const s=clip(0,0,r.x,r.z,ox-10,oz-10,ox+size+10,oz+size+10);if(s)addRibbon(g,s,8,dirt,ox,oz,.35);}for(const [a,b] of [[[-95,-155],[500,0]],[[-95,-155],[-125,-255]]]){const s=clip(a[0],a[1],b[0],b[1],ox-10,oz-10,ox+size+10,oz+size+10);if(s)addRibbon(g,s,6.5,dirt,ox,oz,.42);}};
