@@ -11,3 +11,5 @@ test('chaque région dispose de ressources et d’activités dédiées',()=>{for
 test('les sept régions secondaires ont chacune un monument distinct',()=>{assert.equal(ASTREA_LANDMARKS.length,7);assert.equal(new Set(ASTREA_LANDMARKS.map(x=>x.regionId)).size,7);for(const landmark of ASTREA_LANDMARKS){assert.ok(ASTREA_REGIONS.some(r=>r.id===landmark.regionId));assert.ok(landmark.name&&landmark.kind);}});
 
 test('la zone d’apparition est nivelée et sa hauteur correspond au terrain',()=>{assert.ok(Math.abs(getAstreaTerrainHeight(0,0)-ASTREA_SPAWN_HEIGHT)<1e-6);for(const [x,z] of [[8,0],[-8,0],[0,8],[0,-8],[12,12]])assert.ok(Math.abs(getAstreaTerrainHeight(x,z)-ASTREA_SPAWN_HEIGHT)<1e-6);assert.ok(Math.abs(getAstreaTerrainHeight(76,0)-ASTREA_SPAWN_HEIGHT)>.01);});
+
+test('la zone immédiate de départ reste dégagée et parfaitement plane',()=>{for(let r=0;r<=20;r+=2)for(let a=0;a<Math.PI*2;a+=Math.PI/4)assert.ok(Math.abs(getAstreaTerrainHeight(Math.cos(a)*r,Math.sin(a)*r)-ASTREA_SPAWN_HEIGHT)<1e-6);});
