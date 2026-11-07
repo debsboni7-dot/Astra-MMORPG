@@ -70,7 +70,7 @@ test('commandes tactiles en jeu : déplacement, caméra et remise à zéro aprè
   await page.route('**/src/main.js', async route => {
     const response = await route.fetch();
     const source = await response.text();
-    await route.fulfill({ response, body:source + "\nwindow.__astreaTestState=()=>({x:state.model?.position.x,y:state.model?.position.y,z:state.model?.position.z,yaw:state.gameYaw,touchX:state.touchX,touchY:state.touchY,keys:state.keys.size,ground:world.userData.getHeightAt?.(state.model?.position.x||0,state.model?.position.z||0)});" });
+    await route.fulfill({ response, body:source + "\nwindow.__astreaTestState=()=>({x:state.model?.position.x,y:state.model?.position.y,z:state.model?.position.z,yaw:state.gameYaw,pitch:state.gamePitch,touchX:state.touchX,touchY:state.touchY,keys:state.keys.size,ground:world.userData.getHeightAt?.(state.model?.position.x||0,state.model?.position.z||0)});" });
   });
   try {
     await page.goto('http://127.0.0.1:4173/', {waitUntil:'domcontentloaded'});
@@ -111,7 +111,13 @@ test('commandes tactiles en jeu : déplacement, caméra et remise à zéro aprè
     await cdp.send('Input.dispatchTouchEvent', {type:'touchMove',touchPoints:[{x:canvas.x+canvas.width*.72,y:canvas.y+canvas.height*.45,id:2}]});
     await page.waitForTimeout(100);
     const yawAfter = await page.evaluate(() => window.__astreaTestState().yaw);
-    assert.notEqual(yawAfter, yawBefore, 'un glissement sur le canvas doit faire pivoter la caméra');
+    assert.notEqual(yawAfter, yawBefore, 'un glissement horizontal sur le canvas doit faire pivoter la caméra');
+    const pitchBefore = await page.evaluate(() => window.__astreaTestState().pitch);
+    await cdp.send('Input.dispatchTouchEvent', {type:'touchStart',touchPoints:[{x:canvas.x+canvas.width*.55,y:canvas.y+canvas.height*.45,id:3}]});
+    await cdp.send('Input.dispatchTouchEvent', {type:'touchMove',touchPoints:[{x:canvas.x+canvas.width*.55,y:canvas.y+canvas.height*.30,id:3}]});
+    await page.waitForTimeout(100);
+    const pitchAfter = await page.evaluate(() => window.__astreaTestState().pitch);
+    assert.ok(pitchAfter > pitchBefore, 'un glissement vertical vers le haut doit incliner la caméra');
     await cdp.send('Input.dispatchTouchEvent', {type:'touchEnd',touchPoints:[]});
     assert.deepEqual(errors, [], 'aucune erreur JavaScript ne doit survenir');
   } finally {
