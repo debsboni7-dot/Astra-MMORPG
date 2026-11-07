@@ -54,6 +54,11 @@ export function advanceCombo(combo, now, { inputWindowMs = combo.inputWindowMs, 
   };
 }
 
+/** Ignore completion events from one-shot animations that were already replaced. */
+export function isCurrentOneShotCompletion(finishedAction, currentAction, oneShotActive) {
+  return Boolean(oneShotActive && finishedAction && finishedAction === currentAction);
+}
+
 export function resetCombo(combo) {
   combo.stage = 0;
   combo.lastInputAt = -Infinity;

@@ -119,3 +119,44 @@ test('commandes tactiles en jeu : déplacement, caméra et remise à zéro aprè
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('un ancien swing terminé ne coupe pas le swing suivant du combo à l’épée', { timeout:90000 }, async () => {
+  const server = await startServer();
+  const browser = await chromium.launch({ headless:true });
+  const page = await browser.newPage({ viewport:{width:412,height:915}, isMobile:true, hasTouch:true });
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route('**/src/main.js', async route => {
+    const response = await route.fetch();
+    const source = await response.text();
+    await route.fulfill({ response, body:source + "\nwindow.__astreaComboTest=()=>({stage:comboState.stage,currentAction:state.currentAction,oneShot:state.actionOneShot,actionTime:state.actions[state.currentAction]?.time,actionDuration:state.actions[state.currentAction]?.getClip?.().duration});window.__astreaComboAttack=()=>performPlayerAttack('physical');" });
+  });
+  try {
+    await page.goto('http://127.0.0.1:4173/', {waitUntil:'domcontentloaded'});
+    await page.locator('#new-game-btn').click();
+    await page.waitForFunction(() => document.querySelector('#model-status')?.textContent?.includes('MODÈLE CHARGÉ'), {timeout:60000});
+    await page.locator('#character-name').fill('ComboTest');
+    await page.locator('#player-alias').fill('ComboTest');
+    await page.locator('#create-character').click();
+    await page.waitForFunction(() => document.querySelector('#game-hud') && !document.querySelector('#game-hud').hidden);
+    await page.evaluate(() => window.__astreaComboAttack());
+    const first = await page.evaluate(() => window.__astreaComboTest());
+    assert.equal(first.stage, 1);
+    assert.equal(first.oneShot, true);
+    assert.ok(first.actionDuration > 0);
+    await page.waitForTimeout(350);
+    await page.evaluate(() => window.__astreaComboAttack());
+    const second = await page.evaluate(() => window.__astreaComboTest());
+    assert.equal(second.stage, 2);
+    assert.notEqual(second.currentAction, first.currentAction, 'le deuxième coup doit lancer son animation dédiée');
+    await page.waitForTimeout(200);
+    const afterPreviousFinish = await page.evaluate(() => window.__astreaComboTest());
+    assert.equal(afterPreviousFinish.stage, 2);
+    assert.equal(afterPreviousFinish.oneShot, true, 'la fin du premier swing ne doit pas annuler le deuxième');
+    assert.equal(afterPreviousFinish.currentAction, second.currentAction);
+    assert.deepEqual(errors, [], 'aucune erreur JavaScript ne doit survenir');
+  } finally {
+    await browser.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
