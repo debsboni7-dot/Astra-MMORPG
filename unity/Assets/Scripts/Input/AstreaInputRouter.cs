@@ -69,7 +69,7 @@ namespace Astrea.Input
                 Vector2 delta = look.ReadValue<Vector2>();
                 if (look.activeControl != null && look.activeControl.device is Gamepad)
                     delta *= 120f * Time.deltaTime;
-                character.SetMobileLook(delta);
+                character.SetDeviceLook(delta);
             }
             if (jump != null && jump.WasPressedThisFrame())
                 character.RequestJump();
