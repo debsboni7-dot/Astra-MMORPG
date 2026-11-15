@@ -216,6 +216,26 @@ namespace Astrea.EditorTools
             attackTextRect.anchorMax = Vector2.one;
             attackTextRect.offsetMin = Vector2.zero;
             attackTextRect.offsetMax = Vector2.zero;
+
+            var magicObject = CreateUiImage("Magic Button", canvasObject.transform,
+                new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-145f, 285f), new Vector2(112f, 112f),
+                new Color(0.20f, 0.36f, 0.72f, 0.88f), true);
+            var magicButton = magicObject.AddComponent<Button>();
+            magicButton.targetGraphic = magicObject.GetComponent<Image>();
+            magicButton.onClick.AddListener(binder.RequestMagic);
+            var magicTextObject = new GameObject("Magic Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            magicTextObject.transform.SetParent(magicObject.transform, false);
+            var magicText = magicTextObject.GetComponent<Text>();
+            magicText.text = "MAGIC";
+            magicText.alignment = TextAnchor.MiddleCenter;
+            magicText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            magicText.color = Color.white;
+            magicText.fontSize = 19;
+            var magicTextRect = magicTextObject.GetComponent<RectTransform>();
+            magicTextRect.anchorMin = Vector2.zero;
+            magicTextRect.anchorMax = Vector2.one;
+            magicTextRect.offsetMin = Vector2.zero;
+            magicTextRect.offsetMax = Vector2.zero;
         }
 
         private static GameObject CreateUiImage(string name, Transform parent, Vector2 anchorMin,
