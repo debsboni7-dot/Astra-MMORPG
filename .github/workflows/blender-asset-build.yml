@@ -1,16 +1,21 @@
 name: ASTREA Blender asset build
 
+concurrency:
+  group: astrea-art-build-${{ github.ref }}
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
   push:
     branches: [feat/blender-unreal-cloud-pipeline]
     paths:
-      - "blender-workbench/**"
+      - "blender-workbench/build_sword.py"
+      - "blender-workbench/validate_glb.py"
       - "unreal/**"
       - ".github/workflows/blender-asset-build.yml"
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 jobs:
@@ -22,7 +27,7 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0 python3-numpy
+          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0 python3-numpy assimp-utils
           blender --version
       - name: Generate ASTREA sword asset
         env:
@@ -38,6 +43,23 @@ jobs:
           test -s build/astrea-sword/astrea-ceremonial-sword.png
           test -s build/astrea-sword/build-report.json
           python3 blender-workbench/validate_glb.py build/astrea-sword/astrea-ceremonial-sword.glb
+      - name: Convert sword to Unity FBX
+        run: |
+          assimp export build/astrea-sword/astrea-ceremonial-sword.glb build/astrea-sword/astrea-ceremonial-sword.fbx -f fbx
+          assimp info build/astrea-sword/astrea-ceremonial-sword.fbx
+      - name: Integrate sword into Unity project
+        run: |
+          mkdir -p unity/Assets/Art/Weapons
+          cp build/astrea-sword/astrea-ceremonial-sword.fbx unity/Assets/Art/Weapons/ASTREA_Ceremonial_Sword.fbx
+          cp build/astrea-sword/astrea-ceremonial-sword.png unity/Assets/Art/Weapons/ASTREA_Ceremonial_Sword_Preview.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/Assets/Art/Weapons/
+          if ! git diff --cached --quiet; then
+            git commit -m "Add generated ASTREA ceremonial sword to Unity project"
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
+            git push
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: astrea-blender-sword-${{ github.run_number }}
