@@ -67,6 +67,14 @@ test('race cannot progress a forbidden school', () => {
   assert.equal(result.progression.schools.demonic.xp, 0);
 });
 
+test('a locked or invalid technique cannot grant successful-cast XP', () => {
+  const result = recordMagicSkillUse(createMagicProgression('human'), 'human', 'fire', 'fire:offense:1');
+  assert.equal(result.recorded, false);
+  assert.equal(result.reason, 'skill-locked-or-unknown');
+  assert.equal(result.progression.schools.fire.xp, 0);
+  assert.equal(result.progression.schools.fire.successfulCasts, 0);
+});
+
 test('school levels are bounded and sanitization rejects unknown data', () => {
   const clean = sanitizeMagicProgression({ race:'orc', schools:{ hacked:{xp:999}, fire:{xp:999999999, unlockedSkills:['fire:offense:1','fire:fake:3']} } });
   assert.equal(clean.race, 'orc');
