@@ -1,4 +1,4 @@
-name: Browser prototype smoke tests
+name: Browser prototype and server tests
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  browser-smoke:
+  automated-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,7 +23,9 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Run server and gameplay unit tests
+        run: npm test
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Test mobile and desktop browser prototype
-        run: node --test tests/browser/prototype-smoke.test.js
+        run: npm run test:browser
