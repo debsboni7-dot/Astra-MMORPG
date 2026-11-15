@@ -169,7 +169,6 @@ export function applyWeaponHitProfile(reaction, weaponCategory = 'unarmed') {
     sword: { stagger: 1.04, knockback: .96 },
     axe: { stagger: 1.14, knockback: 1.08 },
     hammer: { stagger: 1.2, knockback: 1.18 },
-    polearm: { stagger: 1.06, knockback: 1.28 },
   };
   const profile = profiles[weaponCategory] || profiles.unarmed;
   return {
