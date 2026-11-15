@@ -6,10 +6,12 @@ on:
     branches: [feat/blender-unreal-cloud-pipeline]
     paths:
       - "blender-workbench/**"
+      - "unreal/**"
       - ".github/workflows/blender-asset-build.yml"
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   blender-build:
@@ -39,4 +41,46 @@ jobs:
         with:
           name: astrea-blender-sword-${{ github.run_number }}
           path: build/astrea-sword/
+          retention-days: 14
+
+  unreal-import:
+    # Enable only after a Linux self-hosted runner with Unreal is registered.
+    # Set repository variable ASTREA_UNREAL_RUNNER_ENABLED=true to activate.
+    if: ${{ vars.ASTREA_UNREAL_RUNNER_ENABLED == 'true' }}
+    needs: blender-build
+    runs-on: [self-hosted, linux, unreal-engine]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Blender output from this run
+        uses: actions/download-artifact@v4
+        with:
+          name: astrea-blender-sword-${{ github.run_number }}
+          path: build/astrea-sword
+      - name: Validate Unreal runner configuration
+        env:
+          ASTREA_UNREAL_EDITOR_CMD: ${{ vars.ASTREA_UNREAL_EDITOR_CMD }}
+        run: |
+          test -n "$ASTREA_UNREAL_EDITOR_CMD" || { echo "Set repository variable ASTREA_UNREAL_EDITOR_CMD to the full UnrealEditor-Cmd executable path."; exit 1; }
+          test -x "$ASTREA_UNREAL_EDITOR_CMD" || { echo "UnrealEditor-Cmd is missing or not executable: $ASTREA_UNREAL_EDITOR_CMD"; exit 1; }
+          test -s unreal/Astrea.uproject
+          test -s build/astrea-sword/astrea-ceremonial-sword.glb
+      - name: Import Blender assets into Unreal
+        env:
+          ASTREA_IMPORT_DIR: ${{ github.workspace }}/build/astrea-sword
+          ASTREA_UNREAL_EDITOR_CMD: ${{ vars.ASTREA_UNREAL_EDITOR_CMD }}
+        run: |
+          mkdir -p build/unreal-logs
+          "$ASTREA_UNREAL_EDITOR_CMD" "$GITHUB_WORKSPACE/unreal/Astrea.uproject" \
+            -unattended -nop4 -nosplash -nullrhi \
+            "-ExecutePythonScript=$GITHUB_WORKSPACE/unreal/Scripts/import_assets.py" \
+            -log="$GITHUB_WORKSPACE/build/unreal-logs/import.log"
+          grep -q "ASTREA_UNREAL_IMPORT_OK" build/unreal-logs/import.log
+      - name: Preserve Unreal import log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astrea-unreal-import-log-${{ github.run_number }}
+          path: build/unreal-logs/
+          if-no-files-found: ignore
           retention-days: 14
