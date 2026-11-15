@@ -44,6 +44,7 @@ jobs:
               "Assets/Scripts/Rendering/AstreaGraphicsProfile.cs",
               "Assets/Editor/AstreaUrpSetup.cs",
               "Assets/Editor/AstreaArmorModelPostprocessor.cs",
+              "Assets/Editor/AstreaStarterSceneBuilder.cs",
               "README.md",
           ]
           for relative in required:
