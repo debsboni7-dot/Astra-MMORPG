@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Astrea.Animation;
 
 namespace Astrea.Combat
 {
@@ -14,14 +15,25 @@ namespace Astrea.Combat
         public event Action<float, float> HealthChanged;
         public event Action Died;
 
-        private void Awake() => CurrentHealth = maxHealth;
+        private AstreaAnimationDriver animationDriver;
+
+        private void Awake()
+        {
+            CurrentHealth = maxHealth;
+            animationDriver = GetComponentInChildren<AstreaAnimationDriver>();
+        }
 
         public void ReceiveDamage(float amount, Transform source)
         {
             if (IsDead || amount <= 0f) return;
             CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
             HealthChanged?.Invoke(CurrentHealth, maxHealth);
-            if (!IsDead) return;
+            if (!IsDead)
+            {
+                if (animationDriver != null) animationDriver.PlayHit();
+                return;
+            }
+            if (animationDriver != null) animationDriver.PlayDeath();
             Died?.Invoke();
             if (destroyOnDeath) Destroy(gameObject);
         }
