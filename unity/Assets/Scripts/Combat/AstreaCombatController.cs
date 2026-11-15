@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Astrea.VFX;
@@ -13,13 +14,18 @@ namespace Astrea.Combat
         [SerializeField, Min(0f)] private float baseDamage = 12f;
         [SerializeField, Min(0.05f)] private float attackCooldown = 0.65f;
         [SerializeField] private LayerMask targetLayers = ~0;
+        [SerializeField] private LayerMask obstructionLayers = ~0;
+        [SerializeField, Min(0f)] private float fallbackImpactDelay = 0.22f;
         [SerializeField] private Animator animator;
         [SerializeField] private string impactVfxKey = "melee_impact";
         private AstreaVfxLibrary vfxLibrary;
 
         private readonly Collider[] hitBuffer = new Collider[16];
+        private readonly RaycastHit[] sightBuffer = new RaycastHit[16];
         private readonly HashSet<int> damagedThisSwing = new HashSet<int>();
         private float nextAttackTime;
+        private bool hitResolvedThisSwing;
+        private Coroutine fallbackImpactRoutine;
 
         private void Awake()
         {
@@ -34,16 +40,34 @@ namespace Astrea.Combat
             if (!CanAttack) return false;
             nextAttackTime = Time.time + attackCooldown;
             damagedThisSwing.Clear();
-            if (animator != null) animator.SetTrigger("Attack");
-            else ResolveMeleeHit();
+            hitResolvedThisSwing = false;
+            if (fallbackImpactRoutine != null) StopCoroutine(fallbackImpactRoutine);
+            if (animator != null)
+            {
+                animator.SetTrigger("Attack");
+                fallbackImpactRoutine = StartCoroutine(ResolveMeleeHitFallback());
+            }
+            else
+            {
+                ResolveMeleeHit();
+            }
             return true;
         }
 
         // Animation events can call this at the weapon's impact frame instead of resolving immediately.
         public void AnimationEvent_ApplyMeleeHit() => ResolveMeleeHit();
 
+        private IEnumerator ResolveMeleeHitFallback()
+        {
+            yield return new WaitForSeconds(fallbackImpactDelay);
+            ResolveMeleeHit();
+            fallbackImpactRoutine = null;
+        }
+
         private void ResolveMeleeHit()
         {
+            if (hitResolvedThisSwing) return;
+            hitResolvedThisSwing = true;
             Vector3 origin = attackOrigin != null
                 ? attackOrigin.position
                 : transform.position + Vector3.up * 1.0f + transform.forward * 0.65f;
@@ -59,11 +83,36 @@ namespace Astrea.Combat
                 var damageable = hit.GetComponentInParent<IAstreaDamageable>();
                 if (damageable == null) continue;
                 int targetId = hit.transform.root.GetInstanceID();
-                if (!damagedThisSwing.Add(targetId)) continue;
+                if (damagedThisSwing.Contains(targetId)) continue;
+                Vector3 impactPoint = hit.ClosestPoint(origin);
+                if (!HasLineOfSight(hit, origin, impactPoint)) continue;
+                damagedThisSwing.Add(targetId);
                 damageable.ReceiveDamage(baseDamage, transform);
-                Vector3 impactPoint = hit.ClosestPoint(center);
                 if (vfxLibrary != null) vfxLibrary.Play(impactVfxKey, impactPoint, Quaternion.LookRotation(direction));
             }
+        }
+
+        private bool HasLineOfSight(Collider target, Vector3 origin, Vector3 impactPoint)
+        {
+            Vector3 offset = impactPoint - origin;
+            float distance = offset.magnitude;
+            if (distance <= 0.01f) return true;
+
+            int count = Physics.RaycastNonAlloc(origin, offset / distance, sightBuffer,
+                distance + 0.05f, obstructionLayers, QueryTriggerInteraction.Ignore);
+            float nearestDistance = float.MaxValue;
+            Transform nearestRoot = null;
+            for (int i = 0; i < count; i++)
+            {
+                Collider obstruction = sightBuffer[i].collider;
+                if (obstruction == null || obstruction.transform.root == transform.root) continue;
+                if (sightBuffer[i].distance < nearestDistance)
+                {
+                    nearestDistance = sightBuffer[i].distance;
+                    nearestRoot = obstruction.transform.root;
+                }
+            }
+            return nearestRoot == target.transform.root;
         }
 
         private void OnDrawGizmosSelected()
