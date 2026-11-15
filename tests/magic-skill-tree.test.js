@@ -38,6 +38,8 @@ test('race restrictions and affinities follow ASTREA rules', () => {
   assert.equal(getMagicCastMultiplier('draconoid','fire','offense'), 1);
   assert.equal(getMagicCastMultiplier('draconoid','demonic','offense'), 1);
   assert.equal(getMagicDestructionModifier('draconoid'), 1.15);
+  assert.equal(getMagicDestructionModifier('dragonoid'), 1.15);
+  assert.equal(createMagicProgression('dragonoid').race, 'dragonoid');
   assert.equal(getMagicDestructionModifier('human'), 1);
   assert.equal(getMagicCastMultiplier('human','demonic'), 1);
   assert.equal(getMagicRaceStatModifiers('orc').physicalStrength,1.14);
