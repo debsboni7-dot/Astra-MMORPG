@@ -21,8 +21,8 @@ Statuses: planned, sourced, generated, downloaded, imported, visible-in-game, te
 - Credits recorded by the workflow: 20 for geometry preview and 10 for texture refinement, 30 total. This generation used the user's explicit authorization for existing credits; no real-money purchase was made.
 - Visual review of the preview: one human-like male adventurer in dark steel/leather armor, front-facing T-pose, isolated on transparent/black preview background.
 - Technical inspection of the GLB: 38,520 vertices, 31,139 triangular faces, one mesh, one material, one glTF node, zero skins/skeletons and zero animation clips. The measured bounding box is approximately 1.87 × 1.90 × 0.39 scene units; confirm the import scale and axis convention in Blender/Unity before treating these as metres.
-- Current status: **generated and artifact downloaded for inspection; not yet rigged, not yet converted to FBX, not yet committed to the Unity project, not yet imported or tested in-game**.
-- Next gate: retopology/mesh review if needed, automatic rigging through an approved workflow, inspect skin weights and skeleton, export a Unity-compatible FBX or validated GLB, then import and test deformation/animations in Unity.
+- Current status: **generation workflow completed successfully and artifact uploaded; technical inspection found a static mesh with no skeleton or animation. The artifact is not yet confirmed as committed to the Unity project, rigged, imported or tested in-game**.
+- Next gate: retrieve and inspect the workflow artifact, review topology, rig the mesh through an approved free/authorized workflow, inspect skin weights and skeleton, export a Unity-compatible FBX or validated GLB, then import and test deformation/animations in Unity.
 - Commercial-use rights must be checked against the Meshy account plan and current terms before commercial distribution. Generation alone does not establish that legal check.
 
 Do not connect this static T-pose mesh to the existing Animator pipeline yet. The absence of a skeleton and animation clips makes it unsuitable for animation until rigging is completed and verified.
