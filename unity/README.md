@@ -46,3 +46,20 @@ GitHub Actions validates the project manifest, pinned editor version, source lay
 - `AstreaHealth` is a reusable local damage receiver with health-change and death events.
 - The generated mobile HUD includes an Attack button wired to the combat controller when a player object with that component is present.
 - This is a local combat prototype only. In a multiplayer build, hit validation, damage, cooldowns and health changes must be authoritative on the game server; clients must not decide final damage.
+
+
+## Input, camera and streamed content
+
+The Unity 6.3 project now includes the released Unity packages below:
+
+- Input System 1.20.1: keyboard (WASD), mouse, gamepad movement/look, jump and attack. `AstreaInputRouter` feeds the existing character/combat APIs. The mobile joystick and touch-look UI remain separate input sources and continue to work alongside physical devices.
+- Cinemachine 3.1.7: the starter-scene builder creates a Cinemachine Brain on the render camera and a third-person Follow + Rotation Composer camera targeting the player camera pivot.
+- Addressables 2.10.3: `AstreaAddressableLoader` instantiates content by address key and releases tracked instances when unloaded or when its owner is destroyed.
+
+### Addressables authoring
+
+Mark a prefab as Addressable in the Unity Inspector and assign a stable key, for example `world/astrea/plains/settlement` or `characters/npc/merchant_01`. Add the required Addressables groups and build the content catalog from the Unity Editor before using remote content. The runtime loader does not configure hosting or publish catalogs; use a CDN/object store only after its costs and access controls are agreed. Local Addressables builds can be tested without paid services.
+
+### Important validation notes
+
+These integrations are source- and package-level setup. GitHub Actions checks project metadata and key source contracts; it does not run the Unity Editor, resolve the Unity Package Manager dependency graph, generate an Addressables catalog, or verify camera framing on a device. The project still needs a real Unity 6.3 Editor import/build and Android device test. Input rebinding UI, controller glyphs, Cinemachine obstruction handling and production content catalog hosting are future tasks.
