@@ -33,6 +33,9 @@ jobs:
           assert deps.get("com.unity.render-pipelines.universal") == "17.3.0", deps
           assert deps.get("com.unity.ugui") == "2.0.0", deps
           assert deps.get("com.unity.animation.rigging") == "1.4.1", deps
+          assert deps.get("com.unity.inputsystem") == "1.20.1", deps
+          assert deps.get("com.unity.cinemachine") == "3.1.7", deps
+          assert deps.get("com.unity.addressables") == "2.10.3", deps
           assert not any(name.startswith("com.unity.services.") for name in deps), deps
 
           version = (root / "ProjectSettings/ProjectVersion.txt").read_text()
@@ -43,6 +46,8 @@ jobs:
               "Assets/Scripts/Combat/AstreaCombatController.cs",
               "Assets/Scripts/Combat/AstreaHealth.cs",
               "Assets/Scripts/Character/AstreaThirdPersonController.cs",
+              "Assets/Scripts/Input/AstreaInputRouter.cs",
+              "Assets/Scripts/Content/AstreaAddressableLoader.cs",
               "Assets/Scripts/UI/AstreaVirtualJoystick.cs",
               "Assets/Scripts/UI/AstreaTouchLookArea.cs",
               "Assets/Scripts/UI/AstreaMobileInputBinder.cs",
@@ -74,6 +79,14 @@ jobs:
           assert "ModelImporterAnimationType.Human" in mixamo
           assert "ModelImporterAvatarSetup.CopyFromOther" in mixamo
           assert "ASTREA_Humanoid_Meshy6.fbx" in mixamo
+          input_router = (root / "Assets/Scripts/Input/AstreaInputRouter.cs").read_text()
+          for binding in ["<Keyboard>/w", "<Mouse>/delta", "<Gamepad>/leftStick", "<Gamepad>/rightStick", "<Gamepad>/buttonSouth"]:
+              assert binding in input_router, binding
+          assert "SetDeviceMove" in input_router and "SetDeviceLook" in input_router
+          addressables = (root / "Assets/Scripts/Content/AstreaAddressableLoader.cs").read_text()
+          assert "Addressables.InstantiateAsync" in addressables
+          assert "Addressables.ReleaseInstance" in addressables
+          assert "CinemachineBrain" in scene_builder and "CinemachineFollow" in scene_builder
 
           print("Unity 6.3 URP project metadata and source layout validated.")
           print("No Unity Gaming Services package or billing integration is configured.")
