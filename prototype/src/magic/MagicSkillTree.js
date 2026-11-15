@@ -166,6 +166,10 @@ export function recordMagicSkillUse(progression, race, school, skill = null) {
   const state = sanitizeMagicProgression(progression, race);
   if (!isMagicSchoolAllowed(state.race, school)) return { recorded: false, reason: 'race-school-restriction', progression: state };
   const schoolState = state.schools[school];
+  // Validate the optional technique before granting any cast or mastery progress.
+  if (skill && !schoolState.unlockedSkills.includes(skill)) {
+    return { recorded: false, reason: 'skill-locked-or-unknown', progression: state };
+  }
   schoolState.successfulCasts++;
   schoolState.xp = Math.min(100000000, schoolState.xp + 1);
   schoolState.level = getMagicSchoolLevel(schoolState.xp).level;
@@ -173,7 +177,6 @@ export function recordMagicSkillUse(progression, race, school, skill = null) {
   let masteryXp = 0;
   let masteryLevel = 0;
   if (skill) {
-    if (!schoolState.unlockedSkills.includes(skill)) return { recorded: false, reason: 'skill-locked-or-unknown', progression: state };
     masteryXp = schoolState.skillMasteryXp[skill] = Math.min(1000000, (schoolState.skillMasteryXp[skill] || 0) + 1);
     masteryLevel = MAGIC_TREE_RULES.masteryUseThresholds.filter(t => masteryXp >= t).length;
   }
