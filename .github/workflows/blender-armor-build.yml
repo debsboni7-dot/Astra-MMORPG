@@ -9,7 +9,7 @@ on:
       - ".github/workflows/blender-armor-build.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   blender-armor:
@@ -58,6 +58,18 @@ jobs:
           print("Validated eight modular armor objects and FBX export for Unity.")
           PY
           assimp info build/astrea-armor/astrea-modular-armor.fbx
+      - name: Integrate generated FBX into Unity project
+        run: |
+          mkdir -p unity/Assets/Art/Armor
+          cp build/astrea-armor/astrea-modular-armor.fbx unity/Assets/Art/Armor/ASTREA_Modular_Armor.fbx
+          cp build/astrea-armor/astrea-modular-armor-preview.png unity/Assets/Art/Armor/ASTREA_Modular_Armor_Preview.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/Assets/Art/Armor/ASTREA_Modular_Armor.fbx unity/Assets/Art/Armor/ASTREA_Modular_Armor_Preview.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Add generated ASTREA modular armor to Unity project"
+            git push
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: astrea-modular-armor-${{ github.run_number }}
