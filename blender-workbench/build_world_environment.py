@@ -94,22 +94,39 @@ def tree(x,y,s=1):
         beam("Oak branch",(x,y,z+2.0*s),top,.15*s,.065*s,wood2,8)
     for dx,dy,dz,sc in ((0,0,4.45,1.65),(.85,0,4.0,1.12),(-.8,.2,4.1,1.18),(.2,.8,4.15,1.05),(-.2,-.8,4.0,1.12),(0,.05,5.05,1.0)):
         ico("Oak foliage cluster",(x+dx*s,y+dy*s,z+dz*s),(sc*s,sc*.88*s,sc*.92*s),leaf if random.random()<.65 else leaf2,2)
-for x,y,s in [(-38,-25,1.15),(-31,-8,.9),(-42,8,1.2),(38,22,1.15),(32,37,.9),(47,-7,1.1),(-48,38,.9),(18,-38,.85)]:
-    tree(x,y,s)
-# scattered angular boulders and grass clumps, avoid road and house footprint
-for i in range(38):
-    x=random.uniform(-53,53); y=random.uniform(-52,52)
-    if abs(x-(5+8*math.sin(y*.045)))<4 or (abs(x+12)<12 and abs(y-7)<12): continue
-    z=height(x,y)
-    ico("Meadow boulder",(x,y,z+.35),(random.uniform(.45,1.35),random.uniform(.4,1.0),random.uniform(.35,.9)),stone if i%3 else stone2,2)
-for i in range(150):
+tree_sites=[
+(-48,-38,1.15),(-42,-20,.95),(-46,2,1.2),(-38,26,1.05),(-50,43,.9),
+(-28,-43,.9),(-30,-25,1.1),(-34,-4,.95),(-29,34,1.05),(-18,47,.9),
+(22,-47,.9),(32,-35,1.0),(43,-25,1.15),(50,-2,.95),(38,12,1.1),
+(30,30,1.0),(45,43,1.15),(16,45,.9),(5,-48,.85),(-5,-42,.9),
+(48,18,.95),(-52,16,1.0),(18,-26,.9),(40,-46,.85)]
+for x,y,scale in tree_sites:
+    if abs(x+12)<13 and abs(y-8)<12: continue
+    tree(x,y,scale)
+
+# Scattered angular boulders, keeping the winding road and homestead clear.
+for i in range(54):
     x=random.uniform(-55,55); y=random.uniform(-55,55)
-    if abs(x-(5+8*math.sin(y*.045)))<2: continue
+    if abs(x-(5+8*math.sin(y*.045)))<4 or (abs(x+12)<13 and abs(y-8)<13): continue
     z=height(x,y)
-    # three tapered blades create readable clumps without a heavy particle system
+    ico("Meadow boulder",(x,y,z+.35),(random.uniform(.45,1.25),random.uniform(.4,.95),random.uniform(.35,.8)),stone if i%3 else stone2,2)
+
+# Batched grass blades: thousands of visible blades in one mesh, not thousands of draw calls.
+grass_verts=[]; grass_faces=[]
+for i in range(950):
+    x=random.uniform(-56,56); y=random.uniform(-56,56)
+    if abs(x-(5+8*math.sin(y*.045)))<2.5 or (abs(x+12)<10 and abs(y-8)<9): continue
+    z=height(x,y)
     for k in range(3):
-        ang=random.random()*math.tau; h=random.uniform(.22,.55)
-        beam("Meadow grass blade",(x,y,z),(x+math.cos(ang)*.12,y+math.sin(ang)*.12,z+h),.035,.004,grass2,5)
+        ang=random.random()*math.tau; h=random.uniform(.28,.72); w=random.uniform(.035,.065)
+        dx=math.cos(ang); dy=math.sin(ang); bx=-dy*w; by=dx*w
+        lean=random.uniform(.06,.18)
+        base=len(grass_verts)
+        grass_verts.extend([(x-bx,y-by,z),(x+bx,y+by,z),
+                            (x+dx*lean,y+dy*lean,z+h)])
+        grass_faces.append((base,base+1,base+2))
+grass_obj=mesh_obj("ASTREA | batched meadow grass",grass_verts,grass_faces,grass2)
+grass_obj["blade_count"]=len(grass_faces)
 
 # Detailed starter homestead: stone base, timber frame, gabled roof, door and windows.
 cx,cy=-12,8; bz=height(cx,cy)
@@ -120,12 +137,18 @@ for yy in (cy-3.76,cy+3.76):
     mesh_obj("Cottage gable",[(cx-5.75,yy,bz+4.65),(cx+5.75,yy,bz+4.65),(cx,yy,bz+7.55)],[(0,1,2)],stone2)
 # Roof slopes as thick beams and roof panels
 for side in (-1,1):
-    eave=(cx+side*6.1,cy,bz+4.65); ridge=(cx,cy,bz+7.75)
-    beam("Terracotta roof plane",eave,ridge,1.0,1.0,roof,4)
-    for yy in (cy-4.0,cy+4.0):
-        beam("Roof verge timber",(cx+side*6.0,yy,bz+4.72),(cx,yy,bz+7.78),.17,.17,wood,8)
-# roof ridge
-cube("Roof ridge cap",(cx,cy,bz+7.82),(.35,8.4,.28),wood,.08)
+    panel=cube("Terracotta sloped roof panel",(cx+side*3.05,cy,bz+6.18),(7.2,8.5,.24),roof,.045)
+    panel.rotation_euler[1]=side*math.radians(27)
+    for yy in (cy-4.22,cy+4.22):
+        beam("Roof verge timber",(cx+side*6.0,yy,bz+4.72),(cx,yy,bz+7.78),.11,.11,wood,8)
+# Ridge cap and repeated raised tile seams for a readable handcrafted roof.
+cube("Roof ridge cap",(cx,cy,bz+7.82),(.38,8.7,.32),wood,.08)
+for side in (-1,1):
+    for row in range(1,7):
+        x=cx+side*(6.0-row*.86)
+        z=bz+4.82+row*.43
+        seam=cube("Raised roof tile course",(x,cy,z),(.045,8.25,.045),wood2,.012)
+        seam.rotation_euler[1]=side*math.radians(27)
 # timber frame at corners and across facade
 for xx in (cx-5.45,cx+5.45):
     for yy in (cy-3.85,cy+3.85):
@@ -165,15 +188,12 @@ for i in range(12):
     cube("Well masonry",(x,y,bz+.55),(.65,.55,1.1),stone,.06)
 bpy.ops.mesh.primitive_cylinder_add(vertices=32,radius=.68,depth=.12,location=(cx+9,cy+1,bz+1.13)); assign(bpy.context.object,dark)
 beam("Well crossbar",(cx+7.9,cy+1,bz+2.5),(cx+10.1,cy+1,bz+2.5),.08,.08,wood)
-# distant hill backdrop as sculpted mounds
-for x,y,s in [(-48,52,1),(0,55,1.3),(48,53,1.1),(-55,-45,1.2),(55,-42,1.0)]:
-    z=height(x,y); ico("Distant rolling hill",(x,y,z+2.1*s),(18*s,15*s,5*s),grass,3)
-# Lighting and camera for preview only
+# The terrain mesh itself carries the distant rolling hills; no oversized sphere mounds.\n# Lighting and camera for preview only
 world=bpy.data.worlds.new("Astrea clear daylight") if not bpy.data.worlds else bpy.data.worlds[0]
 bpy.context.scene.world=world; world.use_nodes=True
-world.node_tree.nodes["Background"].inputs[0].default_value=(.34,.48,.68,1)
-world.node_tree.nodes["Background"].inputs[1].default_value=.65
-bpy.ops.object.light_add(type="SUN",location=( -20,-30,50)); sun=bpy.context.object; sun.name="Warm Astrea sunlight"; sun.data.energy=2.2; sun.rotation_euler=(math.radians(25),math.radians(-20),math.radians(-25))
+world.node_tree.nodes["Background"].inputs[0].default_value=(.42,.58,.78,1)
+world.node_tree.nodes["Background"].inputs[1].default_value=.8
+bpy.ops.object.light_add(type="SUN",location=( -20,-30,50)); sun=bpy.context.object; sun.name="Warm Astrea sunlight"; sun.data.energy=3.0; sun.rotation_euler=(math.radians(25),math.radians(-20),math.radians(-25))
 bpy.ops.object.camera_add(location=(58,-72,46)); cam=bpy.context.object
 target=Vector((0,0,1)); cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler(); cam.data.lens=40; bpy.context.scene.camera=cam
 scene=bpy.context.scene; scene.render.engine="BLENDER_EEVEE"
@@ -190,6 +210,6 @@ for o in bpy.context.scene.objects:
 selected=[o for o in bpy.context.selected_objects]
 bpy.context.view_layer.objects.active=selected[0]
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT,"astrea-starter-plains.glb"),export_format="GLB",use_selection=True)
-report={"asset":"ASTREA starter continent environment","status":"generated","terrain_vertices":len(verts),"tree_count":8,"boulder_count":38,"grass_blade_count":450,"environment_objects":len(selected),"formats":["blend","glb","png"],"engine_target":"Unity 6 URP","note":"Procedural environment kit and preview. Requires Unity import, lighting and scene assembly validation before gameplay use."}
+report={"asset":"ASTREA starter continent environment","status":"generated","terrain_vertices":len(verts),"tree_count":len(tree_sites),"boulder_count":38,"grass_blade_count":len(grass_faces),"environment_objects":len(selected),"formats":["blend","glb","png"],"engine_target":"Unity 6 URP","note":"Procedural environment kit and preview. Requires Unity import, lighting and scene assembly validation before gameplay use."}
 with open(os.path.join(OUT,"build-report.json"),"w") as f: json.dump(report,f,indent=2)
 print("ASTREA_WORLD_BUILD_OK",json.dumps(report))
