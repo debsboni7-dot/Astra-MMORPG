@@ -35,3 +35,23 @@ Dernière mise à jour : 15 novembre 2026
 
 ### Verdict
 **P0 : code de contrôle initial ajouté ; prototype non validé en jeu.** Le modèle humanoïde Meshy actuellement disponible est un mesh statique sans squelette. Il ne permet donc pas encore de démontrer un vrai personnage animé. Le contrôle source est prêt pour la prochaine session Unity Editor, mais aucune jouabilité n'est revendiquée.
+
+
+## P3 — Magie : correction de consommation des ressources
+
+### Correction source
+- Un sort de soin ne consomme plus de mana si aucun soin effectif n'est appliqué.
+- Un sort offensif ne consomme plus de mana et ne démarre plus son cooldown lorsqu'aucune cible valide n'est touchée.
+- Le coût et le cooldown sont désormais engagés via une seule méthode après réussite de l'effet.
+- Le sort de bouclier engage ses ressources après application du bouclier.
+- Fichier : `unity/Assets/Scripts/Combat/AstreaSpellCombatController.cs`
+- Commit : `135a3259656b40a317aacc2baf58fe2ba38230ba`
+
+### Vérification automatisée ajoutée
+- Le workflow Unity vérifie statiquement que l'échec d'un sort offensif retourne avant l'engagement des ressources.
+- Commit du contrôle CI : `de75b9192d492b89aaab179ee1efe64474e59837`
+- Résultat : en attente d'exécution GitHub Actions.
+
+### Limites
+- Ce contrôle statique ne remplace pas un test Play Mode dans Unity.
+- Les restrictions raciales et l'autorité serveur restent non implémentées.
