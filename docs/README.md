@@ -4,7 +4,7 @@ Documentation de conception, d'architecture et de production du projet.
 
 ## Conception
 - [Vision du jeu](astrea-vision.md) : identité, promesse, piliers, monde, cibles et direction artistique.
-- [Game Design Document](astrea-gdd.md) : règles de jeu consolidées, systèmes, contenus, propositions de conception et décisions ouvertes. Version 0.3, brouillon à valider.
+- [Game Design Document](astrea-gdd.md) : règles de jeu consolidées, systèmes, contenus, propositions de conception et décisions ouvertes. Version 0.4, brouillon à valider.
 - [Feuille de route générale](astrea-master-roadmap.md) : phases, inventaire des systèmes et état de réalisation.
 
 ## Technique et production
