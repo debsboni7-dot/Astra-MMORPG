@@ -353,3 +353,111 @@ Avant de figer les chiffres de progression, les simulations devront inclure au m
 - les plafonds de 10 milliards par statistique et la maîtrise d'arme de 1 000.
 
 Les simulations doivent vérifier que le niveau 5 000 reste un objectif d'environ un an pour un joueur extrêmement intensif, sans transformer cette cible en promesse de temps identique pour tous les profils.
+
+
+## 29. Dossier de propositions pour compléter le GDD
+**Statut : propositions de conception, non approuvées.** Cette section sert à accélérer les décisions. Elle ne remplace aucune règle déjà confirmée et ne doit pas être implémentée comme vérité finale avant validation du créateur.
+
+### 29.1 Principes de conception proposés
+1. **Lisibilité avant accumulation de chiffres** : même avec un plafond de 10 milliards, les valeurs affichées doivent rester lisibles (abréviations à partir d'un seuil) et les calculs serveur conserver une précision suffisante.
+2. **Progression horizontale et verticale** : le niveau général ne doit pas être l'unique mesure de puissance. La maîtrise, l'équipement, les connaissances des écoles et la préparation doivent compter.
+3. **Pas de progression gratuite par répétition vide** : une compétence ne progresse que si l'action a un effet réel et adapté au niveau du joueur ; les cibles sans danger ou les actions annulées ne doivent pas fournir de progression normale.
+4. **Règles serveur** : XP, statistiques, maîtrise, butin, dégâts, échanges et monnaie sont validés côté serveur en multijoueur.
+5. **Valeurs d'équilibrage versionnées** : chaque formule et chaque valeur doit avoir un identifiant/version afin de pouvoir corriger l'équilibrage sans perdre la traçabilité.
+
+### 29.2 Catalogue d'attributs : proposition de structure
+Le catalogue ci-dessous est une proposition de travail, pas une liste confirmée. Il sépare les attributs physiques, défensifs et magiques pour éviter qu'une seule statistique domine tous les styles.
+
+| Groupe | Attribut proposé | Effet à spécifier |
+|---|---|---|
+| Survie | Santé maximale | Quantité de dégâts encaissables |
+| Ressource | Mana maximale | Réserve de magie |
+| Ressource | Endurance maximale | Course, esquive, blocage et actions physiques |
+| Physique | Force | Maniement des armes exigeantes et effets physiques |
+| Physique | Agilité | Mobilité, maniement et certaines fenêtres d'action |
+| Physique | Vitesse | Déplacement et/ou vitesse d'exécution, sans doubler les effets d'agilité |
+| Défense | Défense physique | Réduction ou mitigation des dégâts physiques |
+| Défense | Résistance magique | Mitigation des dégâts magiques |
+| Magie | Puissance magique | Efficacité des sorts selon leur école |
+| Magie | Contrôle magique | Stabilité, précision ou résistance aux interruptions, à définir |
+
+**Recommandation de conception :** ne pas conserver deux attributs qui font exactement la même chose. Avant de valider la liste, chaque attribut doit avoir un effet mesurable et un cas d'usage distinct. Le plafond de 10 milliards reste la limite visée par attribut, mais les valeurs initiales et les formules restent ouvertes.
+
+### 29.3 Progression générale et XP : proposition
+- Définir une courbe cumulative, plutôt qu'un coût identique à chaque niveau.
+- Calibrer la courbe sur trois profils de référence : occasionnel, régulier et extrêmement intensif.
+- Prendre comme contrainte d'équilibrage l'objectif déjà fixé : un joueur extrêmement intensif met environ un an pour atteindre le niveau 5 000 ; le segment 5 001–9 999 devient nettement plus lent.
+- Répartir l'XP entre activités pertinentes : combat, exploration, artisanat, récolte et activités sociales reconnues. Les poids exacts restent à simuler.
+- Plafonner ou réduire les gains issus d'une répétition artificielle de la même action sur une cible sans enjeu.
+- Conserver 100 % de l'XP à la mort, conformément à la règle déjà décidée.
+
+**À décider plus tard :** temps de jeu hebdomadaire retenu pour le profil intensif, répartition XP par activité, formule mathématique, niveau de départ et récompenses de jalons. Aucun chiffre de coût par niveau n'est figé ici.
+
+### 29.4 Progression des compétences et écoles : proposition
+- Une utilisation réussie fait progresser la compétence concernée.
+- La difficulté réelle, le risque, la variété des situations et le niveau de l'adversaire influencent le gain.
+- Les répétitions sur une cible très inférieure ou passive voient leur rendement fortement diminuer.
+- Les compétences d'une même famille peuvent partager une partie de la maîtrise, sans rendre automatiquement toutes les techniques accessibles.
+- Les sorts interdits par la race ne peuvent ni être équipés ni progresser par contournement.
+- Les bonus raciaux modifient l'efficacité selon une formule commune et plafonnée, pas par une multiplication cumulative incontrôlée.
+
+### 29.5 Maîtrise des armes : proposition
+- Conserver une maîtrise par famille d'arme, avec un plafond de 1 000 à confirmer.
+- Mesurer la contribution par actions utiles : coups touchés, parades réussies, tirs utiles, gestion de distance et situations de combat variées.
+- Distinguer le rang de l'arme, son poids/exigence physique et la maîtrise de la famille.
+- Une maîtrise élevée facilite les armes de rang inférieur de la même famille, mais ne supprime jamais les exigences physiques d'une arme lourde.
+- Éviter que frapper dans le vide ou attaquer continuellement un mannequin inoffensif donne la même progression qu'un vrai combat.
+
+### 29.6 Équipement, inventaire et artisanat : proposition
+Pour la première tranche jouable, limiter le système à des emplacements clairement définis : arme principale, seconde main si autorisée, tête, torse, mains, jambes, pieds et accessoires. La liste finale des accessoires et des armes reste ouverte.
+- Chaque objet possède un identifiant unique, une catégorie, un niveau/rang, une rareté éventuelle, des exigences et des propriétés.
+- La durabilité est optionnelle et ne doit être introduite qu'avec une boucle de réparation utile, sans punition excessive.
+- Les échanges entre joueurs passent par une transaction confirmée par le serveur.
+- Les ressources sont récoltées dans des biomes cohérents et consommées dans des recettes contrôlées.
+- Pour le Vertical Slice, commencer avec une récolte simple, une recette d'artisanat et un marchand test ; ne pas construire immédiatement toute l'économie.
+
+### 29.7 Mort et réapparition : proposition
+La seule règle confirmée est la conservation intégrale de l'XP. Pour éviter d'ajouter une punition non demandée, la proposition de départ est :
+- aucune perte d'XP ;
+- aucune suppression automatique d'objet équipé ;
+- réapparition à un point sûr défini par la région ou le système de jeu ;
+- autres conséquences (durabilité, butin, monnaie, délai, PvP) désactivées tant qu'elles ne sont pas approuvées.
+
+Cette proposition est volontairement prudente et ne constitue pas une décision finale.
+
+### 29.8 Économie : proposition
+- Une monnaie de base unique pour les premiers tests, afin de mesurer les flux avant d'ajouter d'autres devises.
+- Toute création et destruction de monnaie est enregistrée dans un journal serveur.
+- Les prix dynamiques doivent être bornés par des limites minimales et maximales pour éviter les manipulations.
+- Les taxes sont visibles avant confirmation d'une transaction.
+- Les revenus des territoires sont séparés des fonds personnels du dirigeant.
+- Les règles de salaire, de part du roi (1 % selon la dernière règle connue) et de fiscalité hebdomadaire sont à formaliser dans des exemples chiffrés avant le codage.
+- Aucun système de paiement réel ou d'achat obligatoire n'est présumé.
+
+### 29.9 Vertical Slice : périmètre recommandé
+**Proposition recommandée, à approuver :**
+1. Une petite zone continue du continent Astrea, avec terrain, prairie, chemin, rivière ou point d'eau, végétation et un village compact.
+2. Une race jouable au premier test, probablement humain, avec architecture préparée pour les six autres races.
+3. Création du personnage, déplacement troisième personne, caméra et commandes tactiles.
+4. Une arme de mêlée, un ennemi d'entraînement doté d'une IA simple et une boucle complète attaque/dégâts/défense/mort/réapparition.
+5. Deux ou trois sorts représentatifs au lieu de construire immédiatement les neuf écoles complètes.
+6. Une interaction de récolte, une recette d'artisanat et un marchand de test.
+7. Inventaire et équipement minimal.
+8. Une sauvegarde persistante et une session réseau à deux joueurs pour prouver l'autorité serveur ; le prototype local seul ne valide pas le multijoueur.
+9. Interface, audio, effets et optimisation au niveau de qualité attendu pour cette petite zone.
+
+**Critère de réussite proposé :** un joueur peut créer son personnage, entrer dans la zone, se déplacer, combattre, lancer de la magie, récolter, fabriquer, interagir avec le marchand, sauvegarder puis retrouver sa progression. Un second joueur peut rejoindre et voir les états importants synchronisés.
+
+### 29.10 Réalisme du coût d'exploitation : point de vigilance
+Le moteur Unity et les outils open source peuvent être utilisés sans frais de licence dans le cadre applicable, mais un MMORPG persistant à grande échelle nécessite une infrastructure réseau, stockage, sauvegardes, sécurité et bande passante. Un hébergement réellement gratuit et fiable pour un million de comptes inscrits ne peut pas être garanti. La cible d'un million de comptes n'est pas une cible de connexions simultanées. L'architecture devra prévoir une montée en charge progressive, des coûts mesurés et une solution de serveur auto-hébergée ou communautaire pour les prototypes. Aucun service payant ne sera activé sans autorisation explicite.
+
+### 29.11 Ordre recommandé des décisions
+1. Valider ou corriger le périmètre du Vertical Slice.
+2. Valider le catalogue d'attributs.
+3. Fixer les profils de simulation XP et maîtrise.
+4. Définir les familles d'objets et l'inventaire minimal.
+5. Décider des conséquences de mort autres que l'XP.
+6. Formaliser l'économie et les territoires.
+7. Fixer la cible de joueurs simultanés du prototype réseau et les limites de la première infrastructure.
+
+**Rappel :** les propositions de ce chapitre sont des recommandations de conception. Les décisions finales restent celles du créateur et devront être explicitement approuvées avant d'être codées comme règles de jeu.
