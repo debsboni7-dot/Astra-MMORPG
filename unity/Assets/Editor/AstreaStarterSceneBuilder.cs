@@ -6,7 +6,9 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using Astrea.Rendering;
-using Astrea.UI;\nusing Astrea.Character;\nusing Astrea.Combat;
+using Astrea.UI;
+using Astrea.Character;
+using Astrea.Combat;
 
 namespace Astrea.EditorTools
 {
@@ -16,7 +18,8 @@ namespace Astrea.EditorTools
     /// </summary>
     public static class AstreaStarterSceneBuilder
     {
-        private const string EnvironmentPath = "Assets/Art/Environment/Astrea/ASTREA_Starter_Plains.fbx";\n        private const string PlayerModelPath = "Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx";
+        private const string EnvironmentPath = "Assets/Art/Environment/Astrea/ASTREA_Starter_Plains.fbx";
+        private const string PlayerModelPath = "Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx";
         private const string ScenePath = "Assets/Scenes/ASTREA_Starter_Plains.unity";
 
         [MenuItem("ASTREA/World/Build Starter Plains Scene")]
@@ -52,7 +55,27 @@ namespace Astrea.EditorTools
             var spawn = new GameObject("ASTREA | Player Spawn");
             spawn.transform.position = new Vector3(0f, 4f, 0f);
 
-            var playerModel = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerModelPath);\n            if (playerModel != null)\n            {\n                var player = (GameObject)PrefabUtility.InstantiatePrefab(playerModel, scene);\n                player.name = "ASTREA | Player";\n                player.transform.SetPositionAndRotation(spawn.transform.position, Quaternion.identity);\n                var characterController = player.GetComponent<CharacterController>();\n                if (characterController == null) characterController = player.AddComponent<CharacterController>();\n                characterController.height = 1.8f;\n                characterController.radius = 0.34f;\n                characterController.center = new Vector3(0f, 0.9f, 0f);\n                if (player.GetComponent<AstreaThirdPersonController>() == null) player.AddComponent<AstreaThirdPersonController>();\n                if (player.GetComponent<AstreaCombatController>() == null) player.AddComponent<AstreaCombatController>();\n                if (player.GetComponent<AstreaHealth>() == null) player.AddComponent<AstreaHealth>();\n            }\n            else\n            {\n                Debug.LogWarning("ASTREA player model not imported yet. The scene will be created without a playable character until " + PlayerModelPath + " is available.");\n            }\n\n            var cameraPivotObject = new GameObject("ASTREA | Third Person Camera Pivot");
+            var playerModel = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerModelPath);
+            if (playerModel != null)
+            {
+                var player = (GameObject)PrefabUtility.InstantiatePrefab(playerModel, scene);
+                player.name = "ASTREA | Player";
+                player.transform.SetPositionAndRotation(spawn.transform.position, Quaternion.identity);
+                var characterController = player.GetComponent<CharacterController>();
+                if (characterController == null) characterController = player.AddComponent<CharacterController>();
+                characterController.height = 1.8f;
+                characterController.radius = 0.34f;
+                characterController.center = new Vector3(0f, 0.9f, 0f);
+                if (player.GetComponent<AstreaThirdPersonController>() == null) player.AddComponent<AstreaThirdPersonController>();
+                if (player.GetComponent<AstreaCombatController>() == null) player.AddComponent<AstreaCombatController>();
+                if (player.GetComponent<AstreaHealth>() == null) player.AddComponent<AstreaHealth>();
+            }
+            else
+            {
+                Debug.LogWarning("ASTREA player model not imported yet. The scene will be created without a playable character until " + PlayerModelPath + " is available.");
+            }
+
+            var cameraPivotObject = new GameObject("ASTREA | Third Person Camera Pivot");
             cameraPivotObject.transform.position = spawn.transform.position + new Vector3(0f, 1.55f, 0f);
             var cameraObject = new GameObject("Main Camera");
             cameraObject.tag = "MainCamera";
