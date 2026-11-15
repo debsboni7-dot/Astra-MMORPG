@@ -9,7 +9,6 @@ const TECHNIQUE_DATA = {
   sword: [['quick_slash','Entaille rapide'],['riposte','Riposte'],['cross_cut','Croisé tranchant'],['guard_break','Brise-garde'],['blade_dance','Danse des lames'],['piercing_thrust','Estoc précis'],['steel_tempest','Tempête d’acier'],['sword_mastery','Art du duelliste']],
   axe: [['heavy_chop','Coupe puissante'],['hooking_strike','Frappe crochetée'],['cleaving_arc','Arc dévastateur'],['armor_splitter','Brise-armure'],['execution_chop','Coupe d’exécution'],['whirlwind_axe','Tourbillon de hache'],['ravager','Dévastation'],['axe_mastery','Art du conquérant']],
   hammer: [['crushing_blow','Coup écrasant'],['ground_pound','Fracas au sol'],['staggering_bash','Heurt déstabilisant'],['fortress_breaker','Brise-forteresse'],['quake_strike','Frappe sismique'],['meteor_hammer','Marteau météore'],['cataclysm','Cataclysme'],['hammer_mastery','Art du titan']],
-  polearm: [['long_thrust','Estoc allongé'],['sweeping_cut','Balayage'],['vaulting_strike','Frappe bondissante'],['pinning_thrust','Estoc immobilisant'],['spear_wall','Mur de pointes'],['whirlwind_reach','Tourbillon étendu'],['sky_piercer','Perce-ciel'],['polearm_mastery','Art du lancier']],
 };
 export const WEAPON_TECHNIQUES = Object.freeze(Object.fromEntries(Object.entries(TECHNIQUE_DATA).map(([category, rows]) => [category, Object.freeze(rows.map(([id,name],i) => Object.freeze({id,name,category,requiredMastery:TECHNIQUE_UNLOCK_LEVELS[i]})))])));
 export function weaponMasteryXpForLevel(level) {
