@@ -32,3 +32,14 @@ Le plan de poste de travail GPU distant, d’accès navigateur mobile sécurisé
 ## Licence des ressources
 
 Les ressources Quaternius importées proviennent de l'édition Standard du pack Modular Character Outfits - Fantasy ; sa licence CC0 est conservée dans `prototype/assets/quaternius/License_Standard.txt`. Les autres ressources conservent leur hébergement et leurs conditions propres.
+
+
+## Client Unity 6 URP
+
+A native Unity client foundation now lives in [unity/](unity/README.md), pinned to Unity 6.3 LTS (6000.3.28f1) with URP 17.3.0. It includes a third-person movement foundation, modular armor attachment slots and a UnityWebRequest client for the existing Node.js API. The browser prototype remains available during the transition and is not deleted.
+
+The Unity Editor has not yet been run in CI. The URP package is declared; its render-pipeline asset must be generated and activated from the Unity Editor using the ASTREA menu described in the Unity README. No paid Unity Gaming Services, cloud hosting or automatic billing is configured.
+
+## Modular armor export
+
+The Blender armor workflow generates eight independently named modular armor objects and exports .blend, .glb, .fbx and a PNG preview. The current set is a procedural blockout, not a final rigged or production-quality armor set.
