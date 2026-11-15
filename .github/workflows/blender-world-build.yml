@@ -1,0 +1,62 @@
+name: ASTREA starter world environment build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/blender-unreal-cloud-pipeline]
+    paths:
+      - "blender-workbench/build_world_environment.py"
+      - ".github/workflows/blender-world-build.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  world-environment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0 python3-numpy
+          blender --version
+      - name: Generate Astrea starter plains environment
+        env:
+          ASTREA_WORLD_OUTPUT_DIR: ${{ github.workspace }}/build/astrea-world
+          PYTHONPATH: /usr/lib/python3/dist-packages
+        run: |
+          mkdir -p "$ASTREA_WORLD_OUTPUT_DIR"
+          blender -b --python blender-workbench/build_world_environment.py
+      - name: Validate environment deliverables
+        run: |
+          test -s build/astrea-world/astrea-starter-plains.blend
+          test -s build/astrea-world/astrea-starter-plains.glb
+          test -s build/astrea-world/astrea-starter-plains-preview.png
+          python3 - <<'PY'
+          import json
+          p=json.load(open("build/astrea-world/build-report.json"))
+          assert p["tree_count"] >= 5
+          assert p["terrain_vertices"] > 5000
+          assert p["environment_objects"] > 100
+          print("Validated ASTREA terrain and environment geometry:", p)
+          PY
+      - name: Integrate world asset into Unity
+        run: |
+          mkdir -p unity/Assets/Art/Environment/Astrea
+          cp build/astrea-world/astrea-starter-plains.glb unity/Assets/Art/Environment/Astrea/
+          cp build/astrea-world/astrea-starter-plains-preview.png unity/Assets/Art/Environment/Astrea/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/Assets/Art/Environment/Astrea/
+          if ! git diff --cached --quiet; then
+            git commit -m "Add generated ASTREA starter plains environment"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astrea-starter-plains-${{ github.run_number }}
+          path: build/astrea-world/
+          retention-days: 14
