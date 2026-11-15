@@ -2,9 +2,10 @@ import { awardWeaponMastery, recordWeaponTechniqueUse, getWeaponProgression, WEA
 
 const ATTACK_TYPES = new Set(['light', 'heavy', 'charged', 'finisher', 'special', 'aerial', 'default']);
 const CATEGORIES = new Set(Object.keys(WEAPON_TECHNIQUES));
+const ATTACK_EVENT_ID = /^[A-Za-z0-9_-]{8,128}$/;
 
 function emptyProgression() {
-  return { schemaVersion: 1, weaponMasteries: {}, weaponMasteryXpByCategory: {}, weaponTechniqueXp: {}, weaponUses: 0, weaponUsesByCategory: {} };
+  return { schemaVersion: 1, weaponMasteries: {}, weaponMasteryXpByCategory: {}, weaponTechniqueXp: {}, weaponUses: 0, weaponUsesByCategory: {}, processedEvents: [] };
 }
 
 function sanitizeProgression(value = {}) {
@@ -24,6 +25,8 @@ function sanitizeProgression(value = {}) {
     }
   }
   clean.weaponUses = Number.isFinite(Number(value.weaponUses)) && Number(value.weaponUses) >= 0 ? Math.floor(Number(value.weaponUses)) : 0;
+  clean.processedEvents = [...new Set((Array.isArray(value.processedEvents) ? value.processedEvents : [])
+    .filter(id => typeof id === 'string' && id.length <= 160))].slice(-1000);
   return clean;
 }
 
@@ -45,11 +48,16 @@ export function createWeaponProgressionService(repository) {
     }));
   }
 
-  async function recordSuccessfulAttack({ accountId, characterId, category, attackType = 'default', techniqueId = null }) {
+  async function recordSuccessfulAttack({ accountId, characterId, category, attackType = 'default', techniqueId = null, attackEventId }) {
     if (!accountId || !characterId) throw new TypeError('Authenticated account and character are required');
+    if (typeof attackEventId !== 'string' || !ATTACK_EVENT_ID.test(attackEventId)) throw new TypeError('A valid server attack event ID is required');
     if (!CATEGORIES.has(category) || !ATTACK_TYPES.has(attackType)) throw new TypeError('Invalid server-validated weapon attack');
     return repository.withCharacterTransaction(accountId, characterId, async (character, saveProgression) => {
       const progression = sanitizeProgression(character.weaponProgression);
+      const eventKey = `attack:${attackEventId}`;
+      if (progression.processedEvents.includes(eventKey)) {
+        return { progression, result: { recorded: false, reason: 'duplicate-event', awarded: 0 } };
+      }
       const combatant = { ...progression };
       const mastery = awardWeaponMastery(combatant, category, attackType);
       combatant.weaponUses = (combatant.weaponUses || 0) + 1;
@@ -61,11 +69,13 @@ export function createWeaponProgressionService(repository) {
         technique = recordWeaponTechniqueUse(combatant, category, techniqueId);
         if (!technique.recorded) throw new TypeError(technique.reason);
       }
+      combatant.processedEvents.push(eventKey);
+      combatant.processedEvents = combatant.processedEvents.slice(-1000);
       const saved = sanitizeProgression(combatant);
       if (typeof saveProgression === 'function') await saveProgression(saved);
       else if (typeof repository.saveWeaponProgression === 'function') await repository.saveWeaponProgression(character.id, saved);
       else throw new TypeError('Transactional progression writer is required');
-      return { progression: saved, result: { awarded: mastery.awarded, mastery, technique } };
+      return { progression: saved, result: { recorded: true, attackEventId, awarded: mastery.awarded, mastery, technique } };
     });
   }
 
