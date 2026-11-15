@@ -183,6 +183,6 @@ bpy.ops.object.select_all(action="DESELECT")
 for o in pieces: o.select_set(True)
 bpy.context.view_layer.objects.active=pieces[0]
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT,"astrea-modular-armor.glb"),export_format="GLB",use_selection=True)
-report={"asset":"ASTREA modular medieval armor set","status":"generated","piece_count":len(pieces),"pieces":[p.name for p in pieces],"blender_version":bpy.app.version_string,"formats":["blend","glb","png"],"note":"Eight independently named modular armor objects; greaves are a paired object. FBX is provided for Unity import."}
+report={"asset":"ASTREA modular medieval armor set","status":"generated","piece_count":len(pieces),"pieces":[p.name for p in pieces],"blender_version":bpy.app.version_string,"formats":["blend","glb","fbx","png","pbr-textures"],"texture_sets":["MidnightSteel","ForgedSilver","AntiqueGold","OxbloodLeather","SapphireEnamel"],"texture_resolution":512,"note":"Eight independently named modular armor objects; greaves are a paired object. PBR maps are generated as PNGs for Unity and embedded in the GLB where supported."}
 with open(os.path.join(OUT,"build-report.json"),"w") as f: json.dump(report,f,indent=2)
 print("ASTREA_ARMOR_BUILD_OK",json.dumps(report))
