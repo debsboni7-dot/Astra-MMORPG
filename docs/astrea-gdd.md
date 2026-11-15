@@ -65,7 +65,7 @@ Toutes les races restent globalement humanoïdes, avec des teintes de peau proch
 | Orc | +14 % force physique et +14 % magie de feu | Ne peut pas utiliser lumière ou nature |
 | Dragonoïde | +15 % magie de destruction | Restrictions complémentaires à définir |
 
-Les valeurs exactes de calcul, les cumuls, les plafonds, les exceptions et la définition de « magie de base » restent à spécifier.
+Les valeurs exactes de calcul, les cumuls, les plafonds, les exceptions et la définition de « magie de base » restent à spécifier. Pour le dragonoïde, le bonus de +15 % en magie de destruction est une affinité raciale ; la destruction ne doit pas être ajoutée comme dixième école générale tant que le créateur n'a pas confirmé cette architecture.
 
 ## 5. Progression
 ### 5.1 Niveaux et expérience
@@ -270,7 +270,7 @@ Les familles déjà utilisées dans les prototypes sont : épée, dague, sabre, 
 Les seuils exacts de maîtrise, les exigences par arme, les coefficients, la vitesse d'attaque, la précision, la consommation d'endurance et les formules de dégâts sont **à définir**. Ne pas inventer de barème final dans le code.
 
 ## 22. Statistiques : registre de spécification
-La seule contrainte numérique globale confirmée est un plafond souhaité de 10 milliards pour les statistiques. Le catalogue officiel n'est pas encore validé. Chaque attribut devra avoir une définition fonctionnelle, une unité, une formule d'effet, un plafond, une source de progression et une règle de synchronisation serveur.
+La décision de conception la plus récente fixe le plafond visé de chaque statistique à **10 milliards**. Le catalogue officiel des attributs n'est pas encore validé. Chaque attribut devra avoir une définition fonctionnelle, une unité, une formule d'effet, ce plafond, une source de progression et une règle de synchronisation serveur.
 
 Fiche à compléter pour chaque attribut :
 - Identifiant stable et nom affiché.
@@ -281,7 +281,7 @@ Fiche à compléter pour chaque attribut :
 - Plafond, arrondis et limites anti-exploit.
 - Effets sur PvE, PvP et activités non combattantes.
 
-Les valeurs d'HP, mana, endurance, force, défense, vitesse, résistance et puissance magique doivent être spécifiées séparément. Le plafond général de 10 milliards ne signifie pas que chaque attribut doit nécessairement atteindre cette valeur.
+Les valeurs d'HP, mana, endurance, force, défense, vitesse, résistance et puissance magique doivent être spécifiées séparément. Le plafond cible s'applique à chaque statistique ; les valeurs de départ, les vitesses de progression et les conditions d'atteinte restent à équilibrer.
 
 ## 23. Mort, réapparition et perte
 - Règle confirmée : la mort ne retire pas l'expérience déjà acquise.
@@ -332,3 +332,24 @@ Le GDD pourra passer en version 1.0 lorsque :
 7. Les dépendances techniques et les exigences serveur sont reliées à l'architecture technique.
 
 Tant que ces points ne sont pas tous résolus, le document reste un GDD de travail et ne constitue pas une spécification finale verrouillée.
+
+
+## 27. Règles d'interface confirmées
+- L'interface doit rester claire, moderne et lisible, avec une inspiration console de qualité PlayStation.
+- Les indications de commandes doivent pouvoir afficher des glyphes de manette adaptés, notamment les repères de type PlayStation.
+- Les bordures et états de sélection doivent être visibles et suffisamment contrastés.
+- Les commandes tactiles doivent être disposées pour éviter les chevauchements et préserver la visibilité du personnage et du monde.
+- Le HUD doit éviter les éléments décoratifs inutiles et les informations qui masquent l'action.
+- Les dispositions exactes, tailles, couleurs, animations, raccourcis et règles d'accessibilité restent à définir dans les maquettes UX/UI.
+
+## 28. Conditions de validation des systèmes de progression
+Avant de figer les chiffres de progression, les simulations devront inclure au minimum :
+- un joueur occasionnel, un joueur régulier et un joueur extrêmement intensif ;
+- une progression sur plusieurs semaines, puis une projection jusqu'au niveau 5 000 et 9 999 ;
+- les gains par activité et par combat, les interruptions et les activités répétables ;
+- les différences raciales et les bonus d'équipement ;
+- les risques de farming automatisé, de groupe organisé et de personnages secondaires ;
+- la conservation intégrale de l'XP à la mort ;
+- les plafonds de 10 milliards par statistique et la maîtrise d'arme de 1 000.
+
+Les simulations doivent vérifier que le niveau 5 000 reste un objectif d'environ un an pour un joueur extrêmement intensif, sans transformer cette cible en promesse de temps identique pour tous les profils.
