@@ -25,6 +25,10 @@ ASTREA n'est **pas encore un MMORPG en production**. La fondation backend et les
 
 Les 1 200 emplacements magiques ont une structure de progression commune ; les fiches d'effet détaillées de chaque sort (dégâts, portée, coût, durée, recharge, contres et interactions) restent à définir et équilibrer avant leur activation dans les combats.
 
+## Pipeline cloud Blender / Unreal
+
+Le plan de poste de travail GPU distant, d’accès navigateur mobile sécurisé et d’intégration Unreal est documenté dans [`cloud-workstation/README.md`](cloud-workstation/README.md). Le poste GPU n’est pas encore provisionné : aucune dépense cloud ni exécution réelle d’Unreal n’est déclarée.
+
 ## Licence des ressources
 
 Les ressources Quaternius importées proviennent de l'édition Standard du pack Modular Character Outfits - Fantasy ; sa licence CC0 est conservée dans `prototype/assets/quaternius/License_Standard.txt`. Les autres ressources conservent leur hébergement et leurs conditions propres.
