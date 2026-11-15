@@ -222,3 +222,10 @@ Le fichier `tests/server-http-api.test.js` ajoute des tests HTTP exécutant le v
 - JSON invalide et corps supérieur à la limite : rejet contrôlé.
 
 Ces tests vérifient les routes et leurs contrats avec des dépendances simulées. Ils ne remplacent pas un test de bout en bout avec une vraie base PostgreSQL, ni un test du client Unity. La suite serveur et gameplay a réussi sur le commit `1f3844b`; le test Chromium de ce commit est encore en cours au moment de cette mise à jour.
+
+
+### 11.9 Test d'intégration PostgreSQL ajouté
+- Le workflow CI démarre désormais un service PostgreSQL 16 éphémère.
+- `tests/postgres-integration.test.js` applique les quatre migrations sur cette vraie instance et vérifie inscription/connexion, sessions, création et isolement des personnages, persistance JSONB, transaction et rollback.
+- Le test est ignoré localement si `DATABASE_URL` n'est pas fourni ; dans GitHub Actions, le service PostgreSQL est configuré pour que le test s'exécute.
+- Cette validation porte sur le backend et la base dans le runner CI. Elle ne prouve pas encore le raccordement du client Unity, ni une base de production ou un serveur multijoueur temps réel.
