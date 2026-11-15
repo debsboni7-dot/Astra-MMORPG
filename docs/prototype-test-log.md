@@ -19,6 +19,11 @@ Dernière mise à jour : 15 novembre 2026
 - Résultat : **succès**.
 - Portée : métadonnées Unity, présence des scripts, équilibre des accolades et contrats statiques du contrôleur, des entrées et du bouton de course.
 
+### Dernière vérification CI
+- Workflow Unity : [ASTREA Unity foundation checks](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43723004765)
+- Commit vérifié : `e41eaf63f03fc100c74e8038f5eb154ccbe3c191`
+- Résultat : **succès**. Les contrôles statiques valident aussi le workflow d'import de l'artefact Meshy et la présence de l'asset FBX d'environnement.
+
 ### Tests non exécutés / blocages
 - [ ] Import du projet dans Unity 6.3 Editor.
 - [ ] Compilation C# réelle par Unity.
