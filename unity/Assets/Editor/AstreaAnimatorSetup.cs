@@ -38,6 +38,8 @@ namespace Astrea.EditorTools
             var death = Find("death", "die");
 
             EnsureFolder("Assets/Art", "Animations");
+            if (AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath) != null)
+                AssetDatabase.DeleteAsset(ControllerPath);
             var controller = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
             AddParameters(controller);
 
