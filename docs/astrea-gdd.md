@@ -1,5 +1,5 @@
 # ASTREA — Game Design Document (GDD)
-Version 0.1 — 15 novembre 2026
+Version 0.2 — 15 novembre 2026
 Statut : première base consolidée, **brouillon à valider**. Les points non décidés sont signalés comme tels.
 
 ## 0. Contrôle du document
@@ -235,3 +235,100 @@ Ce périmètre devra être validé avant de devenir la cible officielle du Verti
 
 ---
 **Règle de production :** ce GDD est une base structurée. Les décisions confirmées doivent rester traçables ; les propositions et paramètres ouverts nécessitent validation du créateur avant implémentation définitive.
+
+
+## 20. Détail des neuf écoles et sorts de démonstration
+Le tableau suivant reprend les neuf sorts de la tranche prototype. **Ces valeurs ne sont pas les valeurs d'équilibrage final** et ne doivent pas être considérées comme des coûts/dégâts officiels.
+
+| École | Sort prototype | Fonction prototype | Mana | Recharge |
+|---|---|---|---:|---:|
+| Feu | Trait ardent | Projectile, dégâts et brûlure périodique | 8 | 0,9 s |
+| Eau | Jet d'eau | Projectile et ralentissement temporaire | 8 | 0,8 s |
+| Vent | Onde de vent | Dégâts de zone et recul | 9 | 1,4 s |
+| Terre | Égide de pierre | Bouclier temporaire personnel | 12 | 5 s |
+| Glace | Éclat de givre | Projectile et immobilisation temporaire | 9 | 1,2 s |
+| Foudre | Arc électrique | Dégâts, décharge périodique et bref étourdissement | 10 | 1,3 s |
+| Nature | Sève réparatrice | Soin personnel | 10 | 1,5 s |
+| Lumière | Lueur purificatrice | Soin personnel et purification | 10 | 1,8 s |
+| Démoniaque | Ponction démoniaque | Dégâts et vol de vie | 12 | 1,5 s |
+
+Paramètres communs du prototype : réserve initiale de 100 mana, régénération de 4 mana par seconde ; rayon de zone du vent de 4,5 m ; portée maximale prototype de 12 m pour les cibles directes. Les sorts interdits, sans cible valide, en recharge ou sans mana ne doivent pas consommer de mana. La progression ne doit être accordée que si l'effet est réellement appliqué. Ces paramètres restent à rééquilibrer et à valider pour chaque race, niveau et mode de jeu.
+
+La tranche Unity actuellement codée est plus limitée que le tableau de démonstration : elle applique les neuf définitions de base, les dégâts directs, les soins de nature/lumière et un bouclier de terre. Les effets brûlure, ralentissement, gel, étourdissement, purification et vol de vie ne sont pas tous implémentés dans le client Unity actuel. Le prototype local ne constitue pas une implémentation multijoueur autoritaire.
+
+## 21. Règles détaillées de maîtrise des armes
+### 21.1 Familles de démonstration
+Les familles déjà utilisées dans les prototypes sont : épée, dague, sabre, hache, marteau, masse, arc, arbalète, bâton, baguette et grimoire. Cette liste sert de base de travail ; les variantes, sous-familles et armes de départ restent à décider. Les armes d'hast restent exclues.
+
+### 21.2 Maîtrise et attributs
+- Plafond de maîtrise envisagé : 1 000.
+- La maîtrise doit représenter l'expérience pratique de la famille d'arme.
+- Les caractéristiques physiques doivent limiter l'utilisation des armes trop lourdes ou trop exigeantes.
+- Une arme de haut rang et légère peut être maniable par un personnage moins fort qu'un personnage qui tente de manier une arme lourde.
+- Une maîtrise très élevée dans une famille doit faciliter l'usage des armes de rang inférieur de cette famille.
+
+Les seuils exacts de maîtrise, les exigences par arme, les coefficients, la vitesse d'attaque, la précision, la consommation d'endurance et les formules de dégâts sont **à définir**. Ne pas inventer de barème final dans le code.
+
+## 22. Statistiques : registre de spécification
+La seule contrainte numérique globale confirmée est un plafond souhaité de 10 milliards pour les statistiques. Le catalogue officiel n'est pas encore validé. Chaque attribut devra avoir une définition fonctionnelle, une unité, une formule d'effet, un plafond, une source de progression et une règle de synchronisation serveur.
+
+Fiche à compléter pour chaque attribut :
+- Identifiant stable et nom affiché.
+- Définition et effet exact sur le gameplay.
+- Valeur de base par race.
+- Bonus/malus raciaux et règles de cumul.
+- Progression par niveau, équipement et utilisation.
+- Plafond, arrondis et limites anti-exploit.
+- Effets sur PvE, PvP et activités non combattantes.
+
+Les valeurs d'HP, mana, endurance, force, défense, vitesse, résistance et puissance magique doivent être spécifiées séparément. Le plafond général de 10 milliards ne signifie pas que chaque attribut doit nécessairement atteindre cette valeur.
+
+## 23. Mort, réapparition et perte
+- Règle confirmée : la mort ne retire pas l'expérience déjà acquise.
+- Les pénalités éventuelles sur équipement, durabilité, ressources transportées, monnaie, position ou temps de réapparition ne sont pas définies.
+- Le lieu de réapparition, les règles de résurrection, les soins alliés et les conséquences de mort en PvP doivent être décidés avant implémentation finale.
+
+Aucune pénalité supplémentaire ne doit être ajoutée implicitement : seule la conservation de l'XP est actuellement une règle certaine.
+
+## 24. Contrat de comportement multijoueur
+Les systèmes suivants doivent être autoritaires côté serveur avant une sortie MMORPG :
+- Validation de l'identité, de la propriété des personnages et des sessions.
+- Validation des déplacements, interactions et changements d'état importants.
+- Calcul des dégâts, soins, boucliers, effets, temps de recharge et consommations de ressources.
+- Attribution d'XP, progression des maîtrises, butin et récompenses.
+- Transactions d'inventaire, commerce, monnaie, taxes et propriété territoriale.
+- Horodatage et persistance des changements importants.
+
+Le client peut prédire et afficher les actions pour la réactivité, mais il ne doit pas pouvoir décider seul d'un résultat sensible. Les règles de latence, correction de position, fréquence de synchronisation, anti-triche et réconciliation restent à spécifier dans le document d'architecture.
+
+## 25. Matrice de traçabilité des décisions
+| Sujet | État | Règle ou décision actuelle |
+|---|---|---|
+| Genre et caméra | Décidé | MMORPG d'action fantasy, monde ouvert, troisième personne |
+| Monde | Décidé | Cinq continents : Astrea, Van, Burg, Night, Noir |
+| Races | Décidé | Sept races et bonus/restrictions listés au chapitre 4 |
+| Écoles | Décidé | Neuf écoles listées au chapitre 7 |
+| Progression | Décidé | Progression des compétences par utilisation |
+| Niveau | Décidé, courbe ouverte | Maximum 9 999 ; niveau 5 000 visé après environ un an de jeu extrêmement intensif |
+| Mort | Décidé partiellement | XP conservée ; autres pénalités non définies |
+| Statistiques | Partiel | Plafond souhaité de 10 milliards ; catalogue et formules ouverts |
+| Maîtrise d'arme | Partiel | Plafond envisagé de 1 000 ; seuils et formules ouverts |
+| Techniques équipées | Décidé | Cinq emplacements, trois normaux et deux ultimes |
+| Armes d'hast | Décidé | Exclues de la direction actuelle |
+| Sorts prototype | Référence technique | Coûts/temps du chapitre 20 non définitifs |
+| Économie | À détailler | Monnaie, prix, émission, destruction, fiscalité et protections |
+| Territoires | Partiel | TikTok public, seuils et règles de gouvernance à revalider et préciser |
+| Population serveur | Objectif à préciser | Environ un million de comptes inscrits, pas de connexions simultanées |
+| Première version jouable | À valider | Proposition du chapitre 18 non approuvée |
+
+## 26. Critères de validation du GDD
+Le GDD pourra passer en version 1.0 lorsque :
+1. Toutes les règles confirmées sont relues et acceptées par le créateur.
+2. Les statistiques, niveaux, XP et maîtrises ont des formules explicites ou sont volontairement reportés hors du premier prototype.
+3. Les règles de combat et les neuf écoles ont des fiches cohérentes, avec valeurs clairement classées comme provisoires ou définitives.
+4. Les systèmes d'équipement, inventaire, artisanat et activités ont un périmètre de première version.
+5. Les systèmes économiques et territoriaux ont des règles sans contradictions ni exploit évident.
+6. Le périmètre du Vertical Slice est validé.
+7. Les dépendances techniques et les exigences serveur sont reliées à l'architecture technique.
+
+Tant que ces points ne sont pas tous résolus, le document reste un GDD de travail et ne constitue pas une spécification finale verrouillée.
