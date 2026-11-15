@@ -48,6 +48,11 @@ namespace Astrea.UI
             if (controller != null) controller.SetMobileMove(value);
         }
 
+        public void RequestJump()
+        {
+            if (controller != null) controller.RequestJump();
+        }
+
         private void HandleLook(Vector2 delta)
         {
             if (controller != null) controller.SetMobileLook(delta);
