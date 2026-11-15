@@ -33,7 +33,8 @@ namespace Astrea.EditorTools
             var playerVfx = Object.FindFirstObjectByType<AstreaVfxLibrary>();
             if (playerVfx == null)
             {
-                EditorUtility.DisplayDialog("ASTREA VFX", "Aucun AstreaVfxLibrary trouvé. Construis la scène de départ, puis relance cette commande.", "OK");
+                Debug.LogWarning("ASTREA VFX prefabs generated, but no AstreaVfxLibrary exists in the open scene yet. Generate the character and rebuild the starter scene to wire the pool.");
+                AssetDatabase.SaveAssets();
                 return;
             }
 
