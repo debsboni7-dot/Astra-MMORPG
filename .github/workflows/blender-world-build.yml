@@ -37,6 +37,14 @@ jobs:
         run: |
           assimp export build/astrea-world/astrea-starter-plains.glb build/astrea-world/astrea-starter-plains.fbx -f fbx
           assimp info build/astrea-world/astrea-starter-plains.fbx
+          python3 - <<'PY'
+          import json
+          p="build/astrea-world/build-report.json"
+          d=json.load(open(p))
+          if "fbx" not in d["formats"]: d["formats"].append("fbx")
+          d["unity_asset"]="ASTREA_Starter_Plains.fbx"
+          json.dump(d,open(p,"w"),indent=2)
+          PY
       - name: Validate environment deliverables
         run: |
           test -s build/astrea-world/astrea-starter-plains.blend
@@ -61,7 +69,7 @@ jobs:
           git add unity/Assets/Art/Environment/Astrea/
           if ! git diff --cached --quiet; then
             git commit -m "Add generated ASTREA starter plains environment"
-            git pull --rebase origin "$GITHUB_REF_NAME"
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
             git push
           fi
       - uses: actions/upload-artifact@v4
