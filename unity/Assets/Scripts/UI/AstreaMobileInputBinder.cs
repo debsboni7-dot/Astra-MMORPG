@@ -12,6 +12,7 @@ namespace Astrea.UI
         [SerializeField] private Transform cameraPivot;
         private AstreaCombatController combatController;
         private AstreaSpellCombatController spellController;
+        private bool sprintHeld;
 
         private AstreaThirdPersonController controller;
 
@@ -50,7 +51,17 @@ namespace Astrea.UI
 
         private void HandleMove(Vector2 value)
         {
-            if (controller != null) controller.SetMobileMove(value);
+            if (controller != null)
+            {
+                controller.SetMobileMove(value);
+                controller.SetSprintHeld(sprintHeld);
+            }
+        }
+
+        public void SetSprintHeld(bool held)
+        {
+            sprintHeld = held;
+            if (controller != null) controller.SetSprintHeld(held);
         }
 
         public void RequestJump()
