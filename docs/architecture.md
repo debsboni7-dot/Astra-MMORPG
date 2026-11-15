@@ -212,3 +212,13 @@ Ce schéma décrit une cible logique et des intégrations futures ; les flèches
 - Ajouter des tests automatisés sur les limites de taille, les erreurs JSON, les jetons invalides, les accès inter-comptes et les requêtes répétées.
 - Vérifier le cycle de vie des sessions et le traitement des erreurs de base de données.
 - Définir les origines autorisées uniquement si le navigateur prototype doit appeler directement l'API depuis un autre domaine ; ne pas activer un CORS permissif par défaut.
+
+
+### 11.8 Contrats HTTP couverts par tests automatisés
+Le fichier `tests/server-http-api.test.js` ajoute des tests HTTP exécutant le vrai serveur Node.js sur un port local avec services simulés :
+- inscription et connexion : codes HTTP et forme de réponse ;
+- routes personnages : authentification obligatoire et propriétaire dérivé du jeton, pas du corps client ;
+- déconnexion : transmission du jeton au service de révocation ;
+- JSON invalide et corps supérieur à la limite : rejet contrôlé.
+
+Ces tests vérifient les routes et leurs contrats avec des dépendances simulées. Ils ne remplacent pas un test de bout en bout avec une vraie base PostgreSQL, ni un test du client Unity. La suite serveur et gameplay a réussi sur le commit `1f3844b`; le test Chromium de ce commit est encore en cours au moment de cette mise à jour.
