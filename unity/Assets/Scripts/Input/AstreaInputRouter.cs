@@ -21,6 +21,7 @@ namespace Astrea.Input
         private InputAction jump;
         private InputAction attack;
         private InputAction magic;
+        private InputAction sprint;
 
         private void Awake()
         {
@@ -49,6 +50,11 @@ namespace Astrea.Input
             magic = new InputAction("Magic", InputActionType.Button);
             magic.AddBinding("<Keyboard>/k");
             magic.AddBinding("<Gamepad>/buttonNorth");
+
+            sprint = new InputAction("Sprint", InputActionType.Button);
+            sprint.AddBinding("<Keyboard>/leftShift");
+            sprint.AddBinding("<Keyboard>/rightShift");
+            sprint.AddBinding("<Gamepad>/leftStickPress");
         }
 
         private void OnEnable()
@@ -58,6 +64,7 @@ namespace Astrea.Input
             jump?.Enable();
             attack?.Enable();
             magic?.Enable();
+            sprint?.Enable();
         }
 
         private void OnDisable()
@@ -67,6 +74,7 @@ namespace Astrea.Input
             jump?.Disable();
             attack?.Disable();
             magic?.Disable();
+            sprint?.Disable();
         }
 
         private void Update()
@@ -86,6 +94,8 @@ namespace Astrea.Input
                 combat.TryAttack();
             if (magic != null && magic.WasPressedThisFrame() && spellCombat != null)
                 spellCombat.TryCast("fire");
+            if (sprint != null)
+                character.SetSprintHeld(sprint.IsPressed());
         }
 
         private void OnDestroy()
@@ -95,6 +105,7 @@ namespace Astrea.Input
             jump?.Dispose();
             attack?.Dispose();
             magic?.Dispose();
+            sprint?.Dispose();
         }
     }
 }
