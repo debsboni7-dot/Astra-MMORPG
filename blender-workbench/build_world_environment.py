@@ -176,7 +176,7 @@ world.node_tree.nodes["Background"].inputs[1].default_value=.65
 bpy.ops.object.light_add(type="SUN",location=( -20,-30,50)); sun=bpy.context.object; sun.name="Warm Astrea sunlight"; sun.data.energy=2.2; sun.rotation_euler=(math.radians(25),math.radians(-20),math.radians(-25))
 bpy.ops.object.camera_add(location=(58,-72,46)); cam=bpy.context.object
 target=Vector((0,0,1)); cam.rotation_euler=(target-cam.location).to_track_quat("-Z","Y").to_euler(); cam.data.lens=40; bpy.context.scene.camera=cam
-scene=bpy.context.scene; scene.render.engine="BLENDER_EEVEE_NEXT"
+scene=bpy.context.scene; scene.render.engine="BLENDER_EEVEE"
 scene.render.resolution_x=1600; scene.render.resolution_y=1000; scene.render.resolution_percentage=100
 scene.render.image_settings.file_format="PNG"; scene.render.filepath=os.path.join(OUT,"astrea-starter-plains-preview.png")
 scene.view_settings.view_transform="AgX"
