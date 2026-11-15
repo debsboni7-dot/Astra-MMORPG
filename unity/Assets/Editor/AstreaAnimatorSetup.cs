@@ -159,8 +159,11 @@ namespace Astrea.EditorTools
         private static void AssignToSceneAnimators(RuntimeAnimatorController controller)
         {
             foreach (var animator in UnityEngine.Object.FindObjectsByType<Animator>(FindObjectsSortMode.None))
+            {
                 animator.runtimeAnimatorController = controller;
                 animator.applyRootMotion = false;
+                EditorUtility.SetDirty(animator);
+            }
             EditorSceneManagerMarkDirty();
             UnityEditor.SceneManagement.EditorSceneManager.SaveOpenScenes();
         }
