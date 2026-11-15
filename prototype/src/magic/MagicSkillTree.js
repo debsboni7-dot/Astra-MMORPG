@@ -24,7 +24,8 @@ export const MAGIC_RACE_RULES = Object.freeze({
   demon: Object.freeze({ allowed: MAGIC_SCHOOLS.filter(s => !['light', 'nature'].includes(s)), bonuses: { demonic: 1.20 } }),
   angel: Object.freeze({ allowed: MAGIC_SCHOOLS.filter(s => s !== 'demonic'), bonuses: { light: 1.20 } }),
   orc: Object.freeze({ allowed: MAGIC_SCHOOLS.filter(s => !['light', 'nature'].includes(s)), bonuses: { fire: 1.14 }, physicalStrength: 1.14 }),
-  draconoid: Object.freeze({ allowed: MAGIC_SCHOOLS, bonuses: { offense: 1.15 } }),
+  // Destruction affinity is reserved for a dedicated destruction mechanic; it is not a bonus to every current school.
+  draconoid: Object.freeze({ allowed: MAGIC_SCHOOLS, bonuses: {}, destructionMagic: 1.15 }),
 });
 
 export const MAGIC_TREE_RULES = Object.freeze({
@@ -55,7 +56,6 @@ export function isMagicSchoolAllowed(race, school) {
 
 export function getMagicRaceModifier(race, school, branch = 'offense') {
   if (!isMagicSchoolAllowed(race, school)) return 0;
-  if (race === 'draconoid' && branch === 'offense') return 1.15;
   return MAGIC_RACE_RULES[race].bonuses[school] || 1;
 }
 
@@ -204,4 +204,9 @@ export function getMagicRaceStatModifiers(race) {
 
 export function getMagicCastMultiplier(race, school, branch = 'offense') {
   return getMagicRaceModifier(race, school, branch);
+}
+
+/** Reserved racial affinity. Applied only when destruction magic is implemented as a distinct mechanic. */
+export function getMagicDestructionModifier(race) {
+  return MAGIC_RACE_RULES[isRace(race) ? race : 'human'].destructionMagic || 1;
 }
