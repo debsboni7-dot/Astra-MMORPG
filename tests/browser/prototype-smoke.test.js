@@ -112,6 +112,8 @@ test('commandes tactiles en jeu : déplacement, caméra et remise à zéro aprè
     await page.waitForTimeout(100);
     const yawAfter = await page.evaluate(() => window.__astreaTestState().yaw);
     assert.notEqual(yawAfter, yawBefore, 'un glissement horizontal sur le canvas doit faire pivoter la caméra');
+    await cdp.send('Input.dispatchTouchEvent', {type:'touchEnd',touchPoints:[]});
+    await page.waitForTimeout(80);
     const pitchBefore = await page.evaluate(() => window.__astreaTestState().pitch);
     await cdp.send('Input.dispatchTouchEvent', {type:'touchStart',touchPoints:[{x:canvas.x+canvas.width*.55,y:canvas.y+canvas.height*.45,id:3}]});
     await cdp.send('Input.dispatchTouchEvent', {type:'touchMove',touchPoints:[{x:canvas.x+canvas.width*.55,y:canvas.y+canvas.height*.30,id:3}]});
