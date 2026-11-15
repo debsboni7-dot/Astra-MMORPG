@@ -25,8 +25,7 @@ namespace Astrea.Character
 
         private void Update()
         {
-            Vector2 keyboardMove = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-            Vector2 input = Vector2.ClampMagnitude(keyboardMove.sqrMagnitude > 0.001f ? keyboardMove : mobileMove, 1f);
+            Vector2 input = Vector2.ClampMagnitude(mobileMove, 1f);
             Transform view = cameraPivot != null ? cameraPivot : (Camera.main != null ? Camera.main.transform : transform);
             Vector3 forward = Vector3.ProjectOnPlane(view.forward, Vector3.up).normalized;
             Vector3 right = Vector3.ProjectOnPlane(view.right, Vector3.up).normalized;
@@ -64,6 +63,7 @@ namespace Astrea.Character
 
         // Connect these methods to mobile joystick and touch-look UI events.
         public void SetMobileMove(Vector2 value) => mobileMove = Vector2.ClampMagnitude(value, 1f);
+        public void SetDeviceMove(Vector2 value) => mobileMove = Vector2.ClampMagnitude(value, 1f);
         public void SetMobileLook(Vector2 delta) => mobileLook = delta;
         public void RequestJump() => jumpRequested = true;
     }
