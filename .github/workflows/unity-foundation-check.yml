@@ -1,0 +1,55 @@
+name: ASTREA Unity foundation checks
+
+on:
+  push:
+    branches: [feat/blender-unreal-cloud-pipeline]
+    paths:
+      - "unity/**"
+      - ".github/workflows/unity-foundation-check.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "unity/**"
+      - ".github/workflows/unity-foundation-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-unity-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Unity project metadata and zero-billing package policy
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("unity")
+          manifest = json.loads((root / "Packages/manifest.json").read_text())
+          deps = manifest["dependencies"]
+          assert deps.get("com.unity.render-pipelines.universal") == "17.3.0", deps
+          assert not any(name.startswith("com.unity.services.") for name in deps), deps
+
+          version = (root / "ProjectSettings/ProjectVersion.txt").read_text()
+          assert "6000.3.28f1" in version, version
+
+          required = [
+              "Assets/Scripts/Armor/AstreaArmorSlot.cs",
+              "Assets/Scripts/Character/AstreaThirdPersonController.cs",
+              "Assets/Editor/AstreaUrpSetup.cs",
+              "README.md",
+          ]
+          for relative in required:
+              path = root / relative
+              assert path.is_file() and path.stat().st_size > 0, relative
+
+          for path in root.rglob("*.cs"):
+              source = path.read_text()
+              assert source.count("{") == source.count("}"), f"Unbalanced braces: {path}"
+
+          print("Unity 6.3 URP project metadata and source layout validated.")
+          print("No Unity Gaming Services package or billing integration is configured.")
+          PY
