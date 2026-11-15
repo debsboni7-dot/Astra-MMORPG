@@ -569,3 +569,38 @@ Un contenu n'est prêt que si :
 - il fonctionne en multijoueur si le contenu est partagé ;
 - il a été testé sur les plateformes cibles concernées ;
 - sa provenance et sa licence sont enregistrées pour les assets externes.
+
+
+## 31. Géographie détaillée historique du continent Astrea
+
+**Statut : base de conception récupérée des échanges précédents ; à relire avant verrouillage du contenu final.** Le continent Astrea avait été organisé en huit régions intérieures. Cette structure complète la description générale du continent en section 9.1 sans modifier les cinq continents du monde.
+
+| Région | Identité et activités déjà décrites |
+|---|---|
+| Plaine d’Aube | Région de départ ; cueillette, bois, minerai, pêche, cultures et découverte d’un sanctuaire |
+| Bois de Sylve | Forêt ; cueillette et exploitation du bois |
+| Greniers d’Or | Terres agricoles ; agriculture et cueillette |
+| Hautes Terres de Veyr | Hautes terres ; extraction et découverte de reliques |
+| Lac des Miroirs | Région lacustre ; pêche et vestiges |
+| Bassin d’Eloria | Bassin fertile ; agriculture et pêche |
+| Marches de l’Ouest | Région de ressources ; pierre et bois |
+| Côte des Brumes | Littoral ; plantes et pêche |
+
+### 31.1 Plaine d’Aube — lieu de départ
+
+Les éléments de décor et de géographie déjà définis pour la Plaine d’Aube comprennent :
+- terrain naturel découpé en cellules de conception de 1 km ;
+- fleuve, pont et routes ;
+- bourg avec marché et forge ;
+- fontaine lumineuse ;
+- prairies, végétation, buissons, fleurs et arbres ;
+- activités de cueillette, récolte, extraction, pêche, cultures et découverte d’un sanctuaire.
+
+Une refonte 3D complète de la Plaine d’Aube avait été acceptée, avec une contrainte importante : préserver les déplacements, personnages, combats, commandes tactiles et mécaniques déjà existants. La documentation et le prototype doivent donc améliorer l’environnement sans casser ces systèmes.
+
+### 31.2 Portée et limites
+
+- Les huit régions constituent une structure historique de conception pour le continent Astrea ; elles ne doivent pas être confondues avec les cinq continents.
+- Les activités listées sont des orientations de contenu, pas encore des boucles économiques équilibrées ni des quêtes implémentées.
+- Les frontières, dimensions, reliefs, villages secondaires, routes, ressources exactes, créatures et connexions entre régions restent à spécifier.
+- La Plaine d’Aube est prioritaire pour la première tranche d'environnement ; les sept autres régions ne sont pas déclarées construites ou jouables.
