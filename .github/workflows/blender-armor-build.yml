@@ -68,6 +68,7 @@ jobs:
           git add unity/Assets/Art/Armor/ASTREA_Modular_Armor.fbx unity/Assets/Art/Armor/ASTREA_Modular_Armor_Preview.png
           if ! git diff --cached --quiet; then
             git commit -m "Add generated ASTREA modular armor to Unity project"
+            git pull --rebase origin "$GITHUB_REF_NAME"
             git push
           fi
       - uses: actions/upload-artifact@v4
