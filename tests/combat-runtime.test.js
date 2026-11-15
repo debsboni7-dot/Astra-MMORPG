@@ -66,6 +66,40 @@ test('attack spends stamina and updates target HP', () => {
   assert.equal(result.hpLost, 20);
   assert.equal(player.stamina, 92);
 });
+
+test('executeAttack respects the target block instead of bypassing defense state', () => {
+  const player = createCombatant({ stamina: 100 });
+  const defender = createCombatant({ hp: 100 });
+  beginBlock(defender, { now: 1000, staminaCost: 0, durationMs: 600, parryWindowMs: 180 });
+  const result = executeAttack(player, defender, { id: 'blocked-hit', kind: 'physical', base: 40, staminaCost: 0 }, { now: 1300, rng: () => 1 });
+  assert.equal(result.executed, true);
+  assert.equal(result.blocked, true);
+  assert.equal(result.hpLost, 14);
+  assert.equal(defender.hp, 86);
+});
+
+test('executeAttack respects dodge and parry windows', () => {
+  const player = createCombatant({ stamina: 100 });
+  const dodger = createCombatant({ hp: 100 });
+  beginDodge(dodger, { now: 1000, durationMs: 400, staminaCost: 0 });
+  const dodged = executeAttack(player, dodger, { id: 'dodge-test', kind: 'physical', base: 25, staminaCost: 0 }, { now: 1200, rng: () => 1 });
+  assert.equal(dodged.dodged, true);
+  assert.equal(dodger.hp, 100);
+
+  const parrier = createCombatant({ hp: 100 });
+  beginBlock(parrier, { now: 2000, staminaCost: 0, parryWindowMs: 180 });
+  const parried = executeAttack(player, parrier, { id: 'parry-test', kind: 'physical', base: 25, staminaCost: 0 }, { now: 2100, rng: () => 1 });
+  assert.equal(parried.parried, true);
+  assert.equal(parrier.hp, 100);
+});
+
+test('executeAttack enforces a declared attack cooldown', () => {
+  const player = createCombatant({ stamina: 100 });
+  const enemy = createCombatant({ hp: 100 });
+  const attack = { id: 'cooldown-hit', kind: 'physical', base: 5, staminaCost: 0, cooldownMs: 500 };
+  assert.equal(executeAttack(player, enemy, attack, { now: 1000, rng: () => 1 }).executed, true);
+  assert.equal(executeAttack(player, enemy, attack, { now: 1200, rng: () => 1 }).reason, 'cooldown');
+});
 test('counterattack must be manually executed before the window closes', () => {
   const player = createCombatant();
   const enemy = createCombatant();
