@@ -13,7 +13,7 @@ on:
         default: "no"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate-humanoid:
@@ -21,6 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - name: Install FBX conversion utility
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y assimp-utils
+
       - name: Check API key and available credits
         id: preflight
         shell: bash
