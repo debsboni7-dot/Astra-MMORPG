@@ -60,6 +60,8 @@ namespace Astrea.Character
             mobileLook = Vector2.zero;
         }
 
+        public void SetCameraPivot(Transform pivot) => cameraPivot = pivot;
+
         // Connect these methods to mobile joystick and touch-look UI events.
         public void SetMobileMove(Vector2 value) => mobileMove = Vector2.ClampMagnitude(value, 1f);
         public void SetMobileLook(Vector2 delta) => mobileLook = delta;
