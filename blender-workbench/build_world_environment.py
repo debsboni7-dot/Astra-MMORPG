@@ -10,6 +10,20 @@ def mat(name, color, rough=0.85, metallic=0.0):
     m=bpy.data.materials.new(name); m.diffuse_color=(*color,1); m.use_nodes=True
     p=m.node_tree.nodes.get("Principled BSDF"); p.inputs["Base Color"].default_value=(*color,1)
     p.inputs["Roughness"].default_value=rough; p.inputs["Metallic"].default_value=metallic
+    nodes=m.node_tree.nodes; links=m.node_tree.links
+    noise=nodes.new("ShaderNodeTexNoise"); noise.inputs["Scale"].default_value=5.5
+    noise.inputs["Detail"].default_value=4.0; noise.inputs["Roughness"].default_value=.72
+    ramp=nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position=.18
+    ramp.color_ramp.elements[0].color=(*(c*.78 for c in color),1)
+    ramp.color_ramp.elements[1].position=.82
+    ramp.color_ramp.elements[1].color=(*(min(1,c*1.18+.015) for c in color),1)
+    bump=nodes.new("ShaderNodeBump"); bump.inputs["Strength"].default_value=.16
+    bump.inputs["Distance"].default_value=.075
+    links.new(noise.outputs["Fac"],ramp.inputs["Fac"])
+    links.new(ramp.outputs["Color"],p.inputs["Base Color"])
+    links.new(noise.outputs["Fac"],bump.inputs["Height"])
+    links.new(bump.outputs["Normal"],p.inputs["Normal"])
     return m
 grass=mat("Astrea | meadow green",(0.19,.29,.095))
 grass2=mat("Astrea | sunlit grass",(.32,.39,.14))
@@ -95,17 +109,17 @@ def tree(x,y,s=1):
     for dx,dy,dz,sc in ((0,0,4.45,1.65),(.85,0,4.0,1.12),(-.8,.2,4.1,1.18),(.2,.8,4.15,1.05),(-.2,-.8,4.0,1.12),(0,.05,5.05,1.0)):
         ico("Oak foliage cluster",(x+dx*s,y+dy*s,z+dz*s),(sc*s,sc*.88*s,sc*.92*s),leaf if random.random()<.65 else leaf2,2)
 tree_sites=[
-(-48,-38,1.15),(-42,-20,.95),(-46,2,1.2),(-38,26,1.05),(-50,43,.9),
+(-48,-38,1.15),(-42,-20,.95),(-46,2,1.2),(-38,26,1.05),(-50,43,.9),\n(-55,-8,1.0),(-54,30,.95),(-40,48,1.0),(-25,18,.9),(-22,-10,1.0),
 (-28,-43,.9),(-30,-25,1.1),(-34,-4,.95),(-29,34,1.05),(-18,47,.9),
 (22,-47,.9),(32,-35,1.0),(43,-25,1.15),(50,-2,.95),(38,12,1.1),
 (30,30,1.0),(45,43,1.15),(16,45,.9),(5,-48,.85),(-5,-42,.9),
-(48,18,.95),(-52,16,1.0),(18,-26,.9),(40,-46,.85)]
+(48,18,.95),(-52,16,1.0),(18,-26,.9),(40,-46,.85),\n(12,-18,.95),(25,4,1.0),(54,35,1.05),(8,34,.95),(-8,52,.9),(-16,-50,.95),\n(52,-35,1.0),(-55,-28,.9),(34,48,.95),(0,52,.9)]
 for x,y,scale in tree_sites:
     if abs(x+12)<13 and abs(y-8)<12: continue
     tree(x,y,scale)
 
 # Scattered angular boulders, keeping the winding road and homestead clear.
-for i in range(54):
+for i in range(82):
     x=random.uniform(-55,55); y=random.uniform(-55,55)
     if abs(x-(5+8*math.sin(y*.045)))<4 or (abs(x+12)<13 and abs(y-8)<13): continue
     z=height(x,y)
@@ -113,7 +127,7 @@ for i in range(54):
 
 # Batched grass blades: thousands of visible blades in one mesh, not thousands of draw calls.
 grass_verts=[]; grass_faces=[]
-for i in range(950):
+for i in range(2600):
     x=random.uniform(-56,56); y=random.uniform(-56,56)
     if abs(x-(5+8*math.sin(y*.045)))<2.5 or (abs(x+12)<10 and abs(y-8)<9): continue
     z=height(x,y)
@@ -210,6 +224,6 @@ for o in bpy.context.scene.objects:
 selected=[o for o in bpy.context.selected_objects]
 bpy.context.view_layer.objects.active=selected[0]
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT,"astrea-starter-plains.glb"),export_format="GLB",use_selection=True)
-report={"asset":"ASTREA starter continent environment","status":"generated","terrain_vertices":len(verts),"tree_count":len(tree_sites),"boulder_count":38,"grass_blade_count":len(grass_faces),"environment_objects":len(selected),"formats":["blend","glb","png"],"engine_target":"Unity 6 URP","note":"Procedural environment kit and preview. Requires Unity import, lighting and scene assembly validation before gameplay use."}
+report={"asset":"ASTREA starter continent environment","status":"generated","terrain_vertices":len(verts),"tree_count":len(tree_sites),"boulder_count":82,"grass_blade_count":len(grass_faces),"environment_objects":len(selected),"formats":["blend","glb","png"],"engine_target":"Unity 6 URP","note":"Procedural environment kit and preview. Requires Unity import, lighting and scene assembly validation before gameplay use."}
 with open(os.path.join(OUT,"build-report.json"),"w") as f: json.dump(report,f,indent=2)
 print("ASTREA_WORLD_BUILD_OK",json.dumps(report))
