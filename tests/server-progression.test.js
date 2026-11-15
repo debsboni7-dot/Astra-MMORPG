@@ -29,7 +29,7 @@ test('only server-confirmed successful attacks award and persist category master
   const repository = repositoryFixture();
   const service = createWeaponProgressionService(repository);
   const result = await service.recordSuccessfulAttack({
-    accountId: 'account-1', characterId: 'character-1', category: 'sword', attackType: 'heavy',
+    accountId: 'account-1', characterId: 'character-1', category: 'sword', attackType: 'heavy', attackEventId: 'evt-success-0001',
   });
   assert.equal(result.result.awarded, 1.5);
   assert.equal(repository.character.weaponProgression.weaponUses, 1);
@@ -40,7 +40,7 @@ test('ownership is checked before reading or changing character progression', as
   const service = createWeaponProgressionService(repositoryFixture());
   await assert.rejects(service.getSnapshot('other-account', 'character-1'), /character-not-owned/);
   await assert.rejects(service.recordSuccessfulAttack({
-    accountId: 'other-account', characterId: 'character-1', category: 'sword',
+    accountId: 'other-account', characterId: 'character-1', category: 'sword', attackEventId: 'evt-owned-0001',
   }), /character-not-owned/);
 });
 
@@ -48,12 +48,29 @@ test('client-supplied XP, levels and unknown techniques are never accepted as at
   const repository = repositoryFixture();
   const service = createWeaponProgressionService(repository);
   await assert.rejects(service.recordSuccessfulAttack({
-    accountId: 'account-1', characterId: 'character-1', category: 'wand', attackType: 'light', xp: 999999,
+    accountId: 'account-1', characterId: 'character-1', category: 'wand', attackType: 'light', xp: 999999, attackEventId: 'evt-invalid-0001',
   }), /Invalid server-validated/);
   await assert.rejects(service.recordSuccessfulAttack({
-    accountId: 'account-1', characterId: 'character-1', category: 'sword', attackType: 'light', techniqueId: 'not-a-technique',
+    accountId: 'account-1', characterId: 'character-1', category: 'sword', attackType: 'light', techniqueId: 'not-a-technique', attackEventId: 'evt-invalid-technique',
   }), /Technique does not belong/);
   assert.equal(repository.character.weaponProgression.weaponUses, 0);
+});
+
+
+test('replayed weapon attack event IDs cannot award mastery or uses twice', async () => {
+  const repository = repositoryFixture();
+  const service = createWeaponProgressionService(repository);
+  const attack = {
+    accountId: 'account-1', characterId: 'character-1', category: 'sword',
+    attackType: 'heavy', attackEventId: 'evt-replay-0001',
+  };
+  const first = await service.recordSuccessfulAttack(attack);
+  const replay = await service.recordSuccessfulAttack(attack);
+  assert.equal(first.result.recorded, true);
+  assert.equal(replay.result.recorded, false);
+  assert.equal(replay.result.reason, 'duplicate-event');
+  assert.equal(repository.character.weaponProgression.weaponUses, 1);
+  assert.equal(repository.character.weaponProgression.weaponMasteryXpByCategory.sword, 1.5);
 });
 
 test('legacy progression is bounded and unknown fields are discarded', () => {
@@ -79,7 +96,7 @@ test('individual technique mastery persists independently after category mastery
   const service = createWeaponProgressionService(repository);
   const result = await service.recordSuccessfulAttack({
     accountId: 'account-1', characterId: 'character-1', category: 'sword',
-    attackType: 'light', techniqueId: 'quick_slash',
+    attackType: 'light', techniqueId: 'quick_slash', attackEventId: 'evt-capped-0001',
   });
   assert.equal(result.result.awarded, 0);
   assert.equal(result.result.technique.recorded, true);
