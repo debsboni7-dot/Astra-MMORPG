@@ -10,6 +10,7 @@ using Astrea.UI;
 using Astrea.Character;
 using Astrea.Combat;
 using Astrea.Input;
+using Unity.Cinemachine;
 
 namespace Astrea.EditorTools
 {
@@ -81,14 +82,22 @@ namespace Astrea.EditorTools
             cameraPivotObject.transform.position = spawn.transform.position + new Vector3(0f, 1.55f, 0f);
             var cameraObject = new GameObject("Main Camera");
             cameraObject.tag = "MainCamera";
-            cameraObject.transform.SetParent(cameraPivotObject.transform, false);
-            cameraObject.transform.localPosition = new Vector3(0f, 0f, -5.5f);
-            cameraObject.transform.localRotation = Quaternion.identity;
+            cameraObject.transform.position = cameraPivotObject.transform.position + new Vector3(0f, 0f, -5.5f);
+            cameraObject.transform.rotation = Quaternion.identity;
+            cameraObject.AddComponent<CinemachineBrain>();
             var camera = cameraObject.AddComponent<Camera>();
             camera.nearClipPlane = 0.1f;
             camera.farClipPlane = 600f;
             camera.fieldOfView = 60f;
             cameraObject.AddComponent<AudioListener>();
+
+            var followCameraObject = new GameObject("ASTREA | Cinemachine Third Person Camera");
+            var followCamera = followCameraObject.AddComponent<CinemachineCamera>();
+            followCamera.Follow = cameraPivotObject.transform;
+            followCamera.LookAt = cameraPivotObject.transform;
+            var follow = followCameraObject.AddComponent<CinemachineFollow>();
+            follow.FollowOffset = new Vector3(0f, 0.25f, -5.5f);
+            followCameraObject.AddComponent<CinemachineRotationComposer>();
 
             BuildMobileHud(cameraPivotObject.transform);
 
