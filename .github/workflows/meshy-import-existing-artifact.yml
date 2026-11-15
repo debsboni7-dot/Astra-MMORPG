@@ -1,0 +1,63 @@
+name: ASTREA - Import existing Meshy humanoid artifact
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  import-existing-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout current ASTREA branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Download existing Meshy artifact (no new generation)
+        uses: actions/download-artifact@v4
+        with:
+          name: ASTREA-Humanoid-Meshy6
+          run-id: 43717997465
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          path: output/ASTREA_Humanoid_Meshy6
+
+      - name: Verify source model
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s output/ASTREA_Humanoid_Meshy6/ASTREA_Humanoid_Meshy6.glb
+          ls -lah output/ASTREA_Humanoid_Meshy6
+
+      - name: Convert GLB to Unity FBX
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y assimp-utils
+          mkdir -p unity/Assets/Art/Characters
+          assimp export output/ASTREA_Humanoid_Meshy6/ASTREA_Humanoid_Meshy6.glb unity/Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx -f fbx
+          assimp info unity/Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx
+          if [[ -s output/ASTREA_Humanoid_Meshy6/preview.png ]]; then
+            cp output/ASTREA_Humanoid_Meshy6/preview.png unity/Assets/Art/Characters/ASTREA_Humanoid_Meshy6_Preview.png
+          fi
+          cp output/ASTREA_Humanoid_Meshy6/README.txt unity/Assets/Art/Characters/ASTREA_Humanoid_Meshy6_Source.txt
+
+      - name: Commit imported static model
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/Assets/Art/Characters/
+          if git diff --cached --quiet; then
+            echo "No new character files to commit."
+            exit 0
+          fi
+          git commit -m "Import existing ASTREA Meshy humanoid asset"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
