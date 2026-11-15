@@ -236,6 +236,25 @@ namespace Astrea.EditorTools
             magicTextRect.anchorMax = Vector2.one;
             magicTextRect.offsetMin = Vector2.zero;
             magicTextRect.offsetMax = Vector2.zero;
+
+            var sprintObject = CreateUiImage("Sprint Button", canvasObject.transform,
+                new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-285f, 285f), new Vector2(112f, 112f),
+                new Color(0.18f, 0.48f, 0.30f, 0.88f), true);
+            sprintObject.AddComponent<AstreaHoldButton>().SetInputBinder(binder);
+            var sprintTextObject = new GameObject("Sprint Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            sprintTextObject.transform.SetParent(sprintObject.transform, false);
+            var sprintText = sprintTextObject.GetComponent<Text>();
+            sprintText.text = "SPRINT";
+            sprintText.alignment = TextAnchor.MiddleCenter;
+            sprintText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            sprintText.color = Color.white;
+            sprintText.fontSize = 18;
+            var sprintTextRect = sprintTextObject.GetComponent<RectTransform>();
+            sprintTextRect.anchorMin = Vector2.zero;
+            sprintTextRect.anchorMax = Vector2.one;
+            sprintTextRect.offsetMin = Vector2.zero;
+            sprintTextRect.offsetMax = Vector2.zero;
+
         }
 
         private static GameObject CreateUiImage(string name, Transform parent, Vector2 anchorMin,
