@@ -62,7 +62,7 @@ test('HTTP API rejects malformed JSON and oversized request bodies', async () =>
   await withServer(async (base) => {
     const malformed=await fetch(base+'/v1/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:'{'});
     assert.equal(malformed.status,400);
-    assert.deepEqual(await malformed.json(),{error:'BAD_REQUEST'});
+    assert.deepEqual(await malformed.json(),{error:'JSON invalide'});
     const oversized=await fetch(base+'/v1/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({padding:'x'.repeat(17*1024)})});
     assert.equal(oversized.status,413);
     assert.deepEqual(await oversized.json(),{error:'Corps de requête trop volumineux'});
