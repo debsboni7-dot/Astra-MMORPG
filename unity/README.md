@@ -68,12 +68,26 @@ These integrations are source- and package-level setup. GitHub Actions checks pr
 ## Animation and visual effects foundation
 
 - `AstreaAnimationDriver` maps planar movement, grounded state and vertical velocity to Humanoid Animator parameters: `Speed`, `MoveX`, `MoveY`, `Grounded`, `VerticalSpeed`. It exposes `Attack`, `Hit` and `Dead` animation events through Animator parameters. Create an Animator Controller with these exact parameter names and assign Mixamo clips before expecting visible character animation.
-- `AstreaVfxLibrary` pools authored ParticleSystem prefabs by key. The melee combat controller requests `melee_impact` only when it confirms a damageable target.
+- `AstreaVfxLibrary` pools authored ParticleSystem prefabs by key and enforces a hard per-effect instance cap. When all instances are active, additional requests are rejected instead of creating unbounded objects. The melee combat controller requests `melee_impact` only when it confirms a damageable target.
 - The editor command **ASTREA > VFX > Create Starter VFX Library** creates ten editable starter particle prefabs (melee impact plus fire, water, wind, earth, frost, lightning, nature, light and dark) and connects them to an `AstreaVfxLibrary` on the player in the currently open starter scene. Particle materials are saved as reusable `.mat` assets rather than transient in-memory materials.
 - `AstreaSpellVfxController` maps elemental names to those pooled VFX keys. Spell gameplay should call it only when a spell is released or confirmed to hit; it does not implement spell damage or networking.
-- The editor command **ASTREA > Animation > Build Starter Animator Controller** scans imported clips in `Assets/Art/Animations/Mixamo/`, builds a reusable locomotion/airborne/combat controller, and assigns it to Animators in the open scene. It detects clips by names containing Idle/Breathing, Walk, Run/Sprint, Jump, Fall, Land, Attack/Slash/Sword, Hit/Hurt/Damage and Death/Die. Missing clips are skipped with warnings.
+- The editor command **ASTREA > Animation > Build Starter Animator Controller** scans imported clips in `Assets/Art/Animations/Mixamo/`, builds a reusable locomotion/airborne/combat controller, and assigns it to Animators in the open scene with root motion disabled. The scene assignment loop is covered by the Unity foundation regression checks. It detects clips by names containing Idle/Breathing, Walk, Run/Sprint, Jump, Fall, Land, Attack/Slash/Sword, Hit/Hurt/Damage and Death/Die. Missing clips are skipped with warnings.
 - These generated particles are a first-pass visual language, not final high-end VFX. Replace/refine them with authored flipbook textures, mesh particles, shader effects, trails, hit flashes, elemental decals and optimized mobile variants. Keep effects pooled and cap particle counts on Android.
 
 ### Mixamo animation setup
 
 After importing a rigged Humanoid FBX and its clips into `Assets/Art/Animations/Mixamo/`, create/assign an Animator Controller to the character Animator. Use the exact parameter names above. Add an animation event named `AnimationEvent_ApplyMeleeHit` at the weapon contact frame for each melee attack clip; without this event, the attack animation will not apply damage while an Animator is present. Add transitions for locomotion, jump/fall/land, attack, hit reaction and death. The current driver supplies parameters and triggers; it does not invent or generate animation clips. The generated controller is a starter graph: review transitions and clip selection in Unity Editor, and add `AnimationEvent_ApplyMeleeHit` to each melee clip at the actual contact frame.
+
+
+### Outstanding editor-side work (not yet executed)
+
+The repository currently contains the editor generators, but not their generated Unity assets. The starter plains FBX is committed and its Blender export workflow passed. The following steps still require a Unity 6.3 Editor import session:
+
+1. Import the Unity project and let Package Manager resolve the pinned packages.
+2. Run **ASTREA > Rendering > Generate and activate URP asset**.
+3. Run **ASTREA > Scene > Build Starter Plains Scene** to create and save the playable scene. A rigged player model must first be imported at `Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx`; without it the builder deliberately creates the environment and HUD without a player.
+4. Import actual Mixamo clips into `Assets/Art/Animations/Mixamo/`, then run **ASTREA > Animation > Build Starter Animator Controller**.
+5. Run **ASTREA > VFX > Create Starter VFX Library** to generate the ten editable particle prefabs and their material assets.
+6. Add `AnimationEvent_ApplyMeleeHit` to the real contact frame of each melee clip, then test combat, camera, mobile input and VFX in Play Mode and on Android.
+
+No Unity Editor compile, generated scene, generated particle prefab, Animator Controller, or Android build is claimed as completed yet. The CI workflow is a source/metadata contract check, not an Editor compilation. Meshy generation is not automatic and no paid credits are consumed by these steps.
