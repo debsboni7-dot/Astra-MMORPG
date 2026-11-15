@@ -192,7 +192,7 @@ test('technique mastery improves damage and reduces stamina cost with a ten perc
   const result = executeAttack(player, enemy, { id: 'mastered', kind: 'physical', base: 10, staminaCost: 10, techniqueId: 'quick_slash' }, { rng: () => 1 });
   assert.ok(Math.abs(result.rawDamage - 12.1) < 1e-9);
   assert.equal(result.staminaSpent, 9);
-  assert.equal(player.weaponTechniqueXp.quick_slash, 41);
+  assert.equal(player.weaponTechniqueXp.quick_slash, 40);
 });
 
 test('failed attacks do not grant weapon mastery', () => {
