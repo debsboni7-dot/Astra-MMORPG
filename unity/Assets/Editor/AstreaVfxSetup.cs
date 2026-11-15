@@ -48,6 +48,7 @@ namespace Astrea.EditorTools
             EditorUtility.SetDirty(playerVfx);
             AssetDatabase.SaveAssets();
             EditorSceneManagerMarkDirty(playerVfx);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveOpenScenes();
             EditorUtility.DisplayDialog("ASTREA VFX", "Dix effets procéduraux de prototype ont été créés et reliés au pool VFX. Ils restent à raffiner pour la qualité finale.", "OK");
         }
 
