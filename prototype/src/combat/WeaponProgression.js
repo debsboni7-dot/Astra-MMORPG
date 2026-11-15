@@ -5,6 +5,7 @@ export const WEAPON_MASTERY_XP = Object.freeze({
 });
 export const TECHNIQUE_UNLOCK_LEVELS = Object.freeze([3, 8, 15, 25, 40, 60, 80, 100]);
 export const TECHNIQUE_MASTERY_THRESHOLDS = Object.freeze([3, 8, 15, 25, 40]);
+export const TECHNIQUE_MASTERY_MAX_XP = TECHNIQUE_MASTERY_THRESHOLDS.at(-1);
 const TECHNIQUE_DATA = {
   sword: [['quick_slash','Entaille rapide'],['riposte','Riposte'],['cross_cut','Croisé tranchant'],['guard_break','Brise-garde'],['blade_dance','Danse des lames'],['piercing_thrust','Estoc précis'],['steel_tempest','Tempête d’acier'],['sword_mastery','Art du duelliste']],
   axe: [['heavy_chop','Coupe puissante'],['hooking_strike','Frappe crochetée'],['cleaving_arc','Arc dévastateur'],['armor_splitter','Brise-armure'],['execution_chop','Coupe d’exécution'],['whirlwind_axe','Tourbillon de hache'],['ravager','Dévastation'],['axe_mastery','Art du conquérant']],
@@ -24,7 +25,7 @@ export function getWeaponMasteryFromXp(totalXp = 0) {
 }
 export function getWeaponTechniqueList(category, masteryLevel = 0, techniqueXp = {}) {
   return (WEAPON_TECHNIQUES[category] || []).map(t => {
-    const xp = Math.max(0, Number(techniqueXp[t.id]) || 0);
+    const xp = Math.min(TECHNIQUE_MASTERY_MAX_XP, Math.max(0, Number(techniqueXp[t.id]) || 0));
     const level = TECHNIQUE_MASTERY_THRESHOLDS.filter(v => xp >= v).length;
     const base = level ? TECHNIQUE_MASTERY_THRESHOLDS[level-1] : 0;
     const next = TECHNIQUE_MASTERY_THRESHOLDS[level] ?? base;
@@ -55,7 +56,7 @@ export function recordWeaponTechniqueUse(combatant, category, techniqueId) {
   if (!technique.unlocked) return {recorded:false,reason:'technique-locked',requiredMastery:technique.requiredMastery};
   combatant.weaponTechniqueXp ||= {};
   const before = technique.techniqueMasteryLevel;
-  combatant.weaponTechniqueXp[techniqueId] = (combatant.weaponTechniqueXp[techniqueId]||0)+1;
+  combatant.weaponTechniqueXp[techniqueId] = Math.min(TECHNIQUE_MASTERY_MAX_XP, (combatant.weaponTechniqueXp[techniqueId]||0)+1);
   const after = getWeaponTechniqueList(category,mastery,combatant.weaponTechniqueXp).find(t=>t.id===techniqueId);
   return {recorded:true,technique:after,levelUp:after.techniqueMasteryLevel>before};
 }
