@@ -1,0 +1,48 @@
+name: ASTREA modular armor build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/blender-unreal-cloud-pipeline]
+    paths:
+      - "blender-workbench/build_armor.py"
+      - ".github/workflows/blender-armor-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  blender-armor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender and headless rendering dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0 python3-numpy
+          blender --version
+      - name: Generate eight modular armor pieces
+        env:
+          ASTREA_OUTPUT_DIR: ${{ github.workspace }}/build/astrea-armor
+          PYTHONPATH: /usr/lib/python3/dist-packages
+        run: |
+          mkdir -p "$ASTREA_OUTPUT_DIR"
+          blender -b --python blender-workbench/build_armor.py
+      - name: Validate Blender deliverables
+        run: |
+          test -s build/astrea-armor/astrea-modular-armor.blend
+          test -s build/astrea-armor/astrea-modular-armor.glb
+          test -s build/astrea-armor/astrea-modular-armor-preview.png
+          python3 - <<'PY'
+          import json
+          p=json.load(open("build/astrea-armor/build-report.json"))
+          assert p["piece_count"] == 8, p
+          assert len(p["pieces"]) == 8, p
+          print("Validated eight modular armor objects")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astrea-modular-armor-${{ github.run_number }}
+          path: build/astrea-armor/
+          retention-days: 14
