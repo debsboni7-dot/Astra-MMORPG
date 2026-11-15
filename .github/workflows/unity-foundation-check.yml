@@ -100,6 +100,9 @@ jobs:
           assert "binder.RequestMagic" in scene_builder
           assert "TryAttack()" in combat and "AnimationEvent_ApplyMeleeHit" in combat
           assert "OverlapSphereNonAlloc" in combat, "Melee query must avoid per-swing allocations"
+          assert "ResolveMeleeHitFallback" in combat and "fallbackImpactDelay" in combat
+          assert "hitResolvedThisSwing" in combat, "One swing must resolve its hit only once"
+          assert "RaycastNonAlloc" in combat and "HasLineOfSight" in combat, "Melee hits must respect obstacles"
           health = (root / "Assets/Scripts/Combat/AstreaHealth.cs").read_text()
           assert "IAstreaDamageable" in health and "HealthChanged" in health
           scene_builder = (root / "Assets/Editor/AstreaStarterSceneBuilder.cs").read_text()
