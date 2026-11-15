@@ -117,16 +117,20 @@ tree_sites=[
 (48,18,.95),(-52,16,1.0),(18,-26,.9),(40,-46,.85),
 (12,-18,.95),(25,4,1.0),(54,35,1.05),(8,34,.95),(-8,52,.9),(-16,-50,.95),
 (52,-35,1.0),(-55,-28,.9),(34,48,.95),(0,52,.9)]
+tree_count=0
 for x,y,scale in tree_sites:
     if abs(x+12)<13 and abs(y-8)<12: continue
     tree(x,y,scale)
+    tree_count += 1
 
 # Scattered angular boulders, keeping the winding road and homestead clear.
+boulder_count=0
 for i in range(82):
     x=random.uniform(-55,55); y=random.uniform(-55,55)
     if abs(x-(5+8*math.sin(y*.045)))<4 or (abs(x+12)<13 and abs(y-8)<13): continue
     z=height(x,y)
     ico("Meadow boulder",(x,y,z+.35),(random.uniform(.45,1.25),random.uniform(.4,.95),random.uniform(.35,.8)),stone if i%3 else stone2,2)
+    boulder_count += 1
 
 # Batched grass blades: thousands of visible blades in one mesh, not thousands of draw calls.
 grass_verts=[]; grass_faces=[]
@@ -247,6 +251,6 @@ for o in bpy.context.scene.objects:
 selected=[o for o in bpy.context.selected_objects]
 bpy.context.view_layer.objects.active=selected[0]
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT,"astrea-starter-plains.glb"),export_format="GLB",use_selection=True)
-report={"asset":"ASTREA starter continent environment","status":"generated","terrain_vertices":len(verts),"tree_count":len(tree_sites),"boulder_count":82,"grass_blade_count":len(grass_faces),"environment_objects":len(selected),"formats":["blend","glb","png"],"engine_target":"Unity 6 URP","note":"Procedural environment kit and preview. Requires Unity import, lighting and scene assembly validation before gameplay use."}
+report={"asset":"ASTREA starter continent environment","status":"generated","terrain_vertices":len(verts),"tree_count":tree_count,"boulder_count":boulder_count,"grass_blade_count":len(grass_faces),"environment_objects":len(selected),"formats":["blend","glb","png"],"engine_target":"Unity 6 URP","note":"Procedural environment kit and preview. Requires Unity import, lighting and scene assembly validation before gameplay use."}
 with open(os.path.join(OUT,"build-report.json"),"w") as f: json.dump(report,f,indent=2)
 print("ASTREA_WORLD_BUILD_OK",json.dumps(report))
