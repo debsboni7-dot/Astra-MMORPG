@@ -1,0 +1,41 @@
+name: ASTREA Blender asset build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/blender-unreal-cloud-pipeline]
+    paths:
+      - "blender-workbench/**"
+      - ".github/workflows/blender-asset-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  blender-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+          blender --version
+      - name: Generate ASTREA sword asset
+        env:
+          ASTREA_OUTPUT_DIR: ${{ github.workspace }}/build/astrea-sword
+        run: |
+          mkdir -p "$ASTREA_OUTPUT_DIR"
+          blender -b --python blender-workbench/build_sword.py
+      - name: Validate outputs
+        run: |
+          test -s build/astrea-sword/astrea-ceremonial-sword.blend
+          test -s build/astrea-sword/astrea-ceremonial-sword.glb
+          test -s build/astrea-sword/astrea-ceremonial-sword.png
+          test -s build/astrea-sword/build-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astrea-blender-sword-${{ github.run_number }}
+          path: build/astrea-sword/
+          retention-days: 14
