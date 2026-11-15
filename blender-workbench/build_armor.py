@@ -132,7 +132,6 @@ bpy.ops.object.select_all(action="DESELECT")
 for o in pieces: o.select_set(True)
 bpy.context.view_layer.objects.active=pieces[0]
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT,"astrea-modular-armor.glb"),export_format="GLB",use_selection=True)
-bpy.ops.export_scene.fbx(filepath=os.path.join(OUT,"astrea-modular-armor.fbx"),use_selection=True,object_types={"MESH"},apply_unit_scale=True,bake_space_transform=False)
-report={"asset":"ASTREA modular medieval armor set","status":"generated","piece_count":len(pieces),"pieces":[p.name for p in pieces],"blender_version":bpy.app.version_string,"formats":["blend","fbx","glb","png"],"note":"Eight independently named modular armor objects; greaves are a paired object. FBX is provided for Unity import."}
+report={"asset":"ASTREA modular medieval armor set","status":"generated","piece_count":len(pieces),"pieces":[p.name for p in pieces],"blender_version":bpy.app.version_string,"formats":["blend","glb","png"],"note":"Eight independently named modular armor objects; greaves are a paired object. FBX is provided for Unity import."}
 with open(os.path.join(OUT,"build-report.json"),"w") as f: json.dump(report,f,indent=2)
 print("ASTREA_ARMOR_BUILD_OK",json.dumps(report))
