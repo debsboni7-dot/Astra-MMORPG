@@ -11,6 +11,8 @@ using Astrea.Character;
 using Astrea.Combat;
 using Astrea.Input;
 using Unity.Cinemachine;
+using Astrea.Animation;
+using Astrea.VFX;
 
 namespace Astrea.EditorTools
 {
@@ -72,6 +74,10 @@ namespace Astrea.EditorTools
                 if (player.GetComponent<AstreaCombatController>() == null) player.AddComponent<AstreaCombatController>();
                 if (player.GetComponent<AstreaHealth>() == null) player.AddComponent<AstreaHealth>();
                 if (player.GetComponent<AstreaInputRouter>() == null) player.AddComponent<AstreaInputRouter>();
+                if (player.GetComponent<AstreaVfxLibrary>() == null) player.AddComponent<AstreaVfxLibrary>();
+                var playerAnimator = player.GetComponentInChildren<Animator>();
+                if (playerAnimator != null && playerAnimator.GetComponent<AstreaAnimationDriver>() == null)
+                    playerAnimator.gameObject.AddComponent<AstreaAnimationDriver>();
             }
             else
             {
