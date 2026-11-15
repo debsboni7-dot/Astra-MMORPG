@@ -32,6 +32,7 @@ jobs:
           deps = manifest["dependencies"]
           assert deps.get("com.unity.render-pipelines.universal") == "17.3.0", deps
           assert deps.get("com.unity.ugui") == "2.0.0", deps
+          assert deps.get("com.unity.animation.rigging") == "1.4.1", deps
           assert not any(name.startswith("com.unity.services.") for name in deps), deps
 
           version = (root / "ProjectSettings/ProjectVersion.txt").read_text()
@@ -49,6 +50,8 @@ jobs:
               "Assets/Editor/AstreaUrpSetup.cs",
               "Assets/Editor/AstreaArmorModelPostprocessor.cs",
               "Assets/Editor/AstreaStarterSceneBuilder.cs",
+              "Assets/Editor/AstreaMixamoImportPostprocessor.cs",
+              "Assets/Art/Animations/Mixamo/README.md",
               "README.md",
           ]
           for relative in required:
@@ -67,6 +70,10 @@ jobs:
           scene_builder = (root / "Assets/Editor/AstreaStarterSceneBuilder.cs").read_text()
           assert "ASTREA_Humanoid_Meshy6.fbx" in scene_builder
           assert "AstreaCombatController" in scene_builder and "RequestAttack" in scene_builder
+          mixamo = (root / "Assets/Editor/AstreaMixamoImportPostprocessor.cs").read_text()
+          assert "ModelImporterAnimationType.Human" in mixamo
+          assert "ModelImporterAvatarSetup.CopyFromOther" in mixamo
+          assert "ASTREA_Humanoid_Meshy6.fbx" in mixamo
 
           print("Unity 6.3 URP project metadata and source layout validated.")
           print("No Unity Gaming Services package or billing integration is configured.")
