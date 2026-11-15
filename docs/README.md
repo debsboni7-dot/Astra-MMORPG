@@ -8,6 +8,7 @@ Documentation de conception, d'architecture et de production du projet.
 - [Bible artistique ASTREA](astrea-art-bible.md) : personnages, continents, matériaux, effets, interface et standards visuels.
 - [Direction artistique technique](ART_DIRECTION.md) : palette PBR, surfaces, lumière et critères de revue des assets.
 - [Cahier des prototypes et du Vertical Slice](prototype-specification.md) : objectifs, scénarios et critères d'acceptation des prototypes P0 à P5.
+- [Journal de tests des prototypes](prototype-test-log.md) : preuves, résultats et limites des validations réellement exécutées.
 - [Feuille de route générale](astrea-master-roadmap.md) : inventaire des systèmes et état de réalisation.
 
 ## Architecture et production
