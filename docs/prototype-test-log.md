@@ -76,3 +76,19 @@ Dernière mise à jour : 15 novembre 2026
 - Le code C# n'a pas encore été compilé par Unity Editor.
 - La scène et les collisions n'ont pas été testées en Play Mode ; le blocage réel par les murs doit être confirmé dans Unity.
 - Le combat reste local/prototype. Les dégâts et récompenses devront être validés par le serveur pour le MMORPG.
+
+
+## P2/P3 — Défenses intégrées au combat et affinité dragonoïde
+
+### Combat
+- Le runtime de combat fait maintenant passer les attaques par le résolveur défensif commun.
+- Blocage, parade, esquive, absorption du feu, boucliers et résistances sont donc pris en compte par `executeAttack`, au lieu d'être contournés.
+- Les attaques peuvent appliquer un cooldown déclaré par leur définition (`cooldownMs`).
+- Tests ajoutés pour le blocage, la parade, l'esquive et le cooldown.
+- Les tests unitaires gameplay de la CI [#43727639311](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727639311) ont réussi ; le test navigateur était encore en cours au moment de cette note.
+
+### Magie raciale
+- Le bonus dragonoïde de +15 % est désormais réservé à la magie de destruction via un modificateur dédié.
+- Il n'augmente plus artificiellement les dégâts de toutes les neuf écoles actuelles.
+- Tant que la destruction n'est pas définie comme école ou mécanique distincte, ce modificateur reste disponible mais n'est pas appliqué aux sorts feu/eau/vent/terre/glace/foudre/nature/lumière/démoniaque.
+- Tests de règles raciales inclus dans la suite gameplay ; voir [CI #43727639311](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727639311).
