@@ -58,14 +58,14 @@ test('client-supplied XP, levels and unknown techniques are never accepted as at
 
 test('legacy progression is bounded and unknown fields are discarded', () => {
   const clean = sanitizeProgression({
-    weaponMasteries: { sword: 999, wand: 50 },
-    weaponMasteryXpByCategory: { sword: 999999, axe: -10 },
+    weaponMasteries: { sword: 9999, wand: 50 },
+    weaponMasteryXpByCategory: { sword: 99999999, axe: -10 },
     weaponTechniqueXp: { quick_slash: 4, cheat_skill: 1000 },
     weaponUses: -5,
     isAdmin: true,
   });
-  assert.equal(clean.weaponMasteries.sword, 100);
-  assert.equal(clean.weaponMasteryXpByCategory.sword, 11100);
+  assert.equal(clean.weaponMasteries.sword, 1000);
+  assert.equal(clean.weaponMasteryXpByCategory.sword, 1011000);
   assert.equal(clean.weaponTechniqueXp.quick_slash, 4);
   assert.equal(clean.weaponTechniqueXp.cheat_skill, undefined);
   assert.equal(clean.weaponUses, 0);
@@ -74,8 +74,8 @@ test('legacy progression is bounded and unknown fields are discarded', () => {
 
 test('individual technique mastery persists independently after category mastery is capped', async () => {
   const repository = repositoryFixture();
-  repository.character.weaponProgression.weaponMasteries.sword = 100;
-  repository.character.weaponProgression.weaponMasteryXpByCategory.sword = 11100;
+  repository.character.weaponProgression.weaponMasteries.sword = 1000;
+  repository.character.weaponProgression.weaponMasteryXpByCategory.sword = 1011000;
   const service = createWeaponProgressionService(repository);
   const result = await service.recordSuccessfulAttack({
     accountId: 'account-1', characterId: 'character-1', category: 'sword',
