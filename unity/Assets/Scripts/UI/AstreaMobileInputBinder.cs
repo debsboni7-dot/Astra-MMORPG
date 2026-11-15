@@ -11,6 +11,7 @@ namespace Astrea.UI
         [SerializeField] private AstreaTouchLookArea lookArea;
         [SerializeField] private Transform cameraPivot;
         private AstreaCombatController combatController;
+        private AstreaSpellCombatController spellController;
 
         private AstreaThirdPersonController controller;
 
@@ -37,6 +38,7 @@ namespace Astrea.UI
             controller = FindObjectOfType<AstreaThirdPersonController>();
             if (controller == null) return;
             combatController = controller.GetComponent<AstreaCombatController>();
+            spellController = controller.GetComponent<AstreaSpellCombatController>();
 
             if (cameraPivot != null)
             {
@@ -59,6 +61,11 @@ namespace Astrea.UI
         public void RequestAttack()
         {
             if (combatController != null) combatController.TryAttack();
+        }
+
+        public void RequestMagic()
+        {
+            if (spellController != null) spellController.TryCast("fire");
         }
 
         private void HandleLook(Vector2 delta)
