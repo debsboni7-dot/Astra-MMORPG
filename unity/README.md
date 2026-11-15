@@ -63,3 +63,15 @@ Mark a prefab as Addressable in the Unity Inspector and assign a stable key, for
 ### Important validation notes
 
 These integrations are source- and package-level setup. GitHub Actions checks project metadata and key source contracts; it does not run the Unity Editor, resolve the Unity Package Manager dependency graph, generate an Addressables catalog, or verify camera framing on a device. The project still needs a real Unity 6.3 Editor import/build and Android device test. Input rebinding UI, controller glyphs, Cinemachine obstruction handling and production content catalog hosting are future tasks.
+
+
+## Animation and visual effects foundation
+
+- `AstreaAnimationDriver` maps planar movement, grounded state and vertical velocity to Humanoid Animator parameters: `Speed`, `MoveX`, `MoveY`, `Grounded`, `VerticalSpeed`. It exposes `Attack`, `Hit` and `Dead` animation events through Animator parameters. Create an Animator Controller with these exact parameter names and assign Mixamo clips before expecting visible character animation.
+- `AstreaVfxLibrary` pools authored ParticleSystem prefabs by key. The melee combat controller requests `melee_impact` only when it confirms a damageable target.
+- The editor command **ASTREA > VFX > Create Starter VFX Library** creates five editable starter particle prefabs (melee impact, fire, frost, lightning and nature) and connects them to an `AstreaVfxLibrary` on the player in the currently open starter scene.
+- These generated particles are a first-pass visual language, not final high-end VFX. Replace/refine them with authored flipbook textures, mesh particles, shader effects, trails, hit flashes, elemental decals and optimized mobile variants. Keep effects pooled and cap particle counts on Android.
+
+### Mixamo animation setup
+
+After importing a rigged Humanoid FBX and its clips into `Assets/Art/Animations/Mixamo/`, create/assign an Animator Controller to the character Animator. Use the exact parameter names above. Add an animation event named `AnimationEvent_ApplyMeleeHit` at the weapon contact frame for each melee attack clip; without this event, the attack animation will not apply damage while an Animator is present. Add transitions for locomotion, jump/fall/land, attack, hit reaction and death. The current driver supplies parameters and triggers; it does not invent or generate animation clips.
