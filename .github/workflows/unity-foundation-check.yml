@@ -31,6 +31,7 @@ jobs:
           manifest = json.loads((root / "Packages/manifest.json").read_text())
           deps = manifest["dependencies"]
           assert deps.get("com.unity.render-pipelines.universal") == "17.3.0", deps
+          assert deps.get("com.unity.ugui") == "2.0.0", deps
           assert not any(name.startswith("com.unity.services.") for name in deps), deps
 
           version = (root / "ProjectSettings/ProjectVersion.txt").read_text()
@@ -41,6 +42,7 @@ jobs:
               "Assets/Scripts/Character/AstreaThirdPersonController.cs",
               "Assets/Scripts/UI/AstreaVirtualJoystick.cs",
               "Assets/Scripts/UI/AstreaTouchLookArea.cs",
+              "Assets/Scripts/UI/AstreaMobileInputBinder.cs",
               "Assets/Scripts/Rendering/AstreaGraphicsProfile.cs",
               "Assets/Editor/AstreaUrpSetup.cs",
               "Assets/Editor/AstreaArmorModelPostprocessor.cs",
