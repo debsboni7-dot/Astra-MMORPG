@@ -20,7 +20,7 @@ Statuses: planned, sourced, generated, downloaded, imported, visible-in-game, te
 - Workflow artifact: `ASTREA-Humanoid-Meshy6` (temporary GitHub Actions artifact, 30-day retention).
 - Credits recorded by the workflow: 20 for geometry preview and 10 for texture refinement, 30 total. This generation used the user's explicit authorization for existing credits; no real-money purchase was made.
 - Visual review of the preview: one human-like male adventurer in dark steel/leather armor, front-facing T-pose, isolated on transparent/black preview background.
-- Technical inspection of the GLB: one mesh, one material, no skin/skeleton and no animation clips.
+- Technical inspection of the GLB: 38,520 vertices, 31,139 triangular faces, one mesh, one material, one glTF node, zero skins/skeletons and zero animation clips. The measured bounding box is approximately 1.87 × 1.90 × 0.39 scene units; confirm the import scale and axis convention in Blender/Unity before treating these as metres.
 - Current status: **generated and artifact downloaded for inspection; not yet rigged, not yet converted to FBX, not yet committed to the Unity project, not yet imported or tested in-game**.
 - Next gate: retopology/mesh review if needed, automatic rigging through an approved workflow, inspect skin weights and skeleton, export a Unity-compatible FBX or validated GLB, then import and test deformation/animations in Unity.
 - Commercial-use rights must be checked against the Meshy account plan and current terms before commercial distribution. Generation alone does not establish that legal check.
