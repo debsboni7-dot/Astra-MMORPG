@@ -37,6 +37,7 @@ jobs:
           test -s build/astrea-sword/astrea-ceremonial-sword.glb
           test -s build/astrea-sword/astrea-ceremonial-sword.png
           test -s build/astrea-sword/build-report.json
+          python3 blender-workbench/validate_glb.py build/astrea-sword/astrea-ceremonial-sword.glb
       - uses: actions/upload-artifact@v4
         with:
           name: astrea-blender-sword-${{ github.run_number }}
