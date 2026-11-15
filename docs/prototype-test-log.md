@@ -55,3 +55,24 @@ Dernière mise à jour : 15 novembre 2026
 ### Limites
 - Ce contrôle statique ne remplace pas un test Play Mode dans Unity.
 - Les restrictions raciales et l'autorité serveur restent non implémentées.
+
+
+## P2 — Combat physique : sécurité des impacts et cohérence de maîtrise
+
+### Règles d'armes
+- Les armes d'hast ont été retirées des catégories de maîtrise et d'équipement. Le runtime les refuse comme définition d'arme.
+- Le plafond de maîtrise d'une famille d'armes est aligné sur la règle du GDD : **1 000**.
+- La courbe XP reste provisoire ; avec la formule actuelle, le plafond correspond à 1 011 000 XP. Ce chiffre décrit la courbe prototype, pas une décision d'équilibrage définitive.
+- Les sauvegardes serveur bornent les niveaux et l'XP à ces plafonds.
+- Tests Node.js gameplay réussis dans [la CI du commit de progression](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727223826).
+
+### Résolution des coups Unity
+- Un coup peut être résolu par événement d'animation ; un délai de secours de 0,22 s permet aussi au prototype de fonctionner si le clip n'a pas encore d'événement d'impact.
+- Un seul calcul d'impact est autorisé par frappe, même si l'événement d'animation et le secours se déclenchent tous les deux.
+- Chaque cible est vérifiée par ligne de vue avec un raycast non allouant ; un obstacle entre l'origine de frappe et la cible bloque les dégâts.
+- Vérification statique Unity réussie : [ASTREA Unity foundation checks](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727393365).
+
+### Limites
+- Le code C# n'a pas encore été compilé par Unity Editor.
+- La scène et les collisions n'ont pas été testées en Play Mode ; le blocage réel par les murs doit être confirmé dans Unity.
+- Le combat reste local/prototype. Les dégâts et récompenses devront être validés par le serveur pour le MMORPG.
