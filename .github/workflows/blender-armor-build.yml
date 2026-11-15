@@ -57,15 +57,18 @@ jobs:
           assert p["fbx_export"].startswith("Assimp"), p
           print("Validated eight modular armor objects and FBX export for Unity.")
           PY
+          test "$(find build/astrea-armor/textures -maxdepth 1 -name '*.png' | wc -l)" -ge 15
           assimp info build/astrea-armor/astrea-modular-armor.fbx
       - name: Integrate generated FBX into Unity project
         run: |
           mkdir -p unity/Assets/Art/Armor
           cp build/astrea-armor/astrea-modular-armor.fbx unity/Assets/Art/Armor/ASTREA_Modular_Armor.fbx
           cp build/astrea-armor/astrea-modular-armor-preview.png unity/Assets/Art/Armor/ASTREA_Modular_Armor_Preview.png
+          mkdir -p unity/Assets/Art/Armor/Textures
+          cp -a build/astrea-armor/textures/. unity/Assets/Art/Armor/Textures/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add unity/Assets/Art/Armor/ASTREA_Modular_Armor.fbx unity/Assets/Art/Armor/ASTREA_Modular_Armor_Preview.png
+          git add unity/Assets/Art/Armor/ASTREA_Modular_Armor.fbx unity/Assets/Art/Armor/ASTREA_Modular_Armor_Preview.png unity/Assets/Art/Armor/Textures/
           if ! git diff --cached --quiet; then
             git commit -m "Add generated ASTREA modular armor to Unity project"
             git pull --rebase origin "$GITHUB_REF_NAME"
