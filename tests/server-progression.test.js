@@ -77,13 +77,14 @@ test('legacy progression is bounded and unknown fields are discarded', () => {
   const clean = sanitizeProgression({
     weaponMasteries: { sword: 9999, wand: 50 },
     weaponMasteryXpByCategory: { sword: 99999999, axe: -10 },
-    weaponTechniqueXp: { quick_slash: 4, cheat_skill: 1000 },
+    weaponTechniqueXp: { quick_slash: 4, riposte: 999999, cheat_skill: 1000 },
     weaponUses: -5,
     isAdmin: true,
   });
   assert.equal(clean.weaponMasteries.sword, 1000);
   assert.equal(clean.weaponMasteryXpByCategory.sword, 1011000);
   assert.equal(clean.weaponTechniqueXp.quick_slash, 4);
+  assert.equal(clean.weaponTechniqueXp.riposte, 40);
   assert.equal(clean.weaponTechniqueXp.cheat_skill, undefined);
   assert.equal(clean.weaponUses, 0);
   assert.equal(clean.isAdmin, undefined);
