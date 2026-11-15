@@ -59,6 +59,15 @@ jobs:
               source = path.read_text()
               assert source.count("{") == source.count("}"), f"Unbalanced braces: {path}"
 
+          combat = (root / "Assets/Scripts/Combat/AstreaCombatController.cs").read_text()
+          assert "TryAttack()" in combat and "AnimationEvent_ApplyMeleeHit" in combat
+          assert "OverlapSphereNonAlloc" in combat, "Melee query must avoid per-swing allocations"
+          health = (root / "Assets/Scripts/Combat/AstreaHealth.cs").read_text()
+          assert "IAstreaDamageable" in health and "HealthChanged" in health
+          scene_builder = (root / "Assets/Editor/AstreaStarterSceneBuilder.cs").read_text()
+          assert "ASTREA_Humanoid_Meshy6.fbx" in scene_builder
+          assert "AstreaCombatController" in scene_builder and "RequestAttack" in scene_builder
+
           print("Unity 6.3 URP project metadata and source layout validated.")
           print("No Unity Gaming Services package or billing integration is configured.")
           PY
