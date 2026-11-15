@@ -20,7 +20,7 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0 python3-numpy
+          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0 python3-numpy assimp-utils
           blender --version
       - name: Generate Astrea starter plains environment
         env:
@@ -29,10 +29,15 @@ jobs:
         run: |
           mkdir -p "$ASTREA_WORLD_OUTPUT_DIR"
           blender -b --python blender-workbench/build_world_environment.py
+      - name: Convert environment GLB to Unity FBX
+        run: |
+          assimp export build/astrea-world/astrea-starter-plains.glb build/astrea-world/astrea-starter-plains.fbx -f fbx
+          assimp info build/astrea-world/astrea-starter-plains.fbx
       - name: Validate environment deliverables
         run: |
           test -s build/astrea-world/astrea-starter-plains.blend
           test -s build/astrea-world/astrea-starter-plains.glb
+          test -s build/astrea-world/astrea-starter-plains.fbx
           test -s build/astrea-world/astrea-starter-plains-preview.png
           python3 - <<'PY'
           import json
@@ -45,7 +50,7 @@ jobs:
       - name: Integrate world asset into Unity
         run: |
           mkdir -p unity/Assets/Art/Environment/Astrea
-          cp build/astrea-world/astrea-starter-plains.glb unity/Assets/Art/Environment/Astrea/
+          cp build/astrea-world/astrea-starter-plains.fbx unity/Assets/Art/Environment/Astrea/ASTREA_Starter_Plains.fbx
           cp build/astrea-world/astrea-starter-plains-preview.png unity/Assets/Art/Environment/Astrea/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
