@@ -234,3 +234,16 @@ test('untrusted local weapon mastery values are clamped to level 1000', () => {
   assert.equal(equipWeapon(player, weapon).reason, 'weapon-requirements');
   assert.equal(getWeaponProgression({ weaponMasteries: { sword: 999999 } }, 'sword').mastery.level, 1000);
 });
+
+test('individual weapon technique mastery stops at its level-five XP cap', async () => {
+  const { TECHNIQUE_MASTERY_MAX_XP, recordWeaponTechniqueUse, getWeaponTechniqueList } = await import('../prototype/src/combat/WeaponProgression.js');
+  const player = createCombatant({ weaponMasteries: { sword: 3 }, weaponTechniqueXp: { quick_slash: 39 } });
+  const result = recordWeaponTechniqueUse(player, 'sword', 'quick_slash');
+  assert.equal(TECHNIQUE_MASTERY_MAX_XP, 40);
+  assert.equal(result.technique.xp, 40);
+  assert.equal(result.technique.techniqueMasteryLevel, 5);
+  assert.equal(result.technique.xpRemaining, 0);
+  recordWeaponTechniqueUse(player, 'sword', 'quick_slash');
+  assert.equal(player.weaponTechniqueXp.quick_slash, 40);
+  assert.equal(getWeaponTechniqueList('sword', 3, { quick_slash: 999999 })[0].xp, 40);
+});
