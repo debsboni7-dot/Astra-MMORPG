@@ -21,8 +21,8 @@ After the first import:
 
 ## Current client foundations
 
-- AstreaThirdPersonController: keyboard movement plus public joystick, touch-look and jump methods.
-- AstreaVirtualJoystick, AstreaTouchLookArea and AstreaMobileInputBinder: touch movement, camera look and jump wiring for the generated starter-scene HUD. The scene builder creates the HUD automatically; it binds when a player prefab with AstreaThirdPersonController is present.
+- AstreaThirdPersonController: camera-relative third-person movement, smoothed facing, bounded camera pitch, jump/gravity, walk/sprint speeds, and shared desktop/gamepad/touch input methods.
+- AstreaVirtualJoystick, AstreaTouchLookArea, AstreaHoldButton and AstreaMobileInputBinder: touch movement, camera look, jump, attack, magic and press-and-hold sprint wiring for the generated starter-scene HUD. Desktop sprint uses either Shift key; gamepad sprint uses left-stick press. The scene builder creates the HUD automatically; it binds when a player prefab with AstreaThirdPersonController is present.
 - AstreaGraphicsProfile: a conservative daylight, fog, ambient-light and mobile-shadow baseline for a scene bootstrap object.
 - `com.unity.animation.rigging` 1.4.1: Unity 6.3-compatible rig constraints for future hand/weapon IK, foot placement and armor attachment adjustments.
 - `AstreaMixamoImportPostprocessor`: configures the ASTREA character FBX as a Humanoid Avatar and imports FBX clips dropped into `Assets/Art/Animations/Mixamo/` against that Avatar when available. See `Assets/Art/Animations/Mixamo/README.md` for the manual Mixamo handoff.
@@ -52,7 +52,7 @@ GitHub Actions validates the project manifest, pinned editor version, source lay
 
 The Unity 6.3 project now includes the released Unity packages below:
 
-- Input System 1.20.1: keyboard (WASD), mouse, gamepad movement/look, jump and attack. `AstreaInputRouter` feeds the existing character/combat APIs. The mobile joystick and touch-look UI remain separate input sources and continue to work alongside physical devices.
+- Input System 1.20.1: keyboard (WASD + Shift), mouse, gamepad movement/look, jump, attack and sprint. `AstreaInputRouter` feeds the existing character/combat APIs. The mobile joystick and touch-look UI remain separate input sources and continue to work alongside physical devices.
 - Cinemachine 3.1.7: the starter-scene builder creates a Cinemachine Brain on the render camera and a third-person Follow + Rotation Composer camera targeting the player camera pivot.
 - Addressables 2.10.3: `AstreaAddressableLoader` instantiates content by address key and releases tracked instances when unloaded or when its owner is destroyed.
 
@@ -105,3 +105,18 @@ No Unity Editor compile, generated scene, generated particle prefab, Animator Co
 The workflow `.github/workflows/unity-android-build.yml` runs a licensed Unity 6.3 Editor session, generates the starter scene/VFX/Animator assets, and builds an Android APK. It is manual and guarded by an explicit confirmation input. It requires a Unity Personal/Pro license file stored as the GitHub repository secret `UNITY_LICENSE`; this is a Unity licensing prerequisite, not a paid hosting service. The build deliberately fails if the humanoid FBX is absent, rather than producing an APK that looks playable but has no player character.
 
 The character generation workflow `.github/workflows/meshy-generate-humanoid.yml` was run successfully on 15 November 2026 (GitHub Actions run [43717997465](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43717997465)). The generated GLB was inspected and contains a static humanoid mesh without a skeleton or animation clips. It is therefore not yet ready for the Animator pipeline. The run used 30 existing Meshy credits under the creator's explicit authorization; no real-money purchase was made. See `docs/asset-pipeline.md` for the verified state.
+
+
+### P0 implementation status — 15 November 2026
+
+The first P0 source pass is committed:
+- camera-relative locomotion with diagonal speed clamping and smoothed character facing;
+- separate bounded camera pitch and per-frame look-delta consumption;
+- jump/gravity state and walk/sprint speed selection;
+- desktop Shift and gamepad left-stick-click sprint;
+- mobile hold-to-sprint UI component, with pointer-up/exit safety release;
+- Unity foundation CI assertions for these source contracts.
+
+GitHub Actions Unity foundation check passed for commit `6d9def1283bf0c765a94f1286e2055453f5b81c0` (run [43722488782](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43722488782)). This is a static source/metadata validation only. It is **not** a Unity Editor compile, Play Mode test, Android device test or proof of camera/input feel.
+
+The starter scene builder now creates a SPRINT hold button at the upper-right control cluster. The actual scene asset is generated only by running the Unity Editor command; no generated scene or APK is claimed here. The generated humanoid still needs a skeleton and animation rig before a real character Play Mode test.
