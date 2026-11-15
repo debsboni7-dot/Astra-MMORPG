@@ -75,6 +75,7 @@ namespace Astrea.EditorTools
                 if (player.GetComponent<AstreaHealth>() == null) player.AddComponent<AstreaHealth>();
                 if (player.GetComponent<AstreaInputRouter>() == null) player.AddComponent<AstreaInputRouter>();
                 if (player.GetComponent<AstreaVfxLibrary>() == null) player.AddComponent<AstreaVfxLibrary>();
+                if (player.GetComponent<AstreaSpellVfxController>() == null) player.AddComponent<AstreaSpellVfxController>();
                 var playerAnimator = player.GetComponentInChildren<Animator>();
                 if (playerAnimator != null && playerAnimator.GetComponent<AstreaAnimationDriver>() == null)
                     playerAnimator.gameObject.AddComponent<AstreaAnimationDriver>();
