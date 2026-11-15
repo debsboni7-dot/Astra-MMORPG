@@ -6,6 +6,7 @@ on:
     paths:
       - "unity/**"
       - ".github/workflows/unity-foundation-check.yml"
+      - ".github/workflows/meshy-import-existing-artifact.yml"
   pull_request:
     branches: [main]
     paths:
@@ -65,6 +66,7 @@ jobs:
               "Assets/Editor/AstreaStarterSceneBuilder.cs",
               "Assets/Editor/AstreaMixamoImportPostprocessor.cs",
               "Assets/Art/Animations/Mixamo/README.md",
+              "Assets/Art/Environment/Astrea/ASTREA_Starter_Plains.fbx",
               "README.md",
           ]
           for relative in required:
@@ -146,6 +148,15 @@ jobs:
           assert "EditorUtility.SetDirty(animator);" in animator_setup
           assert "AssignToSceneAnimators(controller);" in animator_setup
           assert "CinemachineBrain" in scene_builder and "CinemachineFollow" in scene_builder
+
+          importer_workflow = Path(".github/workflows/meshy-import-existing-artifact.yml").read_text()
+          assert "actions/download-artifact@v4" in importer_workflow
+          assert "ASTREA-Humanoid-Meshy6" in importer_workflow
+          assert "run-id: 43717997465" in importer_workflow
+          assert "assimp export" in importer_workflow
+          assert "ASTREA_Humanoid_Meshy6.fbx" in importer_workflow
+          assert "contents: write" in importer_workflow
+          assert "MESHY_API_KEY" not in importer_workflow, "Artifact import must not call Meshy or consume credits."
 
           print("Unity 6.3 URP project metadata and source layout validated.")
           print("No Unity Gaming Services package or billing integration is configured.")
