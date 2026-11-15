@@ -196,3 +196,19 @@ Ce schéma décrit une cible logique et des intégrations futures ; les flèches
 - [ ] Mesures reproductibles de latence, charge et synchronisation.
 
 **Statut de phase :** architecture logique initiale définie et auditée ; phase 3 non entièrement validée tant que les tests d'intégration et le prototype réseau ne sont pas passés. Les éléments cochés sont des décisions documentées, pas des validations d'infrastructure de production.
+
+
+### 11.6 Audit du raccordement Unity ↔ API
+- Le dépôt contient déjà `unity/Assets/Scripts/Networking/AstreaApiClient.cs`.
+- Le client Unity expose l'inscription, la connexion, la liste/création de personnages et la déconnexion via les routes `/v1`.
+- Le jeton Bearer est conservé en mémoire et le commentaire du code précise qu'il n'est pas écrit dans PlayerPrefs.
+- Les routes de progression et de combat magique existent côté Node.js, mais le client Unity audité ne les expose pas encore dans cette classe.
+- L'URL par défaut est `http://127.0.0.1:3000`. Sur un téléphone Android, cette adresse désigne le téléphone lui-même, pas le serveur hébergé ailleurs. Il faudra configurer l'adresse LAN de la machine de test ou l'URL HTTPS du serveur de test avant tout essai mobile.
+- Le code présent prouve l'existence d'un adaptateur API, pas qu'une connexion réelle depuis Unity a été exécutée. Aucun test d'intégration Unity ↔ PostgreSQL n'est déclaré réussi à ce stade.
+
+### 11.7 Contrôles à compléter avant une exposition réseau
+- Ajouter une limitation de débit pour l'inscription, la connexion et les routes sensibles.
+- Imposer HTTPS hors environnement local de développement.
+- Ajouter des tests automatisés sur les limites de taille, les erreurs JSON, les jetons invalides, les accès inter-comptes et les requêtes répétées.
+- Vérifier le cycle de vie des sessions et le traitement des erreurs de base de données.
+- Définir les origines autorisées uniquement si le navigateur prototype doit appeler directement l'API depuis un autre domaine ; ne pas activer un CORS permissif par défaut.
