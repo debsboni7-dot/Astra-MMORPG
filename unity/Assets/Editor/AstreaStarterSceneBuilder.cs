@@ -9,6 +9,7 @@ using Astrea.Rendering;
 using Astrea.UI;
 using Astrea.Character;
 using Astrea.Combat;
+using Astrea.Input;
 
 namespace Astrea.EditorTools
 {
@@ -69,6 +70,7 @@ namespace Astrea.EditorTools
                 if (player.GetComponent<AstreaThirdPersonController>() == null) player.AddComponent<AstreaThirdPersonController>();
                 if (player.GetComponent<AstreaCombatController>() == null) player.AddComponent<AstreaCombatController>();
                 if (player.GetComponent<AstreaHealth>() == null) player.AddComponent<AstreaHealth>();
+                if (player.GetComponent<AstreaInputRouter>() == null) player.AddComponent<AstreaInputRouter>();
             }
             else
             {
