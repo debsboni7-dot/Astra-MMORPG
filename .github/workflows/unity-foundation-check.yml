@@ -85,6 +85,11 @@ jobs:
               assert 'element = "' + school + '"' in spell_combat, school
           assert "manaCost" in spell_combat and "cooldown" in spell_combat
           assert "ReceiveDamage" in spell_combat and "ApplyShield" in spell_combat
+          cast_method = spell_combat.split("public bool TryCast(string element)", 1)[1].split("private void CommitCast", 1)[0]
+          assert "if (!hitAny) return false;" in cast_method
+          assert "CommitCast(spell);" in cast_method
+          assert "CurrentMana -= spell.manaCost" not in cast_method
+          assert "cooldownUntil[spell.element] = Time.time + spell.cooldown;" in spell_combat
           assert "TryCast(\"fire\")" in input_router
           assert "magic.AddBinding(\"<Keyboard>/k\")" in input_router
           health_source = (root / "Assets/Scripts/Combat/AstreaHealth.cs").read_text()
