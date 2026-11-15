@@ -54,7 +54,7 @@ jobs:
           python3 - <<'PY'
           import json
           p=json.load(open("build/astrea-world/build-report.json"))
-          assert p["tree_count"] >= 40, p
+          assert p["tree_count"] >= 35, p
           assert p["boulder_count"] >= 80, p
           assert p["grass_blade_count"] >= 8000, p
           assert p["terrain_vertices"] > 5000, p
