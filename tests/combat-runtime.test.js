@@ -226,3 +226,11 @@ test('weapon mastery uses the approved 1000-level ceiling', async () => {
   assert.equal(mastery.maxLevel, 1000);
   assert.equal(mastery.progress, 1);
 });
+
+test('untrusted local weapon mastery values are clamped to level 1000', () => {
+  const player = createCombatant({ weaponMasteries: { sword: 999999 } });
+  assert.equal(player.weaponMasteries.sword, 1000);
+  const weapon = { id: 'over-limit-sword', category: 'sword', requiredStrength: 1, requiredMastery: 1001 };
+  assert.equal(equipWeapon(player, weapon).reason, 'weapon-requirements');
+  assert.equal(getWeaponProgression({ weaponMasteries: { sword: 999999 } }, 'sword').mastery.level, 1000);
+});
