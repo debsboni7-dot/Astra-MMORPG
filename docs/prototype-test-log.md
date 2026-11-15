@@ -109,3 +109,13 @@ Dernière mise à jour : 15 novembre 2026
 - L'équipement et l'affichage de progression appliquent aussi ce plafond, afin qu'une valeur locale aberrante ne donne pas accès à une arme au-dessus de la limite.
 - Test ajouté pour une valeur d'entrée de 999 999 : elle est ramenée à 1 000 et ne permet pas de satisfaire une exigence de maîtrise 1 001.
 - Tests unitaires gameplay réussis dans [CI #43727919911](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727919911) ; Chromium est encore en cours d'installation.
+
+
+## P3 — Vérification des affinités raciales sur les dégâts magiques
+
+- Test ajouté : un sort de feu lancé par un Orc inflige bien 14 % de dégâts supplémentaires par rapport au même sort lancé par un humain.
+- Test de non-débordement : le sort d'eau d'un Orc conserve les mêmes dégâts que celui d'un humain.
+- CI complète réussie : [workflow #43729682159](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43729682159).
+- Commit testé : `65da3ddd0ca612223eb9a9be342e929c0a5716e0`.
+- Résultat : tests serveur/gameplay réussis et tests navigateur Chromium réussis sur les vues mobile et ordinateur.
+- Portée : validation automatisée du prototype web et des règles testées ; ne constitue pas une validation Unity Editor, Play Mode ou réseau MMO.
