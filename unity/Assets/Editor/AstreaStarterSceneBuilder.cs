@@ -3,7 +3,10 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using Astrea.Rendering;
+using Astrea.UI;
 
 namespace Astrea.EditorTools
 {
@@ -49,15 +52,20 @@ namespace Astrea.EditorTools
             var spawn = new GameObject("ASTREA | Player Spawn");
             spawn.transform.position = new Vector3(0f, 4f, 0f);
 
+            var cameraPivotObject = new GameObject("ASTREA | Third Person Camera Pivot");
+            cameraPivotObject.transform.position = spawn.transform.position + new Vector3(0f, 1.55f, 0f);
             var cameraObject = new GameObject("Main Camera");
             cameraObject.tag = "MainCamera";
-            cameraObject.transform.position = new Vector3(12f, 10f, -18f);
-            cameraObject.transform.rotation = Quaternion.LookRotation(new Vector3(0f, 1.5f, 0f) - cameraObject.transform.position, Vector3.up);
+            cameraObject.transform.SetParent(cameraPivotObject.transform, false);
+            cameraObject.transform.localPosition = new Vector3(0f, 0f, -5.5f);
+            cameraObject.transform.localRotation = Quaternion.identity;
             var camera = cameraObject.AddComponent<Camera>();
             camera.nearClipPlane = 0.1f;
             camera.farClipPlane = 600f;
             camera.fieldOfView = 60f;
             cameraObject.AddComponent<AudioListener>();
+
+            BuildMobileHud(cameraPivotObject.transform);
 
             var sunObject = new GameObject("ASTREA | Warm Daylight");
             var sun = sunObject.AddComponent<Light>();
@@ -89,5 +97,81 @@ namespace Astrea.EditorTools
             Selection.activeGameObject = environment;
             Debug.Log("ASTREA starter scene created at " + ScenePath + ". Assign the player prefab and mobile HUD after character assets are integrated.");
         }
+        private static void BuildMobileHud(Transform cameraPivot)
+        {
+            var eventSystem = Object.FindObjectOfType<EventSystem>();
+            if (eventSystem == null)
+                new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+
+            var canvasObject = new GameObject("ASTREA | Mobile HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var lookObject = CreateUiImage("Touch Look Area", canvasObject.transform,
+                new Vector2(0.40f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero,
+                new Color(1f, 1f, 1f, 0.01f), true);
+            var look = lookObject.AddComponent<AstreaTouchLookArea>();
+
+            var joystickObject = CreateUiImage("Movement Joystick", canvasObject.transform,
+                Vector2.zero, Vector2.zero, new Vector2(165f, 160f), new Vector2(190f, 190f),
+                new Color(0.08f, 0.12f, 0.18f, 0.30f), true);
+            var joystickHandleObject = CreateUiImage("Joystick Handle", joystickObject.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(76f, 76f),
+                new Color(0.78f, 0.84f, 0.90f, 0.72f), false);
+            var joystick = joystickObject.AddComponent<AstreaVirtualJoystick>();
+            var joystickSerialized = new SerializedObject(joystick);
+            joystickSerialized.FindProperty("background").objectReferenceValue = joystickObject.GetComponent<RectTransform>();
+            joystickSerialized.FindProperty("handle").objectReferenceValue = joystickHandleObject.GetComponent<RectTransform>();
+            joystickSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+            var binder = canvasObject.AddComponent<AstreaMobileInputBinder>();
+            var binderSerialized = new SerializedObject(binder);
+            binderSerialized.FindProperty("joystick").objectReferenceValue = joystick;
+            binderSerialized.FindProperty("lookArea").objectReferenceValue = look;
+            binderSerialized.FindProperty("cameraPivot").objectReferenceValue = cameraPivot;
+            binderSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+            var jumpObject = CreateUiImage("Jump Button", canvasObject.transform,
+                new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-145f, 145f), new Vector2(112f, 112f),
+                new Color(0.76f, 0.62f, 0.24f, 0.82f), true);
+            var jumpButton = jumpObject.AddComponent<Button>();
+            jumpButton.targetGraphic = jumpObject.GetComponent<Image>();
+            jumpButton.onClick.AddListener(binder.RequestJump);
+            var jumpTextObject = new GameObject("Jump Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            jumpTextObject.transform.SetParent(jumpObject.transform, false);
+            var jumpText = jumpTextObject.GetComponent<Text>();
+            jumpText.text = "JUMP";
+            jumpText.alignment = TextAnchor.MiddleCenter;
+            jumpText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            jumpText.color = Color.white;
+            jumpText.fontSize = 22;
+            var textRect = jumpTextObject.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+        }
+
+        private static GameObject CreateUiImage(string name, Transform parent, Vector2 anchorMin,
+            Vector2 anchorMax, Vector2 anchoredPosition, Vector2 size, Color color, bool raycast)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rect = go.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
+            var image = go.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = raycast;
+            return go;
+        }
+
     }
 }
