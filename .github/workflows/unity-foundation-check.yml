@@ -108,6 +108,12 @@ jobs:
           animator_setup = (root / "Assets/Editor/AstreaAnimatorSetup.cs").read_text()
           for parameter in ["Speed", "Grounded", "VerticalSpeed", "Attack", "Hit", "Dead"]:
               assert parameter in animator_setup, parameter
+          animator_setup = (root / "Assets/Editor/AstreaAnimatorSetup.cs").read_text()
+          assert "foreach (var animator in UnityEngine.Object.FindObjectsByType<Animator>(FindObjectsSortMode.None))" in animator_setup
+          assert "animator.runtimeAnimatorController = controller;" in animator_setup
+          assert "animator.applyRootMotion = false;" in animator_setup
+          assert "EditorUtility.SetDirty(animator);" in animator_setup
+          assert "AssignToSceneAnimators(controller);" in animator_setup
           assert "CinemachineBrain" in scene_builder and "CinemachineFollow" in scene_builder
 
           print("Unity 6.3 URP project metadata and source layout validated.")
