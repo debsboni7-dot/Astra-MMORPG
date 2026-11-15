@@ -50,12 +50,15 @@ def material(name, color, metallic=0.65, roughness=0.28, texture_key="Steel"):
     tex=nodes.new("ShaderNodeTexImage"); tex.image=base; tex.label="ASTREA baked base color"
     links.new(tex.outputs["Color"],p.inputs["Base Color"])
     packed=nodes.new("ShaderNodeTexImage"); packed.image=orm; packed.label="ASTREA metallic / roughness"
-    links.new(packed.outputs["Color"],p.inputs["Metallic"])
-    links.new(packed.outputs["Color"],p.inputs["Roughness"])
+    separate=nodes.new("ShaderNodeSeparateColor"); separate.mode="RGB"
+    links.new(packed.outputs["Color"],separate.inputs["Color"])
+    links.new(separate.outputs["Green"],p.inputs["Roughness"])
+    links.new(separate.outputs["Blue"],p.inputs["Metallic"])
     ntex=nodes.new("ShaderNodeTexImage"); ntex.image=normal; ntex.label="ASTREA subtle surface normal"
     ntex.image.colorspace_settings.name="Non-Color"
-    bump=nodes.new("ShaderNodeBump"); bump.inputs["Strength"].default_value=.12; bump.inputs["Distance"].default_value=.018
-    links.new(ntex.outputs["Color"],bump.inputs["Normal"]); links.new(bump.outputs["Normal"],p.inputs["Normal"])
+    normal_map=nodes.new("ShaderNodeNormalMap"); normal_map.inputs["Strength"].default_value=.35
+    links.new(ntex.outputs["Color"],normal_map.inputs["Color"])
+    links.new(normal_map.outputs["Normal"],p.inputs["Normal"])
     p.inputs["Metallic"].default_value=metallic
     p.inputs["Roughness"].default_value=roughness
     return m
