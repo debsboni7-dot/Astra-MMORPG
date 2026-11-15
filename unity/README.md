@@ -24,6 +24,8 @@ After the first import:
 - AstreaThirdPersonController: keyboard movement plus public joystick, touch-look and jump methods.
 - AstreaVirtualJoystick, AstreaTouchLookArea and AstreaMobileInputBinder: touch movement, camera look and jump wiring for the generated starter-scene HUD. The scene builder creates the HUD automatically; it binds when a player prefab with AstreaThirdPersonController is present.
 - AstreaGraphicsProfile: a conservative daylight, fog, ambient-light and mobile-shadow baseline for a scene bootstrap object.
+- `com.unity.animation.rigging` 1.4.1: Unity 6.3-compatible rig constraints for future hand/weapon IK, foot placement and armor attachment adjustments.
+- `AstreaMixamoImportPostprocessor`: configures the ASTREA character FBX as a Humanoid Avatar and imports FBX clips dropped into `Assets/Art/Animations/Mixamo/` against that Avatar when available. See `Assets/Art/Animations/Mixamo/README.md` for the manual Mixamo handoff.
 - AstreaArmorLoadout: eight independent attachment slots for chest, back, left/right shoulders, left/right forearms, waist and legs.
 - Assets/Editor/AstreaUrpSetup.cs: editor utility to create and activate a URP asset.
 
