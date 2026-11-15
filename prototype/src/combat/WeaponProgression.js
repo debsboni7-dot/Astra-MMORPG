@@ -62,6 +62,6 @@ export function recordWeaponTechniqueUse(combatant, category, techniqueId) {
 export function getWeaponProgression(combatant, category) {
   const xp = combatant?.weaponMasteryXpByCategory?.[category] || 0;
   const mastery = getWeaponMasteryFromXp(xp);
-  const level = Math.max(mastery.level,Number(combatant?.weaponMasteries?.[category])||0);
+  const level = Math.min(WEAPON_MASTERY_MAX_LEVEL, Math.max(mastery.level,Number(combatant?.weaponMasteries?.[category])||0));
   return {category,mastery:{...mastery,level},techniques:getWeaponTechniqueList(category,level,combatant?.weaponTechniqueXp||{})};
 }
