@@ -58,6 +58,7 @@ jobs:
               "Assets/Scripts/UI/AstreaVirtualJoystick.cs",
               "Assets/Scripts/UI/AstreaTouchLookArea.cs",
               "Assets/Scripts/UI/AstreaMobileInputBinder.cs",
+              "Assets/Scripts/UI/AstreaHoldButton.cs",
               "Assets/Scripts/Rendering/AstreaGraphicsProfile.cs",
               "Assets/Editor/AstreaUrpSetup.cs",
               "Assets/Editor/AstreaArmorModelPostprocessor.cs",
@@ -105,6 +106,15 @@ jobs:
           for binding in ["<Keyboard>/w", "<Mouse>/delta", "<Gamepad>/leftStick", "<Gamepad>/rightStick", "<Gamepad>/buttonSouth"]:
               assert binding in input_router, binding
           assert "SetDeviceMove" in input_router and "SetDeviceLook" in input_router
+          assert "sprint.AddBinding(\"<Keyboard>/leftShift\")" in input_router
+          assert "SetSprintHeld(sprint.IsPressed())" in input_router
+          movement = (root / "Assets/Scripts/Character/AstreaThirdPersonController.cs").read_text()
+          for contract in ["UpdateLook()", "Vector3.ClampMagnitude", "IsSprinting", "SetSprintHeld", "RequestJump", "OnDisable()"]:
+              assert contract in movement, contract
+          hold_button = (root / "Assets/Scripts/UI/AstreaHoldButton.cs").read_text()
+          assert "IPointerDownHandler" in hold_button and "IPointerUpHandler" in hold_button
+          assert "SetSprintHeld(true)" in hold_button and "SetSprintHeld(false)" in hold_button
+          assert "Sprint Button" in scene_builder and "SetInputBinder(binder)" in scene_builder
           assert "AstreaSpellCombatController" in input_router
           addressables = (root / "Assets/Scripts/Content/AstreaAddressableLoader.cs").read_text()
           assert "Addressables.InstantiateAsync" in addressables
