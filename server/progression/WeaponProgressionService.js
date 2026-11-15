@@ -1,4 +1,4 @@
-import { awardWeaponMastery, recordWeaponTechniqueUse, getWeaponProgression, WEAPON_TECHNIQUES, WEAPON_MASTERY_MAX_LEVEL, weaponMasteryXpForLevel } from '../../prototype/src/combat/WeaponProgression.js';
+import { awardWeaponMastery, recordWeaponTechniqueUse, getWeaponProgression, WEAPON_TECHNIQUES, WEAPON_MASTERY_MAX_LEVEL, weaponMasteryXpForLevel, TECHNIQUE_MASTERY_MAX_XP } from '../../prototype/src/combat/WeaponProgression.js';
 
 const ATTACK_TYPES = new Set(['light', 'heavy', 'charged', 'finisher', 'special', 'aerial', 'default']);
 const CATEGORIES = new Set(Object.keys(WEAPON_TECHNIQUES));
@@ -21,7 +21,7 @@ function sanitizeProgression(value = {}) {
   for (const category of CATEGORIES) {
     const techniqueIds = new Set(WEAPON_TECHNIQUES[category].map(t => t.id));
     for (const [id, xp] of Object.entries(value.weaponTechniqueXp || {})) {
-      if (techniqueIds.has(id) && Number.isFinite(Number(xp)) && Number(xp) >= 0) clean.weaponTechniqueXp[id] = Math.floor(Number(xp));
+      if (techniqueIds.has(id) && Number.isFinite(Number(xp)) && Number(xp) >= 0) clean.weaponTechniqueXp[id] = Math.min(TECHNIQUE_MASTERY_MAX_XP, Math.floor(Number(xp)));
     }
   }
   clean.weaponUses = Number.isFinite(Number(value.weaponUses)) && Number(value.weaponUses) >= 0 ? Math.floor(Number(value.weaponUses)) : 0;
