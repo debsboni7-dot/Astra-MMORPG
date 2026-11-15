@@ -1,5 +1,5 @@
 import * as Engine from './CombatEngine.js';
-import { awardWeaponMastery, getWeaponProgression, getWeaponTechniqueList, recordWeaponTechniqueUse } from './WeaponProgression.js';
+import { awardWeaponMastery, getWeaponProgression, getWeaponTechniqueList, recordWeaponTechniqueUse, WEAPON_MASTERY_MAX_LEVEL } from './WeaponProgression.js';
 import { isMagicSchoolAllowed, getMagicCastMultiplier } from '../magic/MagicSkillTree.js';
 
 const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -26,7 +26,7 @@ export function createCombatant(config = {}) {
     fireMastery: Math.max(0, number(config.fireMastery, 0)),
     weapon: config.weapon || null,
     weaponMastery: Math.max(0, number(config.weaponMastery, 0)),
-    weaponMasteries: { ...(config.weaponMasteries || {}) },
+    weaponMasteries: Object.fromEntries(Object.entries(config.weaponMasteries || {}).map(([category, level]) => [category, clamp(level, 0, WEAPON_MASTERY_MAX_LEVEL)])),
     weaponMasteryXpByCategory: { ...(config.weaponMasteryXpByCategory || {}) },
     weaponTechniqueXp: { ...(config.weaponTechniqueXp || {}) },
     weaponUses: Math.max(0, number(config.weaponUses, 0)),
@@ -52,7 +52,7 @@ export function equipWeapon(combatant, weapon) {
   if (!weapon.id || !WEAPON_CATEGORIES.has(weapon.category)) {
     return { equipped: false, reason: 'invalid-weapon-definition' };
   }
-  const mastery = number(combatant.weaponMasteries?.[weapon.category], combatant.weaponMastery);
+  const mastery = clamp(number(combatant.weaponMasteries?.[weapon.category], combatant.weaponMastery), 0, WEAPON_MASTERY_MAX_LEVEL);
   const requirement = Engine.canUseWeapon({
     physicalStrength: combatant.physicalStrength,
     requiredStrength: weapon.requiredStrength,
@@ -244,7 +244,7 @@ export function executeAttack(attacker, target, attack, {
   const usesPhysicalWeapon = attack.kind !== 'magic' && attack.kind !== 'spell';
   const weapon = usesPhysicalWeapon ? (attack.weapon || attacker.weapon || null) : null;
   if (weapon) {
-    const mastery = number(attacker.weaponMasteries?.[weapon.category], attacker.weaponMastery);
+    const mastery = clamp(number(attacker.weaponMasteries?.[weapon.category], attacker.weaponMastery), 0, WEAPON_MASTERY_MAX_LEVEL);
     const requirement = Engine.canUseWeapon({
       physicalStrength: attacker.physicalStrength, requiredStrength: weapon.requiredStrength,
       weaponMastery: mastery, requiredMastery: weapon.requiredMastery,
