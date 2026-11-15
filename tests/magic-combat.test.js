@@ -138,3 +138,22 @@ test('expired earth ward cannot absorb a later incoming attack', () => {
   assert.equal(defender.shields.length,0);
   assert.equal(defender.hp,80);
 });
+
+test('racial elemental affinity changes actual spell output, not unrelated schools', () => {
+  const humanCaster = createCombatant({ race:'human', mana:100, maxMana:100 });
+  const orcCaster = createCombatant({ race:'orc', mana:100, maxMana:100 });
+  const humanTarget = createCombatant({ hp:100, maxHp:100 });
+  const orcTarget = createCombatant({ hp:100, maxHp:100 });
+  const humanFire = CombatRuntime.castMagicSpell(humanCaster, humanTarget, 'fire', { now:1000, rng:()=>1 });
+  const orcFire = CombatRuntime.castMagicSpell(orcCaster, orcTarget, 'fire', { now:1000, rng:()=>1 });
+  assert.ok(orcFire.damage > humanFire.damage);
+  assert.ok(Math.abs(orcFire.damage / humanFire.damage - 1.14) < 0.01);
+
+  const humanWaterCaster = createCombatant({ race:'human', mana:100, maxMana:100 });
+  const orcWaterCaster = createCombatant({ race:'orc', mana:100, maxMana:100 });
+  const humanWaterTarget = createCombatant({ hp:100, maxHp:100 });
+  const orcWaterTarget = createCombatant({ hp:100, maxHp:100 });
+  const humanWater = CombatRuntime.castMagicSpell(humanWaterCaster, humanWaterTarget, 'water', { now:1000, rng:()=>1 });
+  const orcWater = CombatRuntime.castMagicSpell(orcWaterCaster, orcWaterTarget, 'water', { now:1000, rng:()=>1 });
+  assert.equal(orcWater.damage, humanWater.damage);
+});
