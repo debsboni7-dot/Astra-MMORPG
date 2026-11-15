@@ -15,15 +15,18 @@ namespace Astrea.Input
     {
         private AstreaThirdPersonController character;
         private AstreaCombatController combat;
+        private AstreaSpellCombatController spellCombat;
         private InputAction move;
         private InputAction look;
         private InputAction jump;
         private InputAction attack;
+        private InputAction magic;
 
         private void Awake()
         {
             character = GetComponent<AstreaThirdPersonController>();
             combat = GetComponent<AstreaCombatController>();
+            spellCombat = GetComponent<AstreaSpellCombatController>();
 
             move = new InputAction("Move", InputActionType.Value);
             move.AddCompositeBinding("2DVector")
@@ -42,6 +45,10 @@ namespace Astrea.Input
             attack = new InputAction("Attack", InputActionType.Button);
             attack.AddBinding("<Mouse>/leftButton");
             attack.AddBinding("<Gamepad>/rightTrigger");
+
+            magic = new InputAction("Magic", InputActionType.Button);
+            magic.AddBinding("<Keyboard>/k");
+            magic.AddBinding("<Gamepad>/buttonNorth");
         }
 
         private void OnEnable()
@@ -50,6 +57,7 @@ namespace Astrea.Input
             look?.Enable();
             jump?.Enable();
             attack?.Enable();
+            magic?.Enable();
         }
 
         private void OnDisable()
@@ -58,6 +66,7 @@ namespace Astrea.Input
             look?.Disable();
             jump?.Disable();
             attack?.Disable();
+            magic?.Disable();
         }
 
         private void Update()
@@ -75,6 +84,8 @@ namespace Astrea.Input
                 character.RequestJump();
             if (attack != null && attack.WasPressedThisFrame() && combat != null)
                 combat.TryAttack();
+            if (magic != null && magic.WasPressedThisFrame() && spellCombat != null)
+                spellCombat.TryCast("fire");
         }
 
         private void OnDestroy()
@@ -83,6 +94,7 @@ namespace Astrea.Input
             look?.Dispose();
             jump?.Dispose();
             attack?.Dispose();
+            magic?.Dispose();
         }
     }
 }
