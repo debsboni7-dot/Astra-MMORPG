@@ -16,6 +16,7 @@ namespace Astrea.Character
         private Vector2 mobileMove;
         private Vector2 deviceMove;
         private Vector2 mobileLook;
+        private Vector2 deviceLook;
         private float verticalVelocity;
         private bool jumpRequested;
 
@@ -47,10 +48,11 @@ namespace Astrea.Character
             velocity.y = verticalVelocity;
             characterController.Move(velocity * Time.deltaTime);
 
-            if (cameraPivot != null && mobileLook.sqrMagnitude > 0.001f)
+            Vector2 lookInput = mobileLook + deviceLook;
+            if (cameraPivot != null && lookInput.sqrMagnitude > 0.001f)
             {
-                cameraPivot.Rotate(Vector3.up, mobileLook.x * lookSensitivity, Space.World);
-                cameraPivot.Rotate(Vector3.right, -mobileLook.y * lookSensitivity, Space.Self);
+                cameraPivot.Rotate(Vector3.up, lookInput.x * lookSensitivity, Space.World);
+                cameraPivot.Rotate(Vector3.right, -lookInput.y * lookSensitivity, Space.Self);
                 Vector3 angles = cameraPivot.localEulerAngles;
                 angles.x = Mathf.Clamp(angles.x > 180f ? angles.x - 360f : angles.x, -35f, 65f);
                 cameraPivot.localEulerAngles = new Vector3(angles.x, angles.y, 0f);
@@ -58,6 +60,7 @@ namespace Astrea.Character
 
             jumpRequested = false;
             mobileLook = Vector2.zero;
+            deviceLook = Vector2.zero;
         }
 
         public void SetCameraPivot(Transform pivot) => cameraPivot = pivot;
@@ -65,7 +68,8 @@ namespace Astrea.Character
         // Connect these methods to mobile joystick and touch-look UI events.
         public void SetMobileMove(Vector2 value) => mobileMove = Vector2.ClampMagnitude(value, 1f);
         public void SetDeviceMove(Vector2 value) => deviceMove = Vector2.ClampMagnitude(value, 1f);
-        public void SetMobileLook(Vector2 delta) => mobileLook = delta;
+        public void SetMobileLook(Vector2 delta) => mobileLook += delta;
+        public void SetDeviceLook(Vector2 delta) => deviceLook = delta;
         public void RequestJump() => jumpRequested = true;
     }
 }
