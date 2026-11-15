@@ -211,3 +211,30 @@ Ne jamais passer un élément à « intégré » sur la seule présence d'un doc
 - Pour [?], noter précisément le scénario et l'appareil à vérifier.
 - Ne pas confondre « documenté », « présent dans le code », « visible en jeu », « testé » et « déployé ».
 - Conserver les décisions de conception les plus récentes et signaler explicitement les anciennes règles devenues obsolètes.
+
+
+---
+
+## Jalons officiels de préproduction — 15 novembre 2026
+
+Ce registre complète la feuille de route historique et suit le cadre de production en 18 étapes adopté pour ASTREA. Les statuts décrivent les documents et preuves présents dans le dépôt, pas une validation implicite du créateur.
+
+| Étape | Livrable attendu | État documentaire |
+|---|---|---|
+| 1. Vision et concept | Vision officielle | [x] Version 1.0 rédigée ; validation finale du créateur encore attendue |
+| 2. GDD | Règles et systèmes complets | [~] Version 0.4 structurée ; plusieurs paramètres et décisions restent ouverts |
+| 3. Faisabilité et architecture | Architecture technique | [~] Architecture cible documentée ; protocole temps réel, hébergement et capacité restent à choisir |
+| 4. Direction artistique | Bible artistique | [~] Bible et standards visuels rédigés ; planches de référence et validation finale à produire |
+| 5. Outils et pipeline | Pipeline reproductible | [~] Outils, formats, licences, CI et cycle de vie documentés ; plusieurs étapes Unity Editor restent à exécuter |
+| 6. Prototypes techniques et gameplay | Prototypes fonctionnels | [ ] Cahier P0 à P5 préparé ; génération/modification de code et tests réels pas encore lancés dans cette séquence |
+| 7. Vertical Slice | Démo représentative et polie | [ ] Périmètre proposé ; dépend des prototypes et de l'approbation du créateur |
+
+### Porte d'entrée vers le développement
+La préparation documentaire est suffisamment structurée pour ouvrir le travail de prototype, mais elle n'est pas une approbation automatique des règles ouvertes. Avant le premier changement de code de cette séquence :
+- le créateur doit approuver ou corriger les choix de conception marqués « proposition » ;
+- le premier prototype à coder doit être P0 (personnage, caméra, commandes) ;
+- les critères d'acceptation doivent être conservés dans `docs/prototype-specification.md` ;
+- les tests Unity Editor et Android doivent être distingués des contrôles statiques et des tests Chromium.
+
+### Règle d'arrêt appliquée
+La présente séquence s'arrête **avant toute génération ou modification de code**. Les livrables sont des documents de préparation. Les prototypes P0 à P5 et le Vertical Slice ne sont pas déclarés réalisés.
