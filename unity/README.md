@@ -40,7 +40,7 @@ GitHub Actions validates the project manifest, pinned editor version, source lay
 
 ## Combat foundation
 
-- `AstreaCombatController` provides cooldown-gated melee input, a non-allocating overlap query, an optional Animator trigger and an animation-event hook for impact timing.
+- `AstreaCombatController` provides cooldown-gated melee input, a non-allocating overlap query, automatic child-Animator discovery, an optional `Attack` trigger and an animation-event hook for impact timing.
 - `AstreaHealth` is a reusable local damage receiver with health-change and death events.
 - The generated mobile HUD includes an Attack button wired to the combat controller when a player object with that component is present.
 - This is a local combat prototype only. In a multiplayer build, hit validation, damage, cooldowns and health changes must be authoritative on the game server; clients must not decide final damage.
