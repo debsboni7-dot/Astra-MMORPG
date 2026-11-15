@@ -19,7 +19,7 @@ export function getWeaponMasteryFromXp(totalXp = 0) {
   const xp = Math.max(0, Number(totalXp) || 0);
   let level = 0;
   while (level < WEAPON_MASTERY_MAX_LEVEL && xp >= weaponMasteryXpForLevel(level + 1)) level++;
-  const base = weaponMasteryXpForLevel(level), next = level === 100 ? base : weaponMasteryXpForLevel(level + 1);
+  const base = weaponMasteryXpForLevel(level), next = level === WEAPON_MASTERY_MAX_LEVEL ? base : weaponMasteryXpForLevel(level + 1);
   return {level,xp,currentLevelXp:base,xpIntoLevel:xp-base,xpForNextLevel:next-base,xpRemaining:Math.max(0,next-xp),progress:level===WEAPON_MASTERY_MAX_LEVEL?1:(xp-base)/(next-base),maxLevel:WEAPON_MASTERY_MAX_LEVEL};
 }
 export function getWeaponTechniqueList(category, masteryLevel = 0, techniqueXp = {}) {
