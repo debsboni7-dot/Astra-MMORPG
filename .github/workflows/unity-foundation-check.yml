@@ -48,6 +48,9 @@ jobs:
               "Assets/Scripts/Character/AstreaThirdPersonController.cs",
               "Assets/Scripts/Input/AstreaInputRouter.cs",
               "Assets/Scripts/Content/AstreaAddressableLoader.cs",
+              "Assets/Scripts/VFX/AstreaVfxLibrary.cs",
+              "Assets/Scripts/Animation/AstreaAnimationDriver.cs",
+              "Assets/Editor/AstreaVfxSetup.cs",
               "Assets/Scripts/UI/AstreaVirtualJoystick.cs",
               "Assets/Scripts/UI/AstreaTouchLookArea.cs",
               "Assets/Scripts/UI/AstreaMobileInputBinder.cs",
@@ -86,6 +89,17 @@ jobs:
           addressables = (root / "Assets/Scripts/Content/AstreaAddressableLoader.cs").read_text()
           assert "Addressables.InstantiateAsync" in addressables
           assert "Addressables.ReleaseInstance" in addressables
+          vfx = (root / "Assets/Scripts/VFX/AstreaVfxLibrary.cs").read_text()
+          assert "StartCoroutine(ReturnWhenFinished" in vfx and "maxPerEffect" in vfx
+          combat = (root / "Assets/Scripts/Combat/AstreaCombatController.cs").read_text()
+          assert "impactVfxKey" in combat and "vfxLibrary.Play" in combat
+          animation = (root / "Assets/Scripts/Animation/AstreaAnimationDriver.cs").read_text()
+          for parameter in ["Speed", "Grounded", "VerticalSpeed", "Attack", "Hit", "Dead"]:
+              assert parameter in animation, parameter
+          assert "PlanarVelocity" in animation and "PlayDeath" in animation
+          vfx_setup = (root / "Assets/Editor/AstreaVfxSetup.cs").read_text()
+          for effect in ["melee_impact", "fire_burst", "frost_burst", "lightning_burst", "nature_burst"]:
+              assert effect in vfx_setup, effect
           assert "CinemachineBrain" in scene_builder and "CinemachineFollow" in scene_builder
 
           print("Unity 6.3 URP project metadata and source layout validated.")
