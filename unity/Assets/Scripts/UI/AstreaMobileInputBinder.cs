@@ -56,7 +56,12 @@ namespace Astrea.UI
             if (controller != null) controller.RequestJump();
         }
 
-        public void RequestAttack()\n        {\n            if (combatController != null) combatController.TryAttack();\n        }\n\n        private void HandleLook(Vector2 delta)
+        public void RequestAttack()
+        {
+            if (combatController != null) combatController.TryAttack();
+        }
+
+        private void HandleLook(Vector2 delta)
         {
             if (controller != null) controller.SetMobileLook(delta);
         }
