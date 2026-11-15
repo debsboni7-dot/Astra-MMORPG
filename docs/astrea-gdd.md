@@ -461,3 +461,111 @@ Le moteur Unity et les outils open source peuvent être utilisés sans frais de 
 7. Fixer la cible de joueurs simultanés du prototype réseau et les limites de la première infrastructure.
 
 **Rappel :** les propositions de ce chapitre sont des recommandations de conception. Les décisions finales restent celles du créateur et devront être explicitement approuvées avant d'être codées comme règles de jeu.
+
+
+## 30. Contenus, activités et comportements — propositions à valider
+**Statut : propositions.** Les règles ci-dessous complètent les systèmes encore peu détaillés. Elles ne constituent pas une autorisation de développer toutes ces fonctionnalités immédiatement.
+
+### 30.1 Boucles d'activité par continent
+| Continent | Activités principales proposées | Intention de difficulté |
+|---|---|---|
+| Astrea | Agriculture, élevage, commerce local, exploration, apprentissage, artisanat simple | Zone d'accueil très sûre |
+| Van | Récolte du bois, sylviculture, construction, collecte forestière, commerce | Faible danger, quelques menaces |
+| Burg | Exploration désertique, extraction de minerais, gestion de ressources rares, caravanes | Danger intermédiaire |
+| Night | Commerce, criminalité, contrebande, enquêtes et conflits entre joueurs | Menace surtout sociale et humaine |
+| Noir | Exploration risquée, créatures agressives, ressources difficiles, défis de maîtrise | Zone très difficile |
+
+Le niveau de danger doit provenir des créatures, des conditions de déplacement et des conflits éventuels, pas uniquement d'une hausse artificielle des points de vie des ennemis.
+
+### 30.2 Quêtes et activités répétables
+Structure proposée :
+- **Quêtes d'introduction** : expliquer les déplacements, interactions, combat, magie, récolte et artisanat sans imposer un long tutoriel.
+- **Quêtes locales** : tâches données par des habitants, artisans, marchands ou autorités.
+- **Contrats répétables** : activités à récompenses limitées ou variables, avec contrôle anti-farm.
+- **Découvertes** : lieux, ressources, secrets et événements trouvés par exploration.
+- **Objectifs de maîtrise** : défis qui demandent de démontrer une compétence plutôt que d'accumuler des éliminations faciles.
+
+Chaque quête devrait préciser un donneur, des prérequis, des objectifs vérifiables côté serveur, une récompense, une durée estimée et des conditions d'échec ou d'abandon. Les récompenses exactes restent à équilibrer.
+
+### 30.3 PNJ et intelligence artificielle
+Pour la première version jouable, limiter les comportements à des états compréhensibles :
+1. repos ou activité quotidienne ;
+2. déplacement vers une destination ;
+3. interaction avec le joueur ;
+4. réaction à une menace ;
+5. combat ou fuite selon le rôle ;
+6. retour à une zone sûre.
+
+Les PNJ importants peuvent avoir un emploi, un lieu de résidence, un calendrier simplifié et des dialogues contextuels. Il n'est pas nécessaire de simuler individuellement une vie complète pour chaque habitant dans un MMORPG. Les comportements éloignés du joueur peuvent être simplifiés.
+
+### 30.4 Créatures et combat contre l'environnement
+Fiche minimale proposée pour chaque créature :
+- identifiant, nom, région et habitat ;
+- niveau de danger et comportement ;
+- santé, dégâts, défenses et résistances ;
+- perception, distance d'alerte et poursuite ;
+- attaques, télégraphies visuelles et temps de récupération ;
+- butin, conditions d'apparition et règles de réapparition ;
+- limites anti-farm.
+
+Les créatures doivent être distinctes par leurs comportements et leurs attaques, pas seulement par leurs statistiques. Les nombres précis seront établis lors des tests de combat.
+
+### 30.5 Joueur contre joueur (PvP)
+Le PvP n'est pas encore défini complètement. Proposition prudente :
+- désactivé dans les espaces d'accueil et les lieux explicitement sûrs ;
+- activé uniquement dans les zones et situations que les règles du monde identifient clairement ;
+- avertissement visible avant une entrée dans une zone dangereuse ;
+- validation serveur de la portée, des dégâts, des délais et des résultats ;
+- journalisation des événements importants pour enquêter sur les abus.
+
+Les règles de duel, guerre de territoires, criminalité, butin à la mort et sanctions restent ouvertes. Aucun système de perte d'objet ou de pénalité PvP ne doit être considéré comme décidé.
+
+### 30.6 Social et coopération
+Fonctions proposées par ordre de priorité :
+1. liste d'amis et présence ;
+2. groupe temporaire avec invitation, départ et chef ;
+3. chat de proximité et chat de groupe avec protections anti-spam ;
+4. échange sécurisé entre deux joueurs ;
+5. guildes ou organisations persistantes ;
+6. outils de modération et signalement.
+
+Les permissions de groupe doivent préciser qui peut inviter, exclure, marquer une cible ou partager une récompense. Les échanges doivent être confirmés par les deux joueurs et exécutés en une transaction serveur atomique.
+
+### 30.7 Accessibilité et sécurité des joueurs
+- taille des textes et lisibilité adaptées aux petits écrans ;
+- remappage ou alternatives aux commandes tactiles lorsque la plateforme le permet ;
+- réglages du volume, des effets visuels et des mouvements de caméra ;
+- filtres de chat, blocage, signalement et modération ;
+- aucune information personnelle réelle exigée pour le nom d'avatar ;
+- pseudonyme public distinct du nom de joueur permanent, selon le système déjà défini ;
+- protection des mineurs et règles de communauté à spécifier avant l'ouverture publique.
+
+### 30.8 Événements et monde persistant
+Événements proposés :
+- événements locaux limités à une région ;
+- apparitions de créatures ou ressources rares selon des règles contrôlées ;
+- événements sociaux et commerciaux ;
+- événements de territoire lorsque les conditions politiques sont remplies.
+
+Chaque événement doit avoir un calendrier serveur, une règle d'éligibilité, une durée, des limites de récompenses et une procédure de reprise après panne. Les événements ne doivent pas exiger une présence permanente pour ne pas pénaliser les joueurs occasionnels.
+
+### 30.9 Gouvernance et territoires : exigences à préciser
+Le système de territoires nécessite encore des spécifications sur :
+- le périmètre exact d'une ville, d'un pays et d'un royaume ;
+- les conflits de demandes et les territoires qui se chevauchent ;
+- les changements de dirigeant, élections, destitutions et succession ;
+- les budgets publics, audits, taxes, salaires et dépenses autorisées ;
+- les abus de comptes multiples, faux abonnés et preuves TikTok falsifiées ;
+- les recours, suspensions et procédures de modération.
+
+La vérification TikTok publique et les seuils de communauté déjà consignés restent des règles de conception existantes, mais le protocole antifraude et les recours ne sont pas encore définis. Aucun document d'identité ne doit être ajouté au processus sans décision explicite du créateur.
+
+### 30.10 Critères de qualité du contenu
+Un contenu n'est prêt que si :
+- il a une identité visuelle et un rôle clair dans le monde ;
+- il est jouable et compréhensible ;
+- ses récompenses ont été mesurées ;
+- il ne crée pas de boucle de farm triviale ;
+- il fonctionne en multijoueur si le contenu est partagé ;
+- il a été testé sur les plateformes cibles concernées ;
+- sa provenance et sa licence sont enregistrées pour les assets externes.
