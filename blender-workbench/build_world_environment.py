@@ -205,6 +205,25 @@ for i in range(12):
     cube("Well masonry",(x,y,bz+.55),(.65,.55,1.1),stone,.06)
 bpy.ops.mesh.primitive_cylinder_add(vertices=32,radius=.68,depth=.12,location=(cx+9,cy+1,bz+1.13)); assign(bpy.context.object,dark)
 beam("Well crossbar",(cx+7.9,cy+1,bz+2.5),(cx+10.1,cy+1,bz+2.5),.08,.08,wood)
+# Merge static decorative meshes by identical material slots to reduce mobile draw calls.
+# Keep the terrain and path separate for collision and navigation setup in Unity.
+merge_groups = {}
+for obj in list(bpy.context.scene.objects):
+    if obj.type != "MESH" or obj in (terrain, path):
+        continue
+    material_key = tuple(material.name for material in obj.data.materials)
+    merge_groups.setdefault(material_key, []).append(obj)
+
+for material_key, objects in merge_groups.items():
+    if len(objects) < 2:
+        continue
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = objects[0]
+    bpy.ops.object.join()
+    bpy.context.object.name = "ASTREA | merged | " + (material_key[0] if material_key else "unassigned")
+
 # The terrain mesh itself carries the distant rolling hills; no oversized sphere mounds.
 # Lighting and camera for preview only
 world=bpy.data.worlds.new("Astrea clear daylight") if not bpy.data.worlds else bpy.data.worlds[0]
