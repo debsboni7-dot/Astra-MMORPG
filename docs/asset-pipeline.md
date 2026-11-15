@@ -1,7 +1,12 @@
-# Pipeline des assets
+# ASTREA asset pipeline
 
-Chaque ressource ajoutée doit avoir une provenance, une licence, un format, une version et un statut de validation. Les ressources externes doivent être contrôlées pour leur usage commercial avant intégration.
+Every asset must record provenance, license, format, version and validation status. Verify commercial-use rights for every external resource.
 
-Statuts recommandés : planned, sourced, downloaded, imported, visible-in-game, tested.
+## Cloud production route
+1. Blender headless on GitHub Actions generates `.blend` sources, GLB interchange files and preview renders.
+2. The workflow checks expected outputs and stores them as a short-lived artifact.
+3. Review assets for scale, orientation, topology, materials, rigging, collision and LODs before promotion.
+4. Unreal imports approved GLB/GLTF files through its Editor Python environment.
+5. Unreal automation requires a self-hosted runner with a licensed Unreal installation. Standard GitHub-hosted runners do not include Unreal Engine.
 
-Ne jamais marquer une ressource comme intégrée ou testée sans vérification réelle.
+Statuses: planned, sourced, generated, downloaded, imported, visible-in-game, tested. Never mark an asset imported, visible or tested without actual verification.
