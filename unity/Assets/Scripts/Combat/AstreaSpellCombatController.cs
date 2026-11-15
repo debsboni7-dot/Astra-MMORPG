@@ -82,22 +82,22 @@ namespace Astrea.Combat
         {
             if (!CanCast(element)) return false;
             SpellDefinition spell = FindSpell(element).Value;
-            CurrentMana -= spell.manaCost;
-            cooldownUntil[spell.element] = Time.time + spell.cooldown;
-            ManaChanged?.Invoke(CurrentMana, maxMana);
 
             if (spell.selfHeal)
             {
                 float before = health.CurrentHealth;
                 health.Restore(spell.element == "light" ? 22f : 18f);
-                if (health.CurrentHealth > before && vfx != null)
-                    vfx.PlayAtCastPoint(spell.element);
-                return health.CurrentHealth > before;
+                bool restored = health.CurrentHealth > before;
+                if (!restored) return false;
+                CommitCast(spell);
+                if (vfx != null) vfx.PlayAtCastPoint(spell.element);
+                return true;
             }
 
             if (spell.shield)
             {
                 health.ApplyShield(30f, spell.cooldown);
+                CommitCast(spell);
                 if (vfx != null) vfx.PlayAtCastPoint(spell.element);
                 return true;
             }
@@ -134,9 +134,19 @@ namespace Astrea.Combat
                 ApplyDamage(nearest, damageable, spell);
                 hitAny = true;
             }
-            if (hitAny && vfx != null)
-                vfx.PlayAtCastPoint(spell.element);
-            return hitAny;
+
+            // P3 acceptance: a failed offensive cast must not consume mana or start cooldown.
+            if (!hitAny) return false;
+            CommitCast(spell);
+            if (vfx != null) vfx.PlayAtCastPoint(spell.element);
+            return true;
+        }
+
+        private void CommitCast(SpellDefinition spell)
+        {
+            CurrentMana = Mathf.Max(0f, CurrentMana - spell.manaCost);
+            cooldownUntil[spell.element] = Time.time + spell.cooldown;
+            ManaChanged?.Invoke(CurrentMana, maxMana);
         }
 
         private void ApplyDamage(Collider target, IAstreaDamageable damageable, SpellDefinition spell)
