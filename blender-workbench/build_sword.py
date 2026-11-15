@@ -21,7 +21,7 @@ def cube(n,loc,scale,m,w=.035):
 def cyl(n,loc,r,d,m,v=32,rot=(0,0,0)):
  bpy.ops.mesh.primitive_cylinder_add(vertices=v,radius=r,depth=d,location=loc,rotation=rot); o=bpy.context.object; o.name=n; o.data.materials.append(m); bevel(o,.02); return o
 profile=[(-.12,0),(.12,0),(.105,1.48),(.075,1.88),(0,2.08),(-.075,1.88),(-.105,1.48)]
-verts=[(x,y,z+.12) for y in (-.035,.035) for x,z in profile]; n=len(profile)
+verts=[(x,y,z+.02) for y in (-.035,.035) for x,z in profile]; n=len(profile)
 faces=[tuple(range(n-1,-1,-1)),tuple(range(n,2*n))]
 for i in range(n): j=(i+1)%n; faces.append((i,j,n+j,n+i))
 me=bpy.data.meshes.new("Tapered forged blade"); me.from_pydata(verts,[],faces); me.materials.append(steel)
@@ -31,6 +31,8 @@ for s in (-1,1):
   o=cube("Polished blade bevel",(x,s*.039,1.12),(.012,.009,1.55),bright,.004); o.rotation_euler[1]=-.012 if x<0 else .012
 for s in (-1,1):
  arm=cube("Swept gold crossguard",(s*.34,0,.02),(.72,.13,.16),gold,.065); arm.rotation_euler[1]=s*math.radians(-13)
+# Central guard boss overlaps the blade root and grip, eliminating the visible gap.
+bpy.ops.mesh.primitive_uv_sphere_add(segments=32,ring_count=16,radius=1,location=(0,0,.035)); boss=bpy.context.object; boss.name="Gold crossguard central boss"; boss.scale=(.17,.095,.13); boss.data.materials.append(gold)
 cyl("Leather wrapped grip",(0,0,-.34),.085,.58,leather,12)
 for z in [-.60+i*.065 for i in range(9)]:
  bpy.ops.mesh.primitive_torus_add(major_radius=.083,minor_radius=.009,major_segments=24,minor_segments=8,location=(0,0,z))
