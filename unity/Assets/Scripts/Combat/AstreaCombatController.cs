@@ -26,7 +26,7 @@ namespace Astrea.Combat
             nextAttackTime = Time.time + attackCooldown;
             damagedThisSwing.Clear();
             if (animator != null) animator.SetTrigger("Attack");
-            ResolveMeleeHit();
+            else ResolveMeleeHit();
             return true;
         }
 
