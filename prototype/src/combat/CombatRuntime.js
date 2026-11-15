@@ -265,7 +265,11 @@ export function executeAttack(attacker, target, attack, {
     weaponCategory: attack.weaponCategory || weapon.category,
     techniqueMultiplier: number(attack.techniqueMultiplier, 1) * (technique?.powerMultiplier || 1),
   } : attack;
-  const result = Engine.resolveAttack({ attacker, target, attack: effectiveAttack, balance, rng });
+  const cooldownMs = Math.max(0, number(attack.cooldownMs));
+  if (cooldownMs > 0) attacker.cooldowns[attack.id] = now + cooldownMs;
+  // Route every attack through the same defensive resolver so block, parry, dodge,
+  // fire absorption, shields and resistances cannot be bypassed by the attacker.
+  const result = resolveIncomingAttack(attacker, target, effectiveAttack, { now, balance, rng });
   let weaponProgression = null;
   let techniqueProgression = null;
   if (weapon) {
