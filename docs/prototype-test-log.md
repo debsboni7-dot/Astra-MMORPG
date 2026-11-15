@@ -85,7 +85,7 @@ Dernière mise à jour : 15 novembre 2026
 - Blocage, parade, esquive, absorption du feu, boucliers et résistances sont donc pris en compte par `executeAttack`, au lieu d'être contournés.
 - Les attaques peuvent appliquer un cooldown déclaré par leur définition (`cooldownMs`).
 - Tests ajoutés pour le blocage, la parade, l'esquive et le cooldown.
-- Les tests unitaires gameplay de la CI [#43727639311](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727639311) ont réussi ; le test navigateur était encore en cours au moment de cette note.
+- La suite gameplay et les tests navigateur de la CI [#43727639311](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727639311) ont réussi.
 
 ### Magie raciale
 - Le bonus dragonoïde de +15 % est désormais réservé à la magie de destruction via un modificateur dédié.
