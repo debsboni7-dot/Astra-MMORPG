@@ -75,6 +75,8 @@ jobs:
               assert source.count("{") == source.count("}"), f"Unbalanced braces: {path}"
 
           combat = (root / "Assets/Scripts/Combat/AstreaCombatController.cs").read_text()
+          input_router = (root / "Assets/Scripts/Input/AstreaInputRouter.cs").read_text()
+          scene_builder = (root / "Assets/Editor/AstreaStarterSceneBuilder.cs").read_text()
           spell_combat = (root / "Assets/Scripts/Combat/AstreaSpellCombatController.cs").read_text()
           for school in ["fire", "water", "wind", "earth", "ice", "lightning", "nature", "light", "dark"]:
               assert 'element = "' + school + '"' in spell_combat, school
