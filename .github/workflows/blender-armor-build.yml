@@ -33,15 +33,15 @@ jobs:
         run: |
           test -s build/astrea-armor/astrea-modular-armor.blend
           test -s build/astrea-armor/astrea-modular-armor.glb
-test -s build/astrea-armor/astrea-modular-armor.fbx
+          test -s build/astrea-armor/astrea-modular-armor.fbx
           test -s build/astrea-armor/astrea-modular-armor-preview.png
           python3 - <<'PY'
           import json
           p=json.load(open("build/astrea-armor/build-report.json"))
           assert p["piece_count"] == 8, p
           assert len(p["pieces"]) == 8, p
-assert "fbx" in p["formats"], p
-          print("Validated eight modular armor objects")
+          assert "fbx" in p["formats"], p
+          print("Validated eight modular armor objects and Unity FBX export")
           PY
       - uses: actions/upload-artifact@v4
         with:
