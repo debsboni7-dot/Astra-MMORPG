@@ -1,0 +1,54 @@
+name: ASTREA Unity 6.3 Android build
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_build:
+        description: "Run licensed Unity Editor generation and Android build"
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    if: inputs.confirm_build == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Unity license secret
+        shell: bash
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [[ -z "${UNITY_LICENSE:-}" ]]; then
+            echo "::error::Add the free Unity Personal license file as repository secret UNITY_LICENSE before running this workflow."
+            exit 1
+          fi
+
+      - name: Build ASTREA with Unity Editor
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: unity
+          unityVersion: 6000.3.28f1
+          targetPlatform: Android
+          buildMethod: Astrea.EditorTools.AstreaCloudBuild.BuildAndroid
+          allowDirtyBuild: true
+          customParameters: -batchmode -nographics
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTREA-Android-APK
+          path: Build/ASTREA.apk
+          if-no-files-found: error
+          retention-days: 14
