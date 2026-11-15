@@ -41,6 +41,7 @@ jobs:
               "Assets/Scripts/Character/AstreaThirdPersonController.cs",
               "Assets/Scripts/UI/AstreaVirtualJoystick.cs",
               "Assets/Scripts/UI/AstreaTouchLookArea.cs",
+              "Assets/Scripts/Rendering/AstreaGraphicsProfile.cs",
               "Assets/Editor/AstreaUrpSetup.cs",
               "Assets/Editor/AstreaArmorModelPostprocessor.cs",
               "README.md",
