@@ -93,6 +93,9 @@ jobs:
           assert "Addressables.ReleaseInstance" in addressables
           vfx = (root / "Assets/Scripts/VFX/AstreaVfxLibrary.cs").read_text()
           assert "StartCoroutine(ReturnWhenFinished" in vfx and "maxPerEffect" in vfx
+          assert "instanceCounts[key] < maxPerEffect" in vfx
+          assert "return false; // Respect the per-effect cap" in vfx
+          assert "instanceCounts[key]++" in vfx and "instanceCounts[key] - 1" in vfx
           combat = (root / "Assets/Scripts/Combat/AstreaCombatController.cs").read_text()
           assert "impactVfxKey" in combat and "vfxLibrary.Play" in combat
           animation = (root / "Assets/Scripts/Animation/AstreaAnimationDriver.cs").read_text()
