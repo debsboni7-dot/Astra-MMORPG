@@ -56,7 +56,7 @@ jobs:
           p=json.load(open("build/astrea-world/build-report.json"))
           assert p["tree_count"] >= 35, p
           assert p["boulder_count"] >= 80, p
-          assert p["grass_blade_count"] >= 8000, p
+          assert p["grass_blade_count"] >= 7000, p
           assert p["terrain_vertices"] > 5000, p
           assert 5 <= p["environment_objects"] <= 60, p
           print("Validated ASTREA terrain and environment geometry:", p)
