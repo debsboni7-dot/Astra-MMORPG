@@ -68,6 +68,17 @@ gold=material("ASTREA | Engraved antique gold",(.62,.36,.105),.78,.25,"AntiqueGo
 leather=material("ASTREA | Dark oxblood leather",(.105,.025,.018),.08,.52,"OxbloodLeather")
 blue=material("ASTREA | Sapphire enamel",(.025,.13,.32),.55,.19,"SapphireEnamel")
 
+# Starter-world surface library: tileable maps ready for terrain and modular props.
+WORLD_TEXTURES = [
+    ("AstreaGrass",(.16,.25,.075),0.0,.92,.16),
+    ("AstreaSoil",(.19,.105,.055),0.0,.88,.18),
+    ("VanForestFloor",(.075,.13,.065),0.0,.94,.20),
+    ("BurgSandstone",(.48,.30,.14),0.0,.82,.14),
+    ("NoirSlate",(.075,.09,.12),0.0,.78,.12),
+]
+for key, color, metal, rough, grain in WORLD_TEXTURES:
+    texture_set(key,color,metal,rough,grain)
+
 def finish(o, name, mat):
     o.name=name; o.data.materials.append(mat)
     for p in o.data.polygons: p.use_smooth=True
@@ -183,6 +194,6 @@ bpy.ops.object.select_all(action="DESELECT")
 for o in pieces: o.select_set(True)
 bpy.context.view_layer.objects.active=pieces[0]
 bpy.ops.export_scene.gltf(filepath=os.path.join(OUT,"astrea-modular-armor.glb"),export_format="GLB",use_selection=True)
-report={"asset":"ASTREA modular medieval armor set","status":"generated","piece_count":len(pieces),"pieces":[p.name for p in pieces],"blender_version":bpy.app.version_string,"formats":["blend","glb","fbx","png","pbr-textures"],"texture_sets":["MidnightSteel","ForgedSilver","AntiqueGold","OxbloodLeather","SapphireEnamel"],"texture_resolution":512,"note":"Eight independently named modular armor objects; greaves are a paired object. PBR maps are generated as PNGs for Unity and embedded in the GLB where supported."}
+report={"asset":"ASTREA modular medieval armor set","status":"generated","piece_count":len(pieces),"pieces":[p.name for p in pieces],"blender_version":bpy.app.version_string,"formats":["blend","glb","fbx","png","pbr-textures"],"texture_sets":["MidnightSteel","ForgedSilver","AntiqueGold","OxbloodLeather","SapphireEnamel","AstreaGrass","AstreaSoil","VanForestFloor","BurgSandstone","NoirSlate"],"texture_resolution":512,"note":"Eight independently named modular armor objects; greaves are a paired object. PBR maps are generated as PNGs for Unity and embedded in the GLB where supported."}
 with open(os.path.join(OUT,"build-report.json"),"w") as f: json.dump(report,f,indent=2)
 print("ASTREA_ARMOR_BUILD_OK",json.dumps(report))
