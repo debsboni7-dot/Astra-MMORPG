@@ -1,4 +1,4 @@
-export const WEAPON_MASTERY_MAX_LEVEL = 100;
+export const WEAPON_MASTERY_MAX_LEVEL = 1000;
 export const WEAPON_MASTERY_XP = Object.freeze({
   firstLevel: 12, perLevelGrowth: 2,
   rewards: Object.freeze({ light: 1, heavy: 1.5, charged: 1.75, finisher: 2, special: 2.25, aerial: 1.5, default: 1 }),
@@ -12,15 +12,15 @@ const TECHNIQUE_DATA = {
 };
 export const WEAPON_TECHNIQUES = Object.freeze(Object.fromEntries(Object.entries(TECHNIQUE_DATA).map(([category, rows]) => [category, Object.freeze(rows.map(([id,name],i) => Object.freeze({id,name,category,requiredMastery:TECHNIQUE_UNLOCK_LEVELS[i]})))])));
 export function weaponMasteryXpForLevel(level) {
-  const n = Math.max(0, Math.min(100, Math.floor(Number(level) || 0)));
+  const n = Math.max(0, Math.min(WEAPON_MASTERY_MAX_LEVEL, Math.floor(Number(level) || 0)));
   return n * 12 + n * (n - 1);
 }
 export function getWeaponMasteryFromXp(totalXp = 0) {
   const xp = Math.max(0, Number(totalXp) || 0);
   let level = 0;
-  while (level < 100 && xp >= weaponMasteryXpForLevel(level + 1)) level++;
+  while (level < WEAPON_MASTERY_MAX_LEVEL && xp >= weaponMasteryXpForLevel(level + 1)) level++;
   const base = weaponMasteryXpForLevel(level), next = level === 100 ? base : weaponMasteryXpForLevel(level + 1);
-  return {level,xp,currentLevelXp:base,xpIntoLevel:xp-base,xpForNextLevel:next-base,xpRemaining:Math.max(0,next-xp),progress:level===100?1:(xp-base)/(next-base),maxLevel:100};
+  return {level,xp,currentLevelXp:base,xpIntoLevel:xp-base,xpForNextLevel:next-base,xpRemaining:Math.max(0,next-xp),progress:level===WEAPON_MASTERY_MAX_LEVEL?1:(xp-base)/(next-base),maxLevel:WEAPON_MASTERY_MAX_LEVEL};
 }
 export function getWeaponTechniqueList(category, masteryLevel = 0, techniqueXp = {}) {
   return (WEAPON_TECHNIQUES[category] || []).map(t => {
@@ -40,8 +40,8 @@ export function awardWeaponMastery(combatant, category, attackType = 'light', ex
   combatant.weaponMasteryXpByCategory[category] = baseline;
   const before = getWeaponMasteryFromXp(baseline);
   const reward = explicitXp == null ? (WEAPON_MASTERY_XP.rewards[attackType] ?? 1) : Math.max(0,Math.min(5,Number(explicitXp)||0));
-  if (before.level >= 100 || reward <= 0) return {awarded:0,before,after:before,unlocked:[]};
-  const xp = Math.min(weaponMasteryXpForLevel(100),before.xp+reward);
+  if (before.level >= WEAPON_MASTERY_MAX_LEVEL || reward <= 0) return {awarded:0,before,after:before,unlocked:[]};
+  const xp = Math.min(weaponMasteryXpForLevel(WEAPON_MASTERY_MAX_LEVEL),before.xp+reward);
   combatant.weaponMasteryXpByCategory[category] = xp;
   const after = getWeaponMasteryFromXp(xp);
   combatant.weaponMasteries[category] = after.level;
