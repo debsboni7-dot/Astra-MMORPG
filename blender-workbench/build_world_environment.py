@@ -109,11 +109,14 @@ def tree(x,y,s=1):
     for dx,dy,dz,sc in ((0,0,4.45,1.65),(.85,0,4.0,1.12),(-.8,.2,4.1,1.18),(.2,.8,4.15,1.05),(-.2,-.8,4.0,1.12),(0,.05,5.05,1.0)):
         ico("Oak foliage cluster",(x+dx*s,y+dy*s,z+dz*s),(sc*s,sc*.88*s,sc*.92*s),leaf if random.random()<.65 else leaf2,2)
 tree_sites=[
-(-48,-38,1.15),(-42,-20,.95),(-46,2,1.2),(-38,26,1.05),(-50,43,.9),\n(-55,-8,1.0),(-54,30,.95),(-40,48,1.0),(-25,18,.9),(-22,-10,1.0),
+(-48,-38,1.15),(-42,-20,.95),(-46,2,1.2),(-38,26,1.05),(-50,43,.9),
+(-55,-8,1.0),(-54,30,.95),(-40,48,1.0),(-25,18,.9),(-22,-10,1.0),
 (-28,-43,.9),(-30,-25,1.1),(-34,-4,.95),(-29,34,1.05),(-18,47,.9),
 (22,-47,.9),(32,-35,1.0),(43,-25,1.15),(50,-2,.95),(38,12,1.1),
 (30,30,1.0),(45,43,1.15),(16,45,.9),(5,-48,.85),(-5,-42,.9),
-(48,18,.95),(-52,16,1.0),(18,-26,.9),(40,-46,.85),\n(12,-18,.95),(25,4,1.0),(54,35,1.05),(8,34,.95),(-8,52,.9),(-16,-50,.95),\n(52,-35,1.0),(-55,-28,.9),(34,48,.95),(0,52,.9)]
+(48,18,.95),(-52,16,1.0),(18,-26,.9),(40,-46,.85),
+(12,-18,.95),(25,4,1.0),(54,35,1.05),(8,34,.95),(-8,52,.9),(-16,-50,.95),
+(52,-35,1.0),(-55,-28,.9),(34,48,.95),(0,52,.9)]
 for x,y,scale in tree_sites:
     if abs(x+12)<13 and abs(y-8)<12: continue
     tree(x,y,scale)
@@ -202,7 +205,8 @@ for i in range(12):
     cube("Well masonry",(x,y,bz+.55),(.65,.55,1.1),stone,.06)
 bpy.ops.mesh.primitive_cylinder_add(vertices=32,radius=.68,depth=.12,location=(cx+9,cy+1,bz+1.13)); assign(bpy.context.object,dark)
 beam("Well crossbar",(cx+7.9,cy+1,bz+2.5),(cx+10.1,cy+1,bz+2.5),.08,.08,wood)
-# The terrain mesh itself carries the distant rolling hills; no oversized sphere mounds.\n# Lighting and camera for preview only
+# The terrain mesh itself carries the distant rolling hills; no oversized sphere mounds.
+# Lighting and camera for preview only
 world=bpy.data.worlds.new("Astrea clear daylight") if not bpy.data.worlds else bpy.data.worlds[0]
 bpy.context.scene.world=world; world.use_nodes=True
 world.node_tree.nodes["Background"].inputs[0].default_value=(.42,.58,.78,1)
