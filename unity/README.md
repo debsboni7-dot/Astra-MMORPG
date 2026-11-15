@@ -91,3 +91,17 @@ The repository currently contains the editor generators, but not their generated
 6. Add `AnimationEvent_ApplyMeleeHit` to the real contact frame of each melee clip, then test combat, camera, mobile input and VFX in Play Mode and on Android.
 
 No Unity Editor compile, generated scene, generated particle prefab, Animator Controller, or Android build is claimed as completed yet. The CI workflow is a source/metadata contract check, not an Editor compilation. Meshy generation is not automatic and no paid credits are consumed by these steps.
+
+
+### Unity elemental spell prototype
+
+- `AstreaSpellCombatController` now provides the nine starter spell definitions with the costs and cooldowns documented in `docs/magic-combat-spells-v1.md`. It regenerates mana, checks range/cooldown/mana before spending, applies damage to `IAstreaDamageable` targets, heals the caster for nature/light and grants a timed damage-absorbing earth shield.
+- Keyboard **K**, gamepad **North/Y**, and the generated mobile **MAGIC** button cast the current starter spell (fire). The element is passed as a parameter to `TryCast`, so an element selector can be connected later.
+- Elemental VFX play at the cast point and confirmed target positions. These are pooled first-pass particle effects. Burning, slow, freeze, stun and purification gameplay effects, race-specific spell permissions/bonuses, authoritative multiplayer validation and a spell-selection HUD are not implemented in this Unity slice yet.
+- The Unity spell runtime is a local prototype; it does not replace the existing browser/server combat implementation.
+
+### Cloud editor build
+
+The workflow `.github/workflows/unity-android-build.yml` runs a licensed Unity 6.3 Editor session, generates the starter scene/VFX/Animator assets, and builds an Android APK. It is manual and guarded by an explicit confirmation input. It requires a Unity Personal/Pro license file stored as the GitHub repository secret `UNITY_LICENSE`; this is a Unity licensing prerequisite, not a paid hosting service. The build deliberately fails if the humanoid FBX is absent, rather than producing an APK that looks playable but has no player character.
+
+The character generation workflow `.github/workflows/meshy-generate-humanoid.yml` is separately guarded and can consume up to 30 Meshy credits. It has not been triggered. Do not launch it until the credit spend is explicitly approved.
