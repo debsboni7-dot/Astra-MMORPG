@@ -45,6 +45,7 @@ jobs:
               "Assets/Scripts/Armor/AstreaArmorSlot.cs",
               "Assets/Scripts/Combat/AstreaCombatController.cs",
               "Assets/Scripts/Combat/AstreaHealth.cs",
+              "Assets/Scripts/Combat/AstreaSpellCombatController.cs",
               "Assets/Scripts/Character/AstreaThirdPersonController.cs",
               "Assets/Scripts/Input/AstreaInputRouter.cs",
               "Assets/Scripts/Content/AstreaAddressableLoader.cs",
@@ -53,6 +54,7 @@ jobs:
               "Assets/Scripts/Animation/AstreaAnimationDriver.cs",
               "Assets/Editor/AstreaVfxSetup.cs",
               "Assets/Editor/AstreaAnimatorSetup.cs",
+              "Assets/Editor/AstreaCloudBuild.cs",
               "Assets/Scripts/UI/AstreaVirtualJoystick.cs",
               "Assets/Scripts/UI/AstreaTouchLookArea.cs",
               "Assets/Scripts/UI/AstreaMobileInputBinder.cs",
@@ -73,6 +75,19 @@ jobs:
               assert source.count("{") == source.count("}"), f"Unbalanced braces: {path}"
 
           combat = (root / "Assets/Scripts/Combat/AstreaCombatController.cs").read_text()
+          spell_combat = (root / "Assets/Scripts/Combat/AstreaSpellCombatController.cs").read_text()
+          for school in ["fire", "water", "wind", "earth", "ice", "lightning", "nature", "light", "dark"]:
+              assert 'element = "' + school + '"' in spell_combat, school
+          assert "manaCost" in spell_combat and "cooldown" in spell_combat
+          assert "ReceiveDamage" in spell_combat and "ApplyShield" in spell_combat
+          assert "TryCast(\"fire\")" in input_router
+          assert "magic.AddBinding(\"<Keyboard>/k\")" in input_router
+          health_source = (root / "Assets/Scripts/Combat/AstreaHealth.cs").read_text()
+          assert "ApplyShield" in health_source and "shieldRemaining" in health_source
+          cloud_build = (root / "Assets/Editor/AstreaCloudBuild.cs").read_text()
+          assert "GenerateStarterAssets" in cloud_build and "BuildPipeline.BuildPlayer" in cloud_build
+          assert "ASTREA_Humanoid_Meshy6.fbx" in cloud_build
+          assert "binder.RequestMagic" in scene_builder
           assert "TryAttack()" in combat and "AnimationEvent_ApplyMeleeHit" in combat
           assert "OverlapSphereNonAlloc" in combat, "Melee query must avoid per-swing allocations"
           health = (root / "Assets/Scripts/Combat/AstreaHealth.cs").read_text()
@@ -88,6 +103,7 @@ jobs:
           for binding in ["<Keyboard>/w", "<Mouse>/delta", "<Gamepad>/leftStick", "<Gamepad>/rightStick", "<Gamepad>/buttonSouth"]:
               assert binding in input_router, binding
           assert "SetDeviceMove" in input_router and "SetDeviceLook" in input_router
+          assert "AstreaSpellCombatController" in input_router
           addressables = (root / "Assets/Scripts/Content/AstreaAddressableLoader.cs").read_text()
           assert "Addressables.InstantiateAsync" in addressables
           assert "Addressables.ReleaseInstance" in addressables
