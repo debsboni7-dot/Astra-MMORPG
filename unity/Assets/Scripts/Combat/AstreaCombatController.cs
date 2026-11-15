@@ -18,6 +18,11 @@ namespace Astrea.Combat
         private readonly HashSet<int> damagedThisSwing = new HashSet<int>();
         private float nextAttackTime;
 
+        private void Awake()
+        {
+            if (animator == null) animator = GetComponentInChildren<Animator>();
+        }
+
         public bool CanAttack => Time.time >= nextAttackTime;
 
         public bool TryAttack()
