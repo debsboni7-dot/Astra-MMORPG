@@ -92,3 +92,13 @@ Dernière mise à jour : 15 novembre 2026
 - Il n'augmente plus artificiellement les dégâts de toutes les neuf écoles actuelles.
 - Tant que la destruction n'est pas définie comme école ou mécanique distincte, ce modificateur reste disponible mais n'est pas appliqué aux sorts feu/eau/vent/terre/glace/foudre/nature/lumière/démoniaque.
 - Tests de règles raciales inclus dans la suite gameplay ; voir [CI #43727639311](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727639311).
+
+
+## Progression d'arme — Protection contre les événements rejoués
+
+- Le service serveur de maîtrise exige maintenant un identifiant d'événement d'attaque valide.
+- Les 1 000 derniers événements traités sont conservés dans la progression ; un même événement rejoué ne donne pas une deuxième récompense et n'incrémente pas les utilisations.
+- Le journal d'événements est nettoyé et limité lors de la lecture des sauvegardes.
+- Test ajouté : rejouer exactement le même événement ne double ni l'XP ni le compteur d'utilisations.
+- Les tests unitaires de la CI [#43727777031](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43727777031) ont réussi ; Chromium était encore en cours d'installation au moment de cette note.
+- L'identifiant doit être généré par la couche de combat serveur de confiance ; cette protection ne rend pas sûr un endpoint qui accepterait aveuglément un identifiant fourni par le client.
