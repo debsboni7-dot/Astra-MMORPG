@@ -85,7 +85,7 @@ The repository currently contains the editor generators, but not their generated
 
 1. Import the Unity project and let Package Manager resolve the pinned packages.
 2. Run **ASTREA > Rendering > Generate and activate URP asset**.
-3. Run **ASTREA > Scene > Build Starter Plains Scene** to create and save the playable scene. A rigged player model must first be imported at `Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx`; without it the builder deliberately creates the environment and HUD without a player.
+3. Run **ASTREA > World > Build Starter Plains Scene** to create and save the playable scene. A rigged player model must first be imported at `Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx`; without it the builder deliberately creates the environment and HUD without a player.
 4. Import actual Mixamo clips into `Assets/Art/Animations/Mixamo/`, then run **ASTREA > Animation > Build Starter Animator Controller**.
 5. Run **ASTREA > VFX > Create Starter VFX Library** to generate the ten editable particle prefabs and their material assets.
 6. Add `AnimationEvent_ApplyMeleeHit` to the real contact frame of each melee clip, then test combat, camera, mobile input and VFX in Play Mode and on Android.
