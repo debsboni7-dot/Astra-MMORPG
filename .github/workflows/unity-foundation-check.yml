@@ -39,6 +39,8 @@ jobs:
           required = [
               "Assets/Scripts/Armor/AstreaArmorSlot.cs",
               "Assets/Scripts/Character/AstreaThirdPersonController.cs",
+              "Assets/Scripts/UI/AstreaVirtualJoystick.cs",
+              "Assets/Scripts/UI/AstreaTouchLookArea.cs",
               "Assets/Editor/AstreaUrpSetup.cs",
               "Assets/Editor/AstreaArmorModelPostprocessor.cs",
               "README.md",
