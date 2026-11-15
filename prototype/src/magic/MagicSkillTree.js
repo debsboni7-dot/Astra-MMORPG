@@ -24,7 +24,8 @@ export const MAGIC_RACE_RULES = Object.freeze({
   demon: Object.freeze({ allowed: MAGIC_SCHOOLS.filter(s => !['light', 'nature'].includes(s)), bonuses: { demonic: 1.20 } }),
   angel: Object.freeze({ allowed: MAGIC_SCHOOLS.filter(s => s !== 'demonic'), bonuses: { light: 1.20 } }),
   orc: Object.freeze({ allowed: MAGIC_SCHOOLS.filter(s => !['light', 'nature'].includes(s)), bonuses: { fire: 1.14 }, physicalStrength: 1.14 }),
-  // Destruction affinity is reserved for a dedicated destruction mechanic; it is not a bonus to every current school.
+  // Canonical race ID follows the GDD; keep the earlier spelling as a save-compatibility alias.
+  dragonoid: Object.freeze({ allowed: MAGIC_SCHOOLS, bonuses: {}, destructionMagic: 1.15 }),
   draconoid: Object.freeze({ allowed: MAGIC_SCHOOLS, bonuses: {}, destructionMagic: 1.15 }),
 });
 
