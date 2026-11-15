@@ -19,6 +19,14 @@
 - Keep texture detail subtle at gameplay camera distance. Large shapes and silhouette must read before micro-detail.
 - Preserve source .blend and PNG maps. FBX is an interchange file for Unity; verify material links after import.
 
+## World surface library
+- AstreaGrass: muted green grass, low saturation for readable player silhouettes.
+- AstreaSoil: warm brown earth for paths and cultivated fields.
+- VanForestFloor: deep green-brown forest ground.
+- BurgSandstone: sun-warmed ochre stone for desert architecture and cliffs.
+- NoirSlate: cool charcoal stone for high-difficulty regions.
+- Each surface is generated as a seamless 512px Base Color, Metallic/Roughness and Normal texture set. These are source maps; Unity terrain/material assignment and in-scene tuning remain required.
+
 ## World and lighting targets
 - Starter continent Astrea: open grassy plains, soft blue sky, warm sunlight, distant hills and sparse landmarks.
 - Prefer baked lighting for static architecture where possible; reserve real-time shadows for the player and nearby moving actors on mobile.
