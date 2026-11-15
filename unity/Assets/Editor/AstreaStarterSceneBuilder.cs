@@ -154,6 +154,26 @@ namespace Astrea.EditorTools
             textRect.anchorMax = Vector2.one;
             textRect.offsetMin = Vector2.zero;
             textRect.offsetMax = Vector2.zero;
+
+            var attackObject = CreateUiImage("Attack Button", canvasObject.transform,
+                new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-285f, 145f), new Vector2(112f, 112f),
+                new Color(0.62f, 0.18f, 0.16f, 0.88f), true);
+            var attackButton = attackObject.AddComponent<Button>();
+            attackButton.targetGraphic = attackObject.GetComponent<Image>();
+            attackButton.onClick.AddListener(binder.RequestAttack);
+            var attackTextObject = new GameObject("Attack Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            attackTextObject.transform.SetParent(attackObject.transform, false);
+            var attackText = attackTextObject.GetComponent<Text>();
+            attackText.text = "ATTACK";
+            attackText.alignment = TextAnchor.MiddleCenter;
+            attackText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            attackText.color = Color.white;
+            attackText.fontSize = 19;
+            var attackTextRect = attackTextObject.GetComponent<RectTransform>();
+            attackTextRect.anchorMin = Vector2.zero;
+            attackTextRect.anchorMax = Vector2.one;
+            attackTextRect.offsetMin = Vector2.zero;
+            attackTextRect.offsetMax = Vector2.zero;
         }
 
         private static GameObject CreateUiImage(string name, Transform parent, Vector2 anchorMin,
