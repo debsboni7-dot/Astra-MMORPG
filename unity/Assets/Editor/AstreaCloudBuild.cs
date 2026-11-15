@@ -28,6 +28,10 @@ namespace Astrea.EditorTools
         public static void BuildAndroid()
         {
             GenerateStarterAssets();
+            const string playerModel = "Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(playerModel) == null)
+                throw new Exception("Android build stopped: humanoid FBX is missing at " + playerModel +
+                    ". Generate/import the character before building a playable APK.");
             string[] scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
             if (scenes.Length == 0)
                 throw new Exception("No enabled scenes in Build Settings.");
