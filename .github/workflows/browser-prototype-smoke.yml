@@ -2,7 +2,7 @@ name: Browser prototype smoke tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/blender-unreal-cloud-pipeline]
   pull_request:
     branches: [main]
   workflow_dispatch:
