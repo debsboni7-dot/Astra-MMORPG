@@ -1,4 +1,5 @@
 using Astrea.Character;
+using Astrea.Combat;
 using UnityEngine;
 
 namespace Astrea.UI
@@ -9,6 +10,7 @@ namespace Astrea.UI
         [SerializeField] private AstreaVirtualJoystick joystick;
         [SerializeField] private AstreaTouchLookArea lookArea;
         [SerializeField] private Transform cameraPivot;
+        private AstreaCombatController combatController;
 
         private AstreaThirdPersonController controller;
 
@@ -34,6 +36,7 @@ namespace Astrea.UI
         {
             controller = FindObjectOfType<AstreaThirdPersonController>();
             if (controller == null) return;
+            combatController = controller.GetComponent<AstreaCombatController>();
 
             if (cameraPivot != null)
             {
