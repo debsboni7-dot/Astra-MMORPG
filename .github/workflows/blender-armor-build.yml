@@ -17,11 +17,12 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Install Blender and headless rendering dependencies
+      - name: Install Blender and FBX conversion utility
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0 python3-numpy
+          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0 python3-numpy assimp-utils
           blender --version
+          assimp version
       - name: Generate eight modular armor pieces
         env:
           ASTREA_OUTPUT_DIR: ${{ github.workspace }}/build/astrea-armor
@@ -29,7 +30,19 @@ jobs:
         run: |
           mkdir -p "$ASTREA_OUTPUT_DIR"
           blender -b --python blender-workbench/build_armor.py
-      - name: Validate Blender deliverables
+      - name: Convert GLB armor to Unity FBX
+        run: |
+          assimp export build/astrea-armor/astrea-modular-armor.glb build/astrea-armor/astrea-modular-armor.fbx -f fbx
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report_path = Path("build/astrea-armor/build-report.json")
+          report = json.loads(report_path.read_text())
+          report["formats"].append("fbx")
+          report["fbx_export"] = "Assimp conversion from validated GLB"
+          report_path.write_text(json.dumps(report, indent=2) + "\n")
+          PY
+      - name: Validate Blender deliverables and Unity FBX
         run: |
           test -s build/astrea-armor/astrea-modular-armor.blend
           test -s build/astrea-armor/astrea-modular-armor.glb
@@ -41,8 +54,10 @@ jobs:
           assert p["piece_count"] == 8, p
           assert len(p["pieces"]) == 8, p
           assert "fbx" in p["formats"], p
-          print("Validated eight modular armor objects and Unity FBX export")
+          assert p["fbx_export"].startswith("Assimp"), p
+          print("Validated eight modular armor objects and FBX export for Unity.")
           PY
+          assimp info build/astrea-armor/astrea-modular-armor.fbx
       - uses: actions/upload-artifact@v4
         with:
           name: astrea-modular-armor-${{ github.run_number }}
