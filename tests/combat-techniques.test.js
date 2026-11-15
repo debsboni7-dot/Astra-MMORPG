@@ -136,7 +136,6 @@ test('weapon categories produce distinct hit-control signatures', () => {
   const sword = applyWeaponHitProfile(base, 'sword');
   const axe = applyWeaponHitProfile(base, 'axe');
   const hammer = applyWeaponHitProfile(base, 'hammer');
-  const polearm = applyWeaponHitProfile(base, 'polearm');
   assert.ok(sword.staggerMs < axe.staggerMs);
   assert.ok(axe.staggerMs < hammer.staggerMs);
   assert.ok(polearm.knockback > hammer.knockback);
