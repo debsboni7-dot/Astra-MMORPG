@@ -1,4 +1,4 @@
-import { awardWeaponMastery, recordWeaponTechniqueUse, getWeaponProgression, WEAPON_TECHNIQUES } from '../../prototype/src/combat/WeaponProgression.js';
+import { awardWeaponMastery, recordWeaponTechniqueUse, getWeaponProgression, WEAPON_TECHNIQUES, WEAPON_MASTERY_MAX_LEVEL, weaponMasteryXpForLevel } from '../../prototype/src/combat/WeaponProgression.js';
 
 const ATTACK_TYPES = new Set(['light', 'heavy', 'charged', 'finisher', 'special', 'aerial', 'default']);
 const CATEGORIES = new Set(Object.keys(WEAPON_TECHNIQUES));
@@ -12,8 +12,8 @@ function sanitizeProgression(value = {}) {
   for (const category of CATEGORIES) {
     const xp = Number(value.weaponMasteryXpByCategory?.[category]);
     const legacyLevel = Number(value.weaponMasteries?.[category]);
-    if (Number.isFinite(xp) && xp >= 0) clean.weaponMasteryXpByCategory[category] = Math.min(11100, xp);
-    if (Number.isFinite(legacyLevel) && legacyLevel >= 0) clean.weaponMasteries[category] = Math.min(100, Math.floor(legacyLevel));
+    if (Number.isFinite(xp) && xp >= 0) clean.weaponMasteryXpByCategory[category] = Math.min(weaponMasteryXpForLevel(WEAPON_MASTERY_MAX_LEVEL), xp);
+    if (Number.isFinite(legacyLevel) && legacyLevel >= 0) clean.weaponMasteries[category] = Math.min(WEAPON_MASTERY_MAX_LEVEL, Math.floor(legacyLevel));
     const uses = Number(value.weaponUsesByCategory?.[category]);
     if (Number.isFinite(uses) && uses >= 0) clean.weaponUsesByCategory[category] = Math.floor(uses);
   }
