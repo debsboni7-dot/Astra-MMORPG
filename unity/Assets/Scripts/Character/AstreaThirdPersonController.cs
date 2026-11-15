@@ -20,6 +20,10 @@ namespace Astrea.Character
         private float verticalVelocity;
         private bool jumpRequested;
 
+        public Vector3 PlanarVelocity { get; private set; }
+        public float VerticalSpeed => verticalVelocity;
+        public bool IsGrounded => characterController != null && characterController.isGrounded;
+
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
@@ -45,6 +49,7 @@ namespace Astrea.Character
 
             verticalVelocity += gravity * Time.deltaTime;
             Vector3 velocity = direction * moveSpeed;
+            PlanarVelocity = direction * moveSpeed;
             velocity.y = verticalVelocity;
             characterController.Move(velocity * Time.deltaTime);
 
