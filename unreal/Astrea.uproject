@@ -2,14 +2,7 @@
   "FileVersion": 3,
   "EngineAssociation": "5.4",
   "Category": "Games",
-  "Description": "ASTREA MMORPG Unreal Engine scaffold",
-  "Modules": [
-    {
-      "Name": "Astrea",
-      "Type": "Runtime",
-      "LoadingPhase": "Default"
-    }
-  ],
+  "Description": "ASTREA MMORPG content project scaffold",
   "Plugins": [
     {
       "Name": "PythonScriptPlugin",
