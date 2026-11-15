@@ -101,6 +101,7 @@ test('equipped weapon supplies power, category and per-category usage tracking',
 test('unequipping a weapon restores unarmed attack and invalid definitions are rejected', () => {
   const player = createCombatant({ physicalStrength: 50, weaponMastery: 5 });
   assert.equal(equipWeapon(player, { id: 'bad', category: 'wand' }).reason, 'invalid-weapon-definition');
+  assert.equal(equipWeapon(player, { id: 'spear', category: 'polearm', requiredStrength: 1, requiredMastery: 0 }).reason, 'invalid-weapon-definition');
   equipWeapon(player, { id: 'sword', category: 'sword', requiredStrength: 1, requiredMastery: 1 });
   assert.equal(equipWeapon(player, null).equipped, true);
   assert.equal(player.weapon, null);
