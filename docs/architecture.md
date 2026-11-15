@@ -135,3 +135,64 @@ Les budgets chiffrés (FPS, mémoire, draw calls, taille de téléchargement) se
 
 ---
 **Statut de sortie :** proposition prête pour revue. La mise en œuvre technique et le choix final du protocole sont volontairement réservés à la phase de développement.
+
+
+## 11. Audit du dépôt et décisions de phase 3
+Audit documentaire du dépôt `feat/blender-unreal-cloud-pipeline`, 15 novembre 2026.
+
+### 11.1 Éléments réellement présents
+- Client 3D : projet Unity 6.3 LTS, URP 17.3.0, Input System, Cinemachine, Animation Rigging et Addressables déclarés dans le manifeste.
+- Backend : application Node.js en modules ES, Node.js >=22, démarrage par `server/index.js`.
+- API : serveur HTTP versionné sous `/v1`, services séparés par responsabilités (authentification, personnages, progression, combat magique).
+- Données : dépendance PostgreSQL `pg`, repository SQL et quatre migrations de compte/session, personnage/progression d'armes, progression magique et état de combat magique.
+- Sécurité déjà décrite dans le serveur : mots de passe scrypt + sel, jetons de session opaques dont seul le SHA-256 est stocké, rattachement des personnages au compte authentifié, progression accordée par les services internes.
+- CI : tests Node et tests navigateur existent dans les scripts racine.
+
+### 11.2 Limites constatées
+- Le backend ne constitue pas un serveur de simulation MMORPG temps réel.
+- Le service de combat magique indique que les cibles offensives nécessitent encore un résolveur appartenant au serveur de monde ; il refuse ces cibles tant que ce composant n'est pas branché.
+- Le prototype navigateur n'est pas encore relié aux routes du backend, d'après le README serveur.
+- Aucun protocole temps réel, système de zones, transfert entre zones, déploiement de production, sauvegarde restaurable ou capacité simultanée n'est validé par cet audit.
+- La présence de dépendances Unity dans le manifeste ne prouve pas qu'une compilation Unity ou un build Android a été exécuté.
+- La disponibilité d'une base PostgreSQL dans un environnement de test n'est pas prouvée par le seul code du repository.
+
+### 11.3 Décisions de conception retenues pour le prototype
+1. Garder Unity comme client 3D principal et préserver le prototype navigateur pendant la transition.
+2. Garder Node.js comme backend applicatif et PostgreSQL comme stockage persistant candidat.
+3. Organiser le backend en monolithe modulaire. Ne pas créer un microservice par domaine avant d'avoir une mesure qui justifie cette séparation.
+4. Garder le serveur autoritaire pour identité, combat, progression, inventaire et économie. Le client transmet des intentions, jamais des résultats de jeu à valider aveuglément.
+5. Ne pas choisir encore le protocole de simulation temps réel. Comparer les options lors d'un prototype réseau à deux clients, avec mesure de latence, fréquence d'updates, pertes et charge CPU.
+6. Ne pas engager d'hébergement payant. Les essais utilisent un environnement local ou cloud gratuit, réversible et sans données de production ; toute dépense future nécessitera l'accord explicite du créateur.
+7. Dimensionner d'abord sur un test reproductible à deux clients, puis 10, 25 et 50 si les résultats le permettent. Le million de comptes inscrits reste un objectif distinct du nombre de joueurs simultanés.
+
+### 11.4 Schéma logique de référence
+```mermaid
+flowchart TD
+  U[Unity client Android / PC] -->|HTTPS API v1| API[Node.js modular backend]
+  W[Browser prototype] -->|HTTPS API v1, après intégration| API
+  API --> AUTH[Auth and account services]
+  API --> CHAR[Character and progression services]
+  API --> GAME[Game rules and combat services]
+  AUTH --> PG[(PostgreSQL)]
+  CHAR --> PG
+  GAME --> PG
+  GAME -. "future authoritative realtime simulation" .-> RT[World simulation service]
+  RT -. "snapshot / durable events" .-> PG
+  RT -. "state updates" .-> U
+  RT -. "state updates, future" .-> W
+```
+
+Ce schéma décrit une cible logique et des intégrations futures ; les flèches pointillées ne sont pas des fonctions actuellement déployées.
+
+### 11.5 Critères de sortie de la phase 3
+- [x] Client Unity, backend Node.js et stockage PostgreSQL candidat identifiés.
+- [x] Frontières initiales des responsabilités et autorité serveur documentées.
+- [x] Architecture simple de prototype retenue, sans microservices prématurés.
+- [x] Contraintes de coût et interdiction de dépense sans accord documentées.
+- [ ] Protocole temps réel choisi après prototype comparatif à deux clients.
+- [ ] Connexion réelle du client Unity à l'API et test d'authentification.
+- [ ] Test de persistance PostgreSQL, redémarrage et restauration.
+- [ ] Démonstration réseau à deux clients avec serveur autoritaire.
+- [ ] Mesures reproductibles de latence, charge et synchronisation.
+
+**Statut de phase :** architecture logique initiale définie et auditée ; phase 3 non entièrement validée tant que les tests d'intégration et le prototype réseau ne sont pas passés. Les éléments cochés sont des décisions documentées, pas des validations d'infrastructure de production.
