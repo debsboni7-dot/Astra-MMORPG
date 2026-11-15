@@ -5,17 +5,65 @@ OUT=os.environ.get("ASTREA_OUTPUT_DIR", os.path.abspath("build/astrea-armor"))
 os.makedirs(OUT, exist_ok=True)
 bpy.ops.object.select_all(action="SELECT"); bpy.ops.object.delete(use_global=False)
 
-def material(name, color, metallic=0.65, roughness=0.28):
+def texture_set(key, color, metallic, roughness, grain=0.08):
+    """Create compact, tileable PBR maps with subtle forged/grained surface detail."""
+    folder=os.path.join(OUT,"textures"); os.makedirs(folder,exist_ok=True)
+    size=512
+    base=bpy.data.images.new("ASTREA_"+key+"_BaseColor",width=size,height=size,alpha=True)
+    orm=bpy.data.images.new("ASTREA_"+key+"_MetallicRoughness",width=size,height=size,alpha=True)
+    normal=bpy.data.images.new("ASTREA_"+key+"_Normal",width=size,height=size,alpha=True)
+    base_pixels=[]; orm_pixels=[]; normal_pixels=[]
+    seed=sum(ord(ch) for ch in key)
+    for y in range(size):
+        v=y/size
+        for x in range(size):
+            u=x/size
+            n=(math.sin((u*37+seed)*6.283)*math.sin((v*29+seed*.17)*6.283)
+               +.45*math.sin((u*113+v*71+seed)*6.283)
+               +.2*math.cos((u*211-v*173+seed*.31)*6.283))/1.65
+            scratch=math.sin((u*size*0.72+v*size*0.035+seed)*6.283)
+            variation=1.0+grain*(n*.55+scratch*.12)
+            base_pixels.extend((max(0,min(1,color[0]*variation)),
+                                max(0,min(1,color[1]*variation)),
+                                max(0,min(1,color[2]*variation)),1.0))
+            r=max(0,min(1,roughness+n*grain*.22))
+            m=max(0,min(1,metallic))
+            orm_pixels.extend((0.0,r,m,1.0))
+            nx=max(0,min(1,.5+n*.025)); ny=max(0,min(1,.5+scratch*.012))
+            normal_pixels.extend((nx,ny,1.0,1.0))
+    for img,pixels,suffix in ((base,base_pixels,"BaseColor"),(orm,orm_pixels,"MetallicRoughness"),(normal,normal_pixels,"Normal")):
+        img.pixels.foreach_set(pixels)
+        img.file_format="PNG"
+        img.filepath_raw=os.path.join(folder,f"ASTREA_{key}_{suffix}.png")
+        img.save()
+        img.pack()
+    base.colorspace_settings.name="sRGB"
+    orm.colorspace_settings.name="Non-Color"
+    normal.colorspace_settings.name="Non-Color"
+    return base,orm,normal
+
+def material(name, color, metallic=0.65, roughness=0.28, texture_key="Steel"):
     m=bpy.data.materials.new(name); m.diffuse_color=(*color,1); m.use_nodes=True
-    p=m.node_tree.nodes.get("Principled BSDF")
-    p.inputs["Base Color"].default_value=(*color,1)
-    p.inputs["Metallic"].default_value=metallic; p.inputs["Roughness"].default_value=roughness
+    nodes=m.node_tree.nodes; links=m.node_tree.links
+    p=nodes.get("Principled BSDF")
+    base,orm,normal=texture_set(texture_key,color,metallic,roughness,0.07 if metallic>.3 else 0.12)
+    tex=nodes.new("ShaderNodeTexImage"); tex.image=base; tex.label="ASTREA baked base color"
+    links.new(tex.outputs["Color"],p.inputs["Base Color"])
+    packed=nodes.new("ShaderNodeTexImage"); packed.image=orm; packed.label="ASTREA metallic / roughness"
+    links.new(packed.outputs["Color"],p.inputs["Metallic"])
+    links.new(packed.outputs["Color"],p.inputs["Roughness"])
+    ntex=nodes.new("ShaderNodeTexImage"); ntex.image=normal; ntex.label="ASTREA subtle surface normal"
+    ntex.image.colorspace_settings.name="Non-Color"
+    bump=nodes.new("ShaderNodeBump"); bump.inputs["Strength"].default_value=.12; bump.inputs["Distance"].default_value=.018
+    links.new(ntex.outputs["Color"],bump.inputs["Normal"]); links.new(bump.outputs["Normal"],p.inputs["Normal"])
+    p.inputs["Metallic"].default_value=metallic
+    p.inputs["Roughness"].default_value=roughness
     return m
-steel=material("ASTREA | Tempered midnight steel",(.105,.16,.22),.82,.24)
-silver=material("ASTREA | Bright forged edges",(.55,.64,.69),.9,.2)
-gold=material("ASTREA | Engraved antique gold",(.62,.36,.105),.78,.25)
-leather=material("ASTREA | Dark oxblood leather",(.105,.025,.018),.08,.52)
-blue=material("ASTREA | Sapphire enamel",(.025,.13,.32),.55,.19)
+steel=material("ASTREA | Tempered midnight steel",(.105,.16,.22),.82,.24,"MidnightSteel")
+silver=material("ASTREA | Bright forged edges",(.55,.64,.69),.9,.2,"ForgedSilver")
+gold=material("ASTREA | Engraved antique gold",(.62,.36,.105),.78,.25,"AntiqueGold")
+leather=material("ASTREA | Dark oxblood leather",(.105,.025,.018),.08,.52,"OxbloodLeather")
+blue=material("ASTREA | Sapphire enamel",(.025,.13,.32),.55,.19,"SapphireEnamel")
 
 def finish(o, name, mat):
     o.name=name; o.data.materials.append(mat)
