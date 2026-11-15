@@ -41,7 +41,7 @@ export function createCombatant(config = {}) {
 }
 
 
-const WEAPON_CATEGORIES = new Set(['sword', 'axe', 'hammer', 'polearm']);
+const WEAPON_CATEGORIES = new Set(['sword', 'axe', 'hammer']);
 
 export function equipWeapon(combatant, weapon) {
   if (!combatant) throw new Error('A combatant is required.');
