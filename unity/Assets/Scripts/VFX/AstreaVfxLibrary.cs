@@ -21,8 +21,8 @@ namespace Astrea.VFX
         [SerializeField] private EffectEntry[] effects;
         [SerializeField, Min(1)] private int maxPerEffect = 24;
         private readonly Dictionary<string, Queue<ParticleSystem>> pools = new Dictionary<string, Queue<ParticleSystem>>();
-        private readonly Dictionary<ParticleSystem, string> active = new Dictionary<ParticleSystem, string>();
         private readonly Dictionary<string, ParticleSystem> prefabs = new Dictionary<string, ParticleSystem>();
+        private readonly Dictionary<string, int> instanceCounts = new Dictionary<string, int>();
 
         private void Awake()
         {
@@ -34,8 +34,12 @@ namespace Astrea.VFX
                 prefabs.Add(entry.key, entry.prefab);
                 var pool = new Queue<ParticleSystem>();
                 pools.Add(entry.key, pool);
+                instanceCounts.Add(entry.key, 0);
                 for (int i = 0; i < entry.prewarm && pool.Count < maxPerEffect; i++)
-                    pool.Enqueue(Create(entry.prefab));
+                {
+                    var prewarmed = Create(entry.prefab, entry.key);
+                    if (prewarmed != null) pool.Enqueue(prewarmed);
+                }
             }
         }
 
@@ -44,21 +48,28 @@ namespace Astrea.VFX
             if (!prefabs.TryGetValue(key, out var prefab) || !pools.TryGetValue(key, out var pool))
                 return false;
 
-            ParticleSystem instance = pool.Count > 0 ? pool.Dequeue() : Create(prefab);
+            ParticleSystem instance;
+            if (pool.Count > 0)
+                instance = pool.Dequeue();
+            else if (instanceCounts[key] < maxPerEffect)
+                instance = Create(prefab, key);
+            else
+                return false; // Respect the per-effect cap instead of allocating without a limit.
             if (instance == null) return false;
             instance.transform.SetPositionAndRotation(position, rotation);
             instance.transform.localScale = Vector3.one * Mathf.Max(0.01f, scale);
             instance.gameObject.SetActive(true);
             instance.Clear(true);
             instance.Play(true);
-            active[instance] = key;
             StartCoroutine(ReturnWhenFinished(instance, key));
             return true;
         }
 
-        private ParticleSystem Create(ParticleSystem prefab)
+        private ParticleSystem Create(ParticleSystem prefab, string key)
         {
             var instance = Instantiate(prefab, transform);
+            if (instance == null) return null;
+            instanceCounts[key]++;
             instance.gameObject.SetActive(false);
             return instance;
         }
@@ -68,13 +79,15 @@ namespace Astrea.VFX
             while (instance != null && instance.IsAlive(true))
                 yield return null;
             if (instance == null) yield break;
-            active.Remove(instance);
             instance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             instance.gameObject.SetActive(false);
             if (pools.TryGetValue(key, out var pool) && pool.Count < maxPerEffect)
                 pool.Enqueue(instance);
             else
+            {
+                instanceCounts[key] = Mathf.Max(0, instanceCounts[key] - 1);
                 Destroy(instance.gameObject);
+            }
         }
     }
 }
