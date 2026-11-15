@@ -179,6 +179,25 @@ jobs:
             echo "- Crédits consommés (texture) : $(jq -r '.consumed_credits // "inconnu"' <<< "$refine_task_json")"
           } | tee output/ASTREA_Humanoid_Meshy6/README.txt
 
+      - name: Convert humanoid to Unity FBX
+        run: |
+          set -euo pipefail
+          assimp export output/ASTREA_Humanoid_Meshy6/ASTREA_Humanoid_Meshy6.glb output/ASTREA_Humanoid_Meshy6/ASTREA_Humanoid_Meshy6.fbx -f fbx
+          assimp info output/ASTREA_Humanoid_Meshy6/ASTREA_Humanoid_Meshy6.fbx
+          mkdir -p unity/Assets/Art/Characters
+          cp output/ASTREA_Humanoid_Meshy6/ASTREA_Humanoid_Meshy6.fbx unity/Assets/Art/Characters/ASTREA_Humanoid_Meshy6.fbx
+          if [[ -f output/ASTREA_Humanoid_Meshy6/preview.png ]]; then
+            cp output/ASTREA_Humanoid_Meshy6/preview.png unity/Assets/Art/Characters/ASTREA_Humanoid_Meshy6_Preview.png
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/Assets/Art/Characters/
+          if ! git diff --cached --quiet; then
+            git commit -m "Integrate generated ASTREA humanoid FBX"
+            git pull --rebase -X theirs origin "$GITHUB_REF_NAME"
+            git push
+          fi
+
       - name: Upload generated 3D asset
         uses: actions/upload-artifact@v4
         with:
