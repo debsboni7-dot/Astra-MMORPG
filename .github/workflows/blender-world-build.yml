@@ -1,5 +1,9 @@
 name: ASTREA starter world environment build
 
+concurrency:
+  group: astrea-art-build-${{ github.ref }}
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
   push:
