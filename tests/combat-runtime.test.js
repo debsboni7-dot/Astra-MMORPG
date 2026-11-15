@@ -180,3 +180,15 @@ test('magic attacks do not increase physical weapon mastery', () => {
   assert.equal(player.weaponUses, 0);
   assert.equal(player.weaponMasteryXpByCategory.sword, undefined);
 });
+
+
+test('weapon mastery uses the approved 1000-level ceiling', async () => {
+  const { WEAPON_MASTERY_MAX_LEVEL, weaponMasteryXpForLevel, getWeaponMasteryFromXp } = await import('../prototype/src/combat/WeaponProgression.js');
+  assert.equal(WEAPON_MASTERY_MAX_LEVEL, 1000);
+  const maxXp = weaponMasteryXpForLevel(1000);
+  assert.equal(maxXp, 1011000);
+  const mastery = getWeaponMasteryFromXp(maxXp + 500);
+  assert.equal(mastery.level, 1000);
+  assert.equal(mastery.maxLevel, 1000);
+  assert.equal(mastery.progress, 1);
+});
