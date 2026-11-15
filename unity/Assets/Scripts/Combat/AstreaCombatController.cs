@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Astrea.VFX;
 
 namespace Astrea.Combat
 {
@@ -13,6 +14,8 @@ namespace Astrea.Combat
         [SerializeField, Min(0.05f)] private float attackCooldown = 0.65f;
         [SerializeField] private LayerMask targetLayers = ~0;
         [SerializeField] private Animator animator;
+        [SerializeField] private string impactVfxKey = "melee_impact";
+        private AstreaVfxLibrary vfxLibrary;
 
         private readonly Collider[] hitBuffer = new Collider[16];
         private readonly HashSet<int> damagedThisSwing = new HashSet<int>();
@@ -21,6 +24,7 @@ namespace Astrea.Combat
         private void Awake()
         {
             if (animator == null) animator = GetComponentInChildren<Animator>();
+            vfxLibrary = GetComponentInChildren<AstreaVfxLibrary>();
         }
 
         public bool CanAttack => Time.time >= nextAttackTime;
@@ -57,6 +61,8 @@ namespace Astrea.Combat
                 int targetId = hit.transform.root.GetInstanceID();
                 if (!damagedThisSwing.Add(targetId)) continue;
                 damageable.ReceiveDamage(baseDamage, transform);
+                Vector3 impactPoint = hit.ClosestPoint(center);
+                if (vfxLibrary != null) vfxLibrary.Play(impactVfxKey, impactPoint, Quaternion.LookRotation(direction));
             }
         }
 
