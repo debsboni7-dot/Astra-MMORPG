@@ -1,5 +1,5 @@
 # ASTREA — Game Design Document (GDD)
-Version 0.3 — 15 novembre 2026
+Version 0.4 — 15 novembre 2026
 Statut : première base consolidée, **brouillon à valider**. Les points non décidés sont signalés comme tels.
 
 ## 0. Contrôle du document
