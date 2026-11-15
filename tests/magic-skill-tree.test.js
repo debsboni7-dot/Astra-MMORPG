@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MAGIC_SCHOOLS, MAGIC_BRANCHES, MAGIC_RACE_RULES, createMagicProgression,
   sanitizeMagicProgression, getMagicSkillTree, getMagicSkillDefinition,
-  recordMagicSkillUse, equipMagicTechnique, getMagicSchoolLevel, getMagicCastMultiplier, getMagicRaceStatModifiers,
+  recordMagicSkillUse, equipMagicTechnique, getMagicSchoolLevel, getMagicCastMultiplier, getMagicRaceStatModifiers, getMagicDestructionModifier,
 } from '../prototype/src/magic/MagicSkillTree.js';
 
 test('only the nine approved magic schools exist', () => {
@@ -35,7 +35,10 @@ test('race restrictions and affinities follow ASTREA rules', () => {
   assert.equal(getMagicCastMultiplier('orc','nature'), 0);
   assert.equal(getMagicCastMultiplier('dwarf','fire'), 1);
   assert.equal(getMagicCastMultiplier('dwarf','nature'), 0);
-  assert.equal(getMagicCastMultiplier('draconoid','fire','offense'), 1.15);
+  assert.equal(getMagicCastMultiplier('draconoid','fire','offense'), 1);
+  assert.equal(getMagicCastMultiplier('draconoid','demonic','offense'), 1);
+  assert.equal(getMagicDestructionModifier('draconoid'), 1.15);
+  assert.equal(getMagicDestructionModifier('human'), 1);
   assert.equal(getMagicCastMultiplier('human','demonic'), 1);
   assert.equal(getMagicRaceStatModifiers('orc').physicalStrength,1.14);
   assert.equal(getMagicRaceStatModifiers('dwarf').defense,1.15);
