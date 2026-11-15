@@ -22,7 +22,7 @@ After the first import:
 ## Current client foundations
 
 - AstreaThirdPersonController: keyboard movement plus public joystick, touch-look and jump methods.
-- AstreaVirtualJoystick and AstreaTouchLookArea: touch input components for mobile movement and camera look. Connect their callbacks to the controller from a scene-level UI binder.
+- AstreaVirtualJoystick, AstreaTouchLookArea and AstreaMobileInputBinder: touch movement, camera look and jump wiring for the generated starter-scene HUD. The scene builder creates the HUD automatically; it binds when a player prefab with AstreaThirdPersonController is present.
 - AstreaGraphicsProfile: a conservative daylight, fog, ambient-light and mobile-shadow baseline for a scene bootstrap object.
 - AstreaArmorLoadout: eight independent attachment slots for chest, back, left/right shoulders, left/right forearms, waist and legs.
 - Assets/Editor/AstreaUrpSetup.cs: editor utility to create and activate a URP asset.
