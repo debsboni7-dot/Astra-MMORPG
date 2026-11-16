@@ -41,6 +41,11 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run server and gameplay unit tests
         run: npm test
+      - name: Verify PostgreSQL backup and restore
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          bash scripts/test-postgres-backup-restore.sh
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Test mobile and desktop browser prototype
