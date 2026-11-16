@@ -71,6 +71,7 @@ function decodeClientFrames(buffer, onFrame) {
 export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
   const tickets = new Map();
   const rooms = new Map();
+  const sockets = new Set();
   let serverTick = 0;
 
   function issueTicket({ accountId, characterId, sessionId, playerId }) {
@@ -257,6 +258,7 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
       '\r\n',
     ].join('\r\n'));
 
+    sockets.add(socket);
     const connection = { socket, authenticated: false, player: null, room: null, buffer: Buffer.alloc(0), authTimer: null };
     connection.authTimer = setTimeout(() => {
       if (connection.authenticated || socket.destroyed) return;
@@ -290,10 +292,12 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
       }
     });
     socket.on('close', () => {
+      sockets.delete(socket);
       clearTimeout(connection.authTimer);
       if (connection.player?.socket === socket) connection.player.socket = null;
     });
     socket.on('error', () => {
+      sockets.delete(socket);
       clearTimeout(connection.authTimer);
       if (connection.player?.socket === socket) connection.player.socket = null;
     });
@@ -307,6 +311,10 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
       if (!httpServer || typeof httpServer.on !== 'function' || typeof httpServer.off !== 'function') throw new TypeError('A Node HTTP server is required');
       httpServer.on('upgrade', handleUpgrade);
       return () => httpServer.off('upgrade', handleUpgrade);
+    },
+    destroyConnections() {
+      for (const socket of sockets) socket.destroy();
+      sockets.clear();
     },
     get address() { return server.address(); },
     close() { return new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())); },
