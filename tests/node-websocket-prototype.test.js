@@ -147,6 +147,18 @@ test('duplicate and out-of-order input sequences cannot change player state', as
   });
 });
 
+test('diagonal movement is normalized to the same maximum speed', async () => {
+  await withRealtimeServer(async ({ connect, issueTicket }) => {
+    const client = connect(ticket(issueTicket, 'player-diagonal'));
+    await client.authenticate();
+    client.send({ version: 1, type: 'INPUT', sequence: 1, payload: { x: 1, z: 1 } });
+    const snapshot = await client.waitFor(message => message.type === 'SNAPSHOT' && message.serverTick === 1);
+    const position = snapshot.players[0].position;
+    assert.ok(Math.abs(position.x - position.z) < 1e-10);
+    assert.ok(Math.abs(Math.hypot(position.x, position.z) - 0.2) < 1e-10);
+  });
+});
+
 test('server limits movement input to 20 messages per second', async () => {
   await withRealtimeServer(async ({ connect, issueTicket }) => {
     const client = connect(ticket(issueTicket, 'player-rate'));
@@ -158,7 +170,7 @@ test('server limits movement input to 20 messages per second', async () => {
     assert.equal(rejected.sequence, 21);
     const latest = [...client.messages].reverse().find(message => message.type === 'SNAPSHOT');
     assert.equal(latest.serverTick, 20);
-    assert.deepEqual(latest.players[0].position, { x: 4, z: 0 });
+    assert.deepEqual(latest.players[0].position, { x: 0.2, z: 0 });
   }, { now: () => 1000 });
 });
 
