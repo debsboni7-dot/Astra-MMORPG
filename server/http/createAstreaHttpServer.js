@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
 
 const MAX_BODY_BYTES = 16 * 1024;
 function send(response, status, body, extraHeaders = {}) {
@@ -20,7 +21,7 @@ function bearer(request) {
   return match?.[1] || null;
 }
 
-export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null, realtimeTicketService = null, authRateLimitLimit = 10, authRateLimitWindowMs = 60_000 }) {
+export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null, realtimeTicketService = null, fishNetJoinTicketService = null, realtimeServerSecret = null, authRateLimitLimit = 10, authRateLimitWindowMs = 60_000 }) {
   if (!authService || !characterService || !progressionService) throw new TypeError('Auth, character and progression services are required');
   if (!Number.isInteger(authRateLimitLimit) || authRateLimitLimit < 1 || !Number.isInteger(authRateLimitWindowMs) || authRateLimitWindowMs < 1) throw new TypeError('Auth rate-limit settings must be positive integers');
   const authRateBuckets = new Map();
@@ -49,6 +50,32 @@ export function createAstreaHttpServer({ authService, characterService, progress
       if (request.method === 'POST' && url.pathname === '/v1/auth/login') {
         const session = await authService.login(await readJson(request));
         return send(response, 200, session);
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/realtime/fishnet/tickets') {
+        const account = await authService.authenticate(bearer(request));
+        if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
+        if (!fishNetJoinTicketService) return send(response, 503, { error: 'REALTIME_UNAVAILABLE' });
+        const body = await readJson(request);
+        if (typeof body.characterId !== 'string' || body.characterId.length < 1 || body.characterId.length > 128) {
+          throw new TypeError('Invalid characterId');
+        }
+        const ticket = await fishNetJoinTicketService.issueForCharacter(account.id, body.characterId);
+        return send(response, 201, ticket);
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/internal/realtime/fishnet/consume') {
+        const supplied = request.headers['x-astrea-server-key'];
+        if (typeof realtimeServerSecret !== 'string' || realtimeServerSecret.length < 32
+          || typeof supplied !== 'string'
+          || Buffer.byteLength(supplied) !== Buffer.byteLength(realtimeServerSecret)
+          || !timingSafeEqual(Buffer.from(supplied), Buffer.from(realtimeServerSecret))) {
+          return send(response, 401, { error: 'UNAUTHENTICATED' });
+        }
+        if (!fishNetJoinTicketService) return send(response, 503, { error: 'REALTIME_UNAVAILABLE' });
+        const body = await readJson(request);
+        if (typeof body.ticket !== 'string' || body.ticket.length > 128) throw new TypeError('Invalid ticket');
+        const identity = await fishNetJoinTicketService.consume(body.ticket, body.serverId);
+        if (!identity) return send(response, 401, { error: 'INVALID_OR_EXPIRED_TICKET' });
+        return send(response, 200, { identity });
       }
       if (request.method === 'POST' && url.pathname === '/v1/realtime/tickets') {
         const account = await authService.authenticate(bearer(request));
