@@ -7,6 +7,7 @@ import { createCharacterService } from './characters/CharacterService.js';
 import { createAstreaHttpServer } from './http/createAstreaHttpServer.js';
 import { createNodeWebSocketPrototypeServer } from './realtime/NodeWebSocketPrototypeServer.js';
 import { createRealtimeTicketService } from './realtime/RealtimeTicketService.js';
+import { createFishNetJoinTicketService } from './realtime/FishNetJoinTicketService.js';
 
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 const { Pool } = await import('pg');
@@ -19,7 +20,8 @@ const magicCombatService = createMagicCombatService(repository);
 const characterService = createCharacterService(repository);
 const realtimeServer = createNodeWebSocketPrototypeServer();
 const realtimeTicketService = createRealtimeTicketService({ characterService, realtimeServer });
-const server = createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService, magicCombatService, realtimeTicketService });
+const fishNetJoinTicketService = createFishNetJoinTicketService({ characterService, repository, serverId: process.env.REALTIME_SERVER_ID || 'astrea-prototype-zone-01' });
+const server = createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService, magicCombatService, realtimeTicketService, fishNetJoinTicketService, realtimeServerSecret: process.env.REALTIME_SERVER_SECRET || null });
 realtimeServer.attachTo(server);
 const port = Number(process.env.PORT || 3000);
 server.listen(port, '0.0.0.0', () => process.stdout.write(`ASTREA API listening on :${port}\n`));
