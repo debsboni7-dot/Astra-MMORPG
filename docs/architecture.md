@@ -287,3 +287,11 @@ Le test a été exécuté avec PostgreSQL 16 dans GitHub Actions et l'ensemble d
 - Les tests API de ticket, service de ticket et lecture de personnage sont inclus dans CI ; le workflow du commit `4b10c11c204e1bb1569d958fbd1365994aa3d23c` a réussi intégralement (tests Node, PostgreSQL, sauvegarde/restauration et Chromium desktop/mobile).
 - Un test d'intégration supplémentaire vérifie le passage réel HTTP vers WebSocket sur le même port ; son workflow est encore en cours. Les derniers changements de capacité de tickets et de nettoyage des tickets expirés sont également en attente de validation CI.
 - Limites : salle commune de prototype en mémoire, aucun matchmaking/zone, aucune persistance de session temps réel, aucun client Unity, aucun TLS intégré et aucune mesure réseau réelle. Le ticket n'est pas une session de jeu durable.
+
+
+### 11.17 Microbenchmark local du candidat WebSocket — 16 novembre 2026
+- Le script `scripts/benchmark-realtime-websocket.js` exécute deux clients Node indépendants sur loopback et mesure le délai entre l'envoi d'un INPUT par A et la réception du SNAPSHOT correspondant par B.
+- Il rapporte min/moyenne/p50/p95/p99/max, débit observé, tailles des messages, temps CPU du processus et RSS avant/après.
+- Commande : `npm run benchmark:realtime` (20 échantillons par défaut), avec un nombre optionnel jusqu'à 500.
+- Le workflow CI exécute désormais ce microbenchmark avant Chromium. Le workflow `43821310409` a déjà validé l'intégration HTTP→WebSocket, les tests Node, PostgreSQL, sauvegarde/restauration et Chromium desktop/mobile ; l'exécution du nouveau benchmark sur le dernier commit est en attente.
+- Limites : mesure loopback sur runner CI uniquement ; aucun résultat WAN, Android physique, client Unity, perte/gigue simulée ou capacité concurrente n'est démontré. Ne pas choisir le protocole sur ce seul chiffre.
