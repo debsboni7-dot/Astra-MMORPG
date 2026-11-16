@@ -1,0 +1,159 @@
+name: ASTREA FishNet two-client integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_build:
+        description: "Build and run the licensed Unity FishNet two-client integration test"
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+jobs:
+  fishnet-two-client:
+    if: inputs.confirm_build == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: astrea
+          POSTGRES_DB: astrea
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d astrea"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:astrea@127.0.0.1:5432/astrea
+      ASTREA_API_BASE_URL: http://127.0.0.1:3000
+      REALTIME_SERVER_ID: astrea-prototype-zone-01
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Unity license secret
+        shell: bash
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [[ -z "${UNITY_LICENSE:-}" ]]; then
+            echo "::error::Add the free Unity Personal license file as repository secret UNITY_LICENSE before running this workflow."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Apply PostgreSQL migrations
+        run: node scripts/apply-server-migrations.js
+
+      - name: Generate private server-to-server secret
+        shell: bash
+        run: |
+          echo "REALTIME_SERVER_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "ASTREA_API_BASE_URL=http://127.0.0.1:3000" >> "$GITHUB_ENV"
+          echo "REALTIME_SERVER_ID=astrea-prototype-zone-01" >> "$GITHUB_ENV"
+
+      - name: Start ASTREA Node API
+        shell: bash
+        run: |
+          nohup npm run start:server > /tmp/astrea-api.log 2>&1 &
+          echo $! > /tmp/astrea-api.pid
+          for attempt in {1..40}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/v1/characters || true)
+            if [[ "$status" == "401" ]]; then
+              echo "ASTREA API is ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/astrea-api.log
+          exit 1
+
+      - name: Build FishNet Linux dedicated server and client
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: unity
+          unityVersion: 6000.3.28f1
+          targetPlatform: StandaloneLinux64
+          buildMethod: Astrea.EditorTools.AstreaCloudBuild.BuildFishNetNetworkTestBinaries
+          allowDirtyBuild: true
+          customParameters: -batchmode -nographics
+
+      - name: Prepare two isolated accounts and one-use tickets
+        run: node scripts/prepare-fishnet-integration-test.js
+
+      - name: Start FishNet Linux dedicated server
+        shell: bash
+        run: |
+          chmod +x unity/Build/ASTREA-FishNet-Server/ASTREA.x86_64
+          nohup env ASTREA_API_BASE_URL="$ASTREA_API_BASE_URL" \
+            REALTIME_SERVER_SECRET="$REALTIME_SERVER_SECRET" \
+            REALTIME_SERVER_ID="$REALTIME_SERVER_ID" \
+            ./unity/Build/ASTREA-FishNet-Server/ASTREA.x86_64 \
+            -batchmode -nographics -logFile /tmp/astrea-fishnet-server.log \
+            > /tmp/astrea-fishnet-server-console.log 2>&1 &
+          echo $! > /tmp/astrea-fishnet-server.pid
+          sleep 5
+          if ! kill -0 "$(cat /tmp/astrea-fishnet-server.pid)"; then
+            cat /tmp/astrea-fishnet-server.log || true
+            cat /tmp/astrea-fishnet-server-console.log || true
+            exit 1
+          fi
+
+      - name: Run two FishNet clients and verify remote movement replication
+        shell: bash
+        run: |
+          chmod +x unity/Build/ASTREA-FishNet-Client/ASTREA.x86_64
+          set +e
+          timeout 45s env ASTREA_TEST_JOIN_TICKET="$ASTREA_TEST_JOIN_TICKET_1" \
+            ASTREA_TEST_CLIENT_ID=1 ASTREA_TEST_SERVER_ADDRESS=127.0.0.1 ASTREA_TEST_SERVER_PORT=7770 \
+            ./unity/Build/ASTREA-FishNet-Client/ASTREA.x86_64 \
+            -batchmode -nographics -logFile /tmp/astrea-fishnet-client-1.log \
+            > /tmp/astrea-fishnet-client-1-console.log 2>&1 &
+          client1=$!
+          timeout 45s env ASTREA_TEST_JOIN_TICKET="$ASTREA_TEST_JOIN_TICKET_2" \
+            ASTREA_TEST_CLIENT_ID=2 ASTREA_TEST_SERVER_ADDRESS=127.0.0.1 ASTREA_TEST_SERVER_PORT=7770 \
+            ./unity/Build/ASTREA-FishNet-Client/ASTREA.x86_64 \
+            -batchmode -nographics -logFile /tmp/astrea-fishnet-client-2.log \
+            > /tmp/astrea-fishnet-client-2-console.log 2>&1 &
+          client2=$!
+          wait "$client1"; result1=$?
+          wait "$client2"; result2=$?
+          set -e
+          kill "$(cat /tmp/astrea-fishnet-server.pid)" 2>/dev/null || true
+          if [[ "$result1" -ne 0 || "$result2" -ne 0 ]]; then
+            echo "FishNet client exit codes: client1=$result1 client2=$result2"
+            cat /tmp/astrea-fishnet-server.log || true
+            cat /tmp/astrea-fishnet-client-1.log || true
+            cat /tmp/astrea-fishnet-client-2.log || true
+            exit 1
+          fi
+          grep -q "ASTREA_FISHNET_TEST_RESULT=CLIENT_1_SENT_AUTHORITATIVE_MOVEMENT" /tmp/astrea-fishnet-client-1.log
+          grep -q "ASTREA_FISHNET_TEST_RESULT=CLIENT_2_OBSERVED_REMOTE_SERVER_MOVEMENT" /tmp/astrea-fishnet-client-2.log
+
+      - name: Upload FishNet integration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTREA-FishNet-two-client-logs
+          path: /tmp/astrea-*.log
+          if-no-files-found: ignore
+          retention-days: 14
