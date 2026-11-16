@@ -149,3 +149,10 @@ The isolated branch now contains `AstreaFishNetAuthenticator`, which presents th
 ### Linux Dedicated Server build
 
 A manual GitHub Actions workflow is available at `.github/workflows/unity-linux-server-build.yml`. It builds with Unity 6000.3.28f1, `StandaloneLinux64`, and `StandaloneBuildSubtarget.Server`. It requires the repository secret `UNITY_LICENSE` and a manual `confirm_build=yes`. It has not yet been run; a successful CI source check is not a Unity build.
+
+
+### Automated FishNet network test scene
+
+`AstreaFishNetPrototypeSceneBuilder` creates a separate `ASTREA_FishNet_NetworkTest` scene, a temporary cube-only network proxy prefab, a FishNet `SinglePrefabObjects` collection, and the NetworkManager/authenticator/spawner/client harness. The proxy is only a technical test fixture, not a final character model. The test client reads `ASTREA_TEST_JOIN_TICKET`, `ASTREA_TEST_CLIENT_ID`, `ASTREA_TEST_SERVER_ADDRESS`, and `ASTREA_TEST_SERVER_PORT` from its process environment.
+
+The manual workflow `.github/workflows/unity-fishnet-two-client-integration.yml` builds a Linux dedicated server and two Linux clients, starts PostgreSQL and the Node API, issues two one-use tickets, then checks that client 2 observes server-authoritative movement from client 1. It requires `UNITY_LICENSE` and an explicit `confirm_build=yes`; it has not yet been run.
