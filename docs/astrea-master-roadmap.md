@@ -301,3 +301,17 @@ La validation CI renforce la preuve du prototype Node, mais ne ferme pas l'étap
 
 Le workflow CI de serveur et navigateur ne remplace pas Unity Editor. Le workflow Unity Android existant est manuel, nécessite le secret de licence `UNITY_LICENSE` et n'a pas été lancé. Aucune compilation Unity ni aucun build serveur dédié ne sont revendiqués.
 
+
+
+### Mise à jour intégration FishNet — 16 novembre 2026
+
+- [x] API Node d'émission de tickets FishNet liés au compte/personnage/serveur, durée 30 s.
+- [x] Hash SHA-256 uniquement stocké en base PostgreSQL.
+- [x] Consommation atomique à usage unique, liée au serveur attendu.
+- [x] Route interne protégée par secret serveur et comparaison en temps constant.
+- [x] Méthode `AstreaApiClient.RequestFishNetJoinTicket`.
+- [x] Première implémentation `AstreaFishNetAuthenticator` basée sur l'API FishNet 4.7.4, avec timeout et validation stricte de l'URL API.
+- [ ] Compilation Unity 6.3 et validation des signatures API exactes.
+- [ ] Configuration d'un NetworkManager et d'un serveur Linux dédié.
+- [ ] Spawn autoritaire du personnage après authentification.
+- [ ] Test à deux clients, reconnexion et mesures de latence.
