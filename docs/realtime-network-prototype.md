@@ -167,12 +167,19 @@ Les tests sont dans `tests/node-websocket-prototype.test.js` et sont inclus dans
 ### Limites explicites
 
 - Les tickets, sessions et positions sont en mémoire ; redémarrage du processus = perte de l'état de test.
-- Aucun endpoint HTTP public ne délivre les tickets. L'appel `issueTicket` est une fonction interne et doit recevoir des identités déjà vérifiées côté serveur.
+- La route HTTP authentifiée `POST /v1/realtime/tickets` délivre désormais un ticket éphémère après vérification du propriétaire du personnage. Le jeton de session HTTP reste hors du canal WebSocket. La route utilise une salle de prototype commune, pas un matchmaking.
 - La reconnexion dans le même processus est testée : un nouveau ticket du même compte/personnage restaure la dernière position et la dernière séquence autoritaires ; les anciennes séquences sont rejetées. La reconnexion après redémarrage ou entre plusieurs instances n'est pas implémentée.
-- Le test utilise deux clients Node.js sur loopback, pas deux clients Unity ni deux appareils distants.
+- Le test utilise deux clients Node.js sur loopback, pas deux clients Unity ni deux appareils distants. Un test vérifie aussi que l'upgrade WebSocket peut partager le même port HTTP/API.
 - Le ticket de reconnexion est également lié au compte et au personnage d'origine ; un ticket qui tente de réutiliser le même emplacement de joueur avec un autre personnage est rejeté.
 
 - Aucune mesure réseau de performance, de latence WAN, de charge, de pertes ou de capacité n'est encore produite.
 - Le serveur est un prototype de comparaison contrôlé, pas un service prêt à exposer sur Internet. Avant toute exposition : remplacer le parseur WebSocket minimal par une implémentation éprouvée, ajouter TLS/reverse proxy, contrôle d'origine, limites distribuées, observabilité et tests de sécurité.
 
 **Statut candidat :** première preuve fonctionnelle de réplication autoritaire Node WebSocket. FishNet et NGO restent à comparer dans Unity ; aucune décision finale n'est prise.
+
+
+### Liaison au backend HTTP — en cours de validation
+
+Le backend expose maintenant `POST /v1/realtime/tickets`. Le compte vient exclusivement du Bearer authentifié ; le personnage est recherché avec le couple `account_id + character_id` en PostgreSQL. Un ticket de 30 secondes est délivré et le serveur WebSocket peut attacher son gestionnaire d'upgrade au même serveur HTTP que l'API. Le point d'entrée de production de prototype initialise ces deux composants ensemble.
+
+Les tests ajoutés couvrent la route HTTP, le refus d'un personnage appartenant à un autre compte, le service de ticket et le partage du port HTTP/WebSocket. La validation CI de ces derniers changements doit être terminée avant de considérer le raccordement validé. Le test n'est pas encore un test Unity ni un test sur deux appareils.
