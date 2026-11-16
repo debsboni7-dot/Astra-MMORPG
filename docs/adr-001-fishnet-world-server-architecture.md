@@ -118,3 +118,10 @@ Le dépôt contient maintenant `AstreaFishNetAuthenticator`, basé sur l'API Aut
 - les réponses tardives après déconnexion sont ignorées.
 
 Le composant n'a pas encore été compilé par Unity. Il faut encore le placer dans un NetworkManager FishNet, configurer les variables d'environnement du serveur, connecter le retour d'identité au spawn du personnage, puis vérifier le flux avec deux clients réels. L'existence du code et les assertions source CI ne constituent pas une compilation.
+
+
+## Mise à jour — spawn joueur après authentification
+
+Le composant `AstreaFishNetPlayerSpawner` écoute l'événement émis après que FishNet a accepté le résultat d'authentification. Il crée ensuite un `NetworkObject`, y attache l'identité compte/personnage côté serveur et le spawn avec le `NetworkConnection` propriétaire. Les connexions non authentifiées ne sont donc pas éligibles au spawn. Le prefab doit contenir un `NetworkObject` et être enregistré dans les Spawnable Prefabs du NetworkManager.
+
+Cette étape fournit le point d'accroche serveur pour la création de l'avatar, mais aucun prefab de joueur réseau final n'est encore configuré. Elle n'est pas validée en Play Mode ni sur deux clients.
