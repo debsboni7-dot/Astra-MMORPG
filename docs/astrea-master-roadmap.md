@@ -315,3 +315,12 @@ Le workflow CI de serveur et navigateur ne remplace pas Unity Editor. Le workflo
 - [ ] Configuration d'un NetworkManager et d'un serveur Linux dédié.
 - [ ] Spawn autoritaire du personnage après authentification.
 - [ ] Test à deux clients, reconnexion et mesures de latence.
+
+
+### Spawn réseau après authentification FishNet — 16 novembre 2026
+
+- [x] Composant de spawn serveur ajouté : le joueur n'est instancié qu'après validation du ticket et authentification FishNet.
+- [x] Identité compte/personnage attachée côté serveur, non fournie par le client.
+- [ ] Créer/configurer un prefab réseau avec NetworkObject et l'enregistrer dans Spawnable Prefabs.
+- [ ] Compiler et tester le spawn en Unity Play Mode.
+- [ ] Vérifier qu'un deuxième client voit le premier joueur et inversement.
