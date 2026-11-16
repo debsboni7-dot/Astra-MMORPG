@@ -109,3 +109,17 @@ test('rate-limit settings reject zero, negative and non-integer values', async (
     assert.throws(() => createAstreaHttpServer({ ...services, ...options }), /positive integers/);
   }
 });
+
+
+test('untrusted X-Forwarded-For headers cannot bypass the local auth limiter', async () => {
+  await withServer(async (base) => {
+    const post = (forwardedFor) => fetch(base + '/v1/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': forwardedFor },
+      body: JSON.stringify({ email: 'a@example.com', password: 'long-password-123' }),
+    });
+    assert.equal((await post('198.51.100.10')).status, 200);
+    const second = await post('203.0.113.77');
+    assert.equal(second.status, 429);
+  }, { authRateLimitLimit: 1, authRateLimitWindowMs: 60_000 });
+});
