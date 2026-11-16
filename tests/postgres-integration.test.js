@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -40,7 +41,7 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
     assert.equal((await characters.get(account.id, character.id)).id, character.id);
     assert.equal(await characters.get('999999999', character.id), null);
 
-    const joinTicketHash = crypto.createHash('sha256').update(crypto.randomBytes(32)).digest('hex');
+    const joinTicketHash = createHash('sha256').update(randomBytes(32)).digest('hex');
     const joinTicketExpiry = new Date(Date.now() + 30_000);
     await repository.createRealtimeJoinTicket({
       tokenHash: joinTicketHash,
