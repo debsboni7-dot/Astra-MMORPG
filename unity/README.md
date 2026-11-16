@@ -156,3 +156,6 @@ A manual GitHub Actions workflow is available at `.github/workflows/unity-linux-
 `AstreaFishNetPrototypeSceneBuilder` creates a separate `ASTREA_FishNet_NetworkTest` scene, a temporary cube-only network proxy prefab, a FishNet `SinglePrefabObjects` collection, and the NetworkManager/authenticator/spawner/client harness. The proxy is only a technical test fixture, not a final character model. The test client reads `ASTREA_TEST_JOIN_TICKET`, `ASTREA_TEST_CLIENT_ID`, `ASTREA_TEST_SERVER_ADDRESS`, and `ASTREA_TEST_SERVER_PORT` from its process environment.
 
 The manual workflow `.github/workflows/unity-fishnet-two-client-integration.yml` builds a Linux dedicated server and two Linux clients, starts PostgreSQL and the Node API, issues two one-use tickets, then checks that client 2 observes server-authoritative movement from client 1. It requires `UNITY_LICENSE` and an explicit `confirm_build=yes`; it has not yet been run.
+
+
+**Current external blocker:** the end-to-end workflow [43832992881](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832992881) stopped before Unity setup because repository secret `UNITY_LICENSE` is missing. Add a valid Unity license file as a GitHub Actions repository secret, then rerun the workflow. Do not commit or paste the license into source files or chat.
