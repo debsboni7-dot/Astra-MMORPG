@@ -32,7 +32,7 @@ test('authenticated HTTP ticket issuance connects a character to WebSocket on th
   await new Promise(resolve => httpServer.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${httpServer.address().port}`;
   const wsUrl = `ws://127.0.0.1:${httpServer.address().port}/realtime/v1`;
-  const client = new WebSocket(wsUrl);
+  let client;
   try {
     const ticketResponse = await fetch(base + '/v1/realtime/tickets', {
       method: 'POST',
@@ -48,9 +48,11 @@ test('authenticated HTTP ticket issuance connects a character to WebSocket on th
     assert.equal(typeof ticket, 'string');
     assert.ok(ticket.length >= 32);
 
+    client = new WebSocket(wsUrl);
     await new Promise((resolve, reject) => {
-      client.addEventListener('open', resolve, { once: true });
-      client.addEventListener('error', reject, { once: true });
+      const timer = setTimeout(() => reject(new Error('Timed out opening realtime WebSocket')), 1500);
+      client.addEventListener('open', () => { clearTimeout(timer); resolve(); }, { once: true });
+      client.addEventListener('error', error => { clearTimeout(timer); reject(error); }, { once: true });
     });
     const welcomePromise = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Timed out waiting for realtime WELCOME')), 1500);
