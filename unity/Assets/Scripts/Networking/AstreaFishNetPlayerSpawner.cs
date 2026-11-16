@@ -81,6 +81,7 @@ namespace Astrea.Networking
             }
 
             Vector3 position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
+            position += Vector3.right * connection.ClientId * 2f;
             Quaternion rotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
             NetworkObject player = Instantiate(playerPrefab, position, rotation);
             AstreaServerPlayerIdentity serverIdentity = player.GetComponent<AstreaServerPlayerIdentity>();
