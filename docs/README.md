@@ -18,3 +18,11 @@ Documentation de conception, d'architecture et de production du projet.
 
 ## Règle de lecture
 Les documents distinguent les décisions confirmées, les propositions à valider et les éléments déjà implémentés. Une spécification écrite ne prouve pas qu'une fonctionnalité est codée, importée, compilée ou testée en jeu.
+
+
+## Étape 3 — Faisabilité et architecture
+
+- [Rapport de faisabilité technique étape 3](feasibility-stage-3.md)
+- [Architecture technique](architecture.md)
+- [ADR-001 — Serveur de monde FishNet](adr-001-fishnet-world-server-architecture.md)
+- [Cahier du prototype réseau comparatif](realtime-network-prototype.md)
