@@ -1,0 +1,54 @@
+name: ASTREA Unity 6.3 Linux Dedicated Server build
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_build:
+        description: "Run licensed Unity Editor compilation and Linux Dedicated Server build"
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux-server:
+    if: inputs.confirm_build == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Unity license secret
+        shell: bash
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [[ -z "${UNITY_LICENSE:-}" ]]; then
+            echo "::error::Add the free Unity Personal license file as repository secret UNITY_LICENSE before running this workflow."
+            exit 1
+          fi
+
+      - name: Build ASTREA Linux Dedicated Server with Unity Editor
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: unity
+          unityVersion: 6000.3.28f1
+          targetPlatform: StandaloneLinux64
+          buildMethod: Astrea.EditorTools.AstreaCloudBuild.BuildLinuxDedicatedServer
+          allowDirtyBuild: true
+          customParameters: -batchmode -nographics
+
+      - name: Upload Linux Dedicated Server
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTREA-Linux-Dedicated-Server
+          path: unity/Build/ASTREA-LinuxServer/
+          if-no-files-found: error
+          retention-days: 14
