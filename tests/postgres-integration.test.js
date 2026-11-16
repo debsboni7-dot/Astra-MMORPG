@@ -9,7 +9,7 @@ const databaseUrl = process.env.DATABASE_URL;
 
 test('real PostgreSQL migrations, account ownership and character persistence', { skip: !databaseUrl }, async () => {
   const { Pool } = await import('pg');
-  const pool = new Pool({ connectionString: databaseUrl });
+  let pool = new Pool({ connectionString: databaseUrl });
   let email;
   try {
     for (const file of [
@@ -60,6 +60,21 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
 
     await auth.logout(session.token);
     assert.equal(await auth.authenticate(session.token), null);
+
+    // Recreate the database connection pool to prove committed data survives
+    // a backend connection restart, not just reads through the original pool.
+    await pool.end();
+    pool = new Pool({ connectionString: databaseUrl });
+    const reconnectedRepository = createPostgresRepository(pool);
+    const afterReconnect = await reconnectedRepository.withCharacterTransaction(account.id, character.id, async record => ({
+      race: record.characterData.race,
+      progression: record.magicProgression,
+      combat: record.magicCombatState,
+    }));
+    assert.equal(afterReconnect.race, 'elf');
+    assert.equal(afterReconnect.progression.schools.nature.successfulCasts, 3);
+    assert.equal(afterReconnect.combat.hp, 87);
+    assert.equal(afterReconnect.combat.mana, 64);
   } finally {
     if (email) await pool.query('DELETE FROM accounts WHERE email=$1', [email]);
     await pool.end();
