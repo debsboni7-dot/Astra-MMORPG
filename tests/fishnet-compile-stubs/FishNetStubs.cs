@@ -38,6 +38,7 @@ namespace UnityEngine
     }
     public struct Vector3
     {
+        public Vector3(float x, float y, float z) { }
         public static Vector3 zero => new Vector3();
         public static Vector3 right => new Vector3();
         public static Vector3 operator +(Vector3 left, Vector3 right) => new Vector3();
