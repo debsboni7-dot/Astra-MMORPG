@@ -92,6 +92,51 @@ function ticket(issueTicket, playerId, accountId = playerId) {
   });
 }
 
+test('WebSocket upgrade handler can share the authenticated HTTP API server port', async () => {
+  const { createServer } = await import('node:http');
+  const httpServer = createServer((_request, response) => {
+    response.writeHead(404);
+    response.end();
+  });
+  const realtime = createNodeWebSocketPrototypeServer();
+  realtime.attachTo(httpServer);
+  await new Promise(resolve => httpServer.listen(0, '127.0.0.1', resolve));
+  const url = `ws://127.0.0.1:${httpServer.address().port}/realtime/v1`;
+  const client = new WebSocket(url);
+  try {
+    await new Promise((resolve, reject) => {
+      client.addEventListener('open', resolve, { once: true });
+      client.addEventListener('error', reject, { once: true });
+    });
+    const welcomed = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Timed out waiting for WELCOME')), 1500);
+      client.addEventListener('message', event => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'WELCOME') {
+          clearTimeout(timer);
+          resolve(message);
+        }
+      });
+    });
+    client.send(JSON.stringify({
+      version: 1,
+      type: 'AUTH',
+      ticket: realtime.issueTicket({
+        accountId: 'account-shared',
+        characterId: 'character-shared',
+        sessionId: 'shared-http-room',
+        playerId: 'player-shared',
+      }),
+    }));
+    const welcome = await welcomed;
+    assert.equal(welcome.playerId, 'player-shared');
+    assert.equal(welcome.characterId, 'character-shared');
+  } finally {
+    if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) client.close();
+    await new Promise(resolve => httpServer.close(resolve));
+  }
+});
+
 test('two authenticated clients receive the same server-authoritative movement snapshot', async () => {
   await withRealtimeServer(async ({ connect, issueTicket }) => {
     const first = connect(ticket(issueTicket, 'player-a'));
