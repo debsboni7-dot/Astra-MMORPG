@@ -337,3 +337,14 @@ Le rapport [`docs/feasibility-stage-3.md`](feasibility-stage-3.md) rassemble la 
 - [x] Workflow manuel protégé par confirmation et secret de licence Unity ajouté.
 - [ ] Exécuter le workflow avec une licence Unity valide.
 - [ ] Corriger toute erreur de résolution/compilation et obtenir un build Linux serveur réussi.
+
+
+### Banc de test FishNet deux clients
+
+- [x] Scène Unity de test isolée générée par code Editor.
+- [x] Proxy réseau temporaire avec NetworkObject et NetworkTransform en mode serveur autoritaire.
+- [x] Client harness CI : client 1 envoie un déplacement, client 2 doit observer le déplacement distant.
+- [x] Script de migrations PostgreSQL et préparation de deux comptes/tickets CI.
+- [x] Workflow manuel end-to-end ajouté, avec PostgreSQL, API Node, serveur dédié et deux clients Linux.
+- [ ] Exécuter le workflow avec le secret Unity Personal `UNITY_LICENSE`.
+- [ ] Corriger les éventuelles erreurs réelles de résolution/compilation/build et valider le scénario.
