@@ -128,7 +128,7 @@ test('tickets are one-use and required before any gameplay input', async () => {
     await replay.waitOpen();
     replay.client.send(JSON.stringify({ version: 1, type: 'AUTH', ticket: value }));
     const rejected = await replay.waitFor(message => message.type === 'REJECT');
-    assert.equal(rejected.code, 'UNAUTHENTICATED');
+    assert.equal(rejected.code, 'INVALID_OR_EXPIRED_TICKET');
   });
 });
 
