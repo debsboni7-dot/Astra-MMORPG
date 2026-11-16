@@ -136,3 +136,6 @@ No Unity import, compilation, dedicated-server build or FishNet multiplayer test
 On the isolated `spike/fishnet-unity-6-3-evaluation` branch, `AstreaApiClient.RequestFishNetJoinTicket` requests a 30-second, one-use join ticket from `POST /v1/realtime/fishnet/tickets` after account login. The API stores only a SHA-256 ticket hash in PostgreSQL and provides a server-only consume endpoint protected by `REALTIME_SERVER_SECRET`.
 
 This is only the account-to-ticket handoff. The FishNet custom Authenticator, its server-to-server ticket-consume client, player spawning, and the two-client server test are still pending. Do not connect the client directly to FishNet using the long-lived HTTP bearer token.
+
+
+The isolated branch now contains `AstreaFishNetAuthenticator`, which presents the short-lived ticket through a FishNet pre-auth broadcast and asks the Node API to consume it. Configure `ASTREA_API_BASE_URL`, `REALTIME_SERVER_SECRET` (32+ random characters), and `REALTIME_SERVER_ID` as environment variables in the dedicated server process. Never commit these values or serialize the secret into a Unity scene/prefab. The authenticator exposes the validated account/character identity through `OnClientIdentityAuthenticated`; a server-side spawn coordinator still needs to subscribe to this event. Unity compilation and live two-client validation remain pending.
