@@ -246,7 +246,7 @@ La présente séquence s'arrête **avant toute génération ou modification de c
 ## Alignement avec la feuille de route officielle et ordre du développement 3D
 
 La progression doit suivre les étapes numérotées du cadre de production, pas sauter directement vers la création de contenu 3D :
-- **Étape 3 — Faisabilité et architecture : en cours.** Les tests HTTP de sécurité, l'isolation PostgreSQL entre comptes, la reconnexion du pool, la sauvegarde/restauration CI et Chromium desktop/mobile passent. Un contrat de messages autoritaire neutre au transport est documenté. Un premier candidat Node.js WebSocket fonctionne dans un test automatisé à deux clients. Une route HTTP authentifiée délivre des tickets liés aux personnages possédés et le WebSocket partage le port de l'API. Le workflow `43821310409` a validé l'intégration HTTP→WebSocket, les tests Node, PostgreSQL, sauvegarde/restauration et Chromium desktop/mobile. Un microbenchmark reproductible à deux clients (latence A→snapshot reçu par B, p50/p95/p99, débit, taille messages, CPU/RSS) est ajouté et son exécution CI est en cours. Il ne constitue pas une mesure WAN, mobile ou Unity. Il reste à comparer FishNet et NGO dans Unity, mesurer les candidats, choisir le protocole sur preuves et valider l'intégration Unity/API.
+- **Étape 3 — Faisabilité et architecture : en cours.** Les tests HTTP, PostgreSQL, sauvegarde/restauration, Chromium desktop/mobile et les benchmarks du prototype Node WebSocket passent en CI. FishNet 4.7.4 est déclaré sur la branche isolée, et l'ADR-001 définit la séparation entre serveur Unity/FishNet autoritaire par zone et API Node/PostgreSQL pour comptes et persistance. Cela reste une décision de prototype : résolution UPM, compilation Unity, serveur dédié, authentification par ticket et deux clients Unity restent à valider. Les mesures loopback Node ne prouvent ni la performance WAN ni la capacité de production.
 - **Étape 4 — Direction artistique : ensuite.** Compléter les références visuelles, matériaux, silhouettes, éclairage et validation de style.
 - **Étape 5 — Outils et pipeline : ensuite.** Rendre reproductibles les imports, formats, licences, génération d'assets et contrôles.
 - **Étape 6 — Prototypes techniques et gameplay : ensuite.** P0 personnage/caméra/contrôles, puis les prototypes prévus dans le cahier de spécification.
@@ -283,14 +283,21 @@ Cette validation ne ferme pas l'étape d'architecture et ne constitue pas une pr
 La validation CI renforce la preuve du prototype Node, mais ne ferme pas l'étape 3 : le choix du protocole et l'intégration Unity/API restent ouverts.
 
 
-### Comparatif réseau Unity 6.3 — résultat documentaire (16 novembre 2026)
+### Architecture réseau et décision FishNet — 16 novembre 2026
 
 - [x] Sources officielles consultées pour FishNet, NGO, Unity Transport et la compatibilité Unity 6.3.
-- [x] FishNet classé premier candidat à prototyper : distribution Asset Store gratuite, support Unity 6 LTS annoncé, version publiée conçue pour Unity 6000.3.17.
-- [x] NGO conservé comme comparateur officiel ; la page Unity 6000.3 consultée présente NGO 2.14.0 en préversion, donc la version stable compatible doit être déterminée avant installation.
-- [ ] Auditer les licences exactes des archives de packages et de leurs dépendances.
-- [ ] Installer un seul candidat dans une branche de test isolée après vérification des licences ; ne pas modifier le projet principal avant compilation.
-- [ ] Construire un serveur dédié et exécuter le scénario autoritaire avec deux clients Unity.
-- [ ] Comparer FishNet, NGO et la référence Node sur des mesures équivalentes avant de choisir l'architecture.
+- [x] Audit du package FishNet 4.7.4R fourni par le créateur : archive et SHA-256 vérifiés, manifeste du package et notices tierces examinés.
+- [x] FishNet 4.7.4 déclaré via UPM uniquement dans `spike/fishnet-unity-6-3-evaluation`, avec Newtonsoft JSON 3.2.1.
+- [x] Architecture de prototype écrite dans `docs/adr-001-fishnet-world-server-architecture.md`.
+- [x] Séparation documentée : FishNet/Unity dédié pour la simulation temps réel par zone ; Node.js pour comptes, sessions et règles persistantes ; PostgreSQL pour stockage durable.
+- [x] Rôle du million d'inscrits clarifié : royaume logique distribué, sans le confondre avec un million de joueurs simultanés.
+- [x] Workflow de validation des fondations Unity étendu à la branche d'évaluation et contrôle statique du manifeste FishNet ajouté.
+- [ ] Résoudre FishNet dans Unity 6000.3.28f1 et compiler le projet.
+- [ ] Construire un serveur Linux Dedicated Server.
+- [ ] Implémenter et tester l'authentification FishNet avec tickets éphémères à usage unique validés côté Node.
+- [ ] Connecter deux clients Unity au serveur dédié et vérifier la simulation autoritaire.
+- [ ] Comparer FishNet avec la baseline Node sur des mesures équivalentes, puis tester réseau distant et Android physique.
+- [ ] Confirmer les contraintes de licence avant toute distribution publique ; revue différée à la demande du créateur.
 
-Mise à jour du 16 novembre 2026 : FishNet 4.7.4 est déclaré via UPM uniquement dans la branche isolée `spike/fishnet-unity-6-3-evaluation`, avec Newtonsoft JSON 3.2.1. Le manifeste de la branche principale reste inchangé. La résolution UPM, la compilation Unity 6.3, le build serveur dédié et le test à deux clients restent à effectuer. Cette intégration de dépendance ne clôt pas l'étape 3.
+Le workflow CI de serveur et navigateur ne remplace pas Unity Editor. Le workflow Unity Android existant est manuel, nécessite le secret de licence `UNITY_LICENSE` et n'a pas été lancé. Aucune compilation Unity ni aucun build serveur dédié ne sont revendiqués.
+
