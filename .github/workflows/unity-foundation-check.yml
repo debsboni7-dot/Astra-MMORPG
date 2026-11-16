@@ -39,6 +39,10 @@ jobs:
           server_broadcast = (root / "Runtime/Managing/Server/ServerManager.Broadcast.cs").read_text(encoding="utf-8-sig")
           server_qol = (root / "Runtime/Managing/Server/ServerManager.QOL.cs").read_text(encoding="utf-8-sig")
           client_broadcast = (root / "Runtime/Managing/Client/ClientManager.Broadcast.cs").read_text(encoding="utf-8-sig")
+          client_manager = (root / "Runtime/Managing/Client/ClientManager.cs").read_text(encoding="utf-8-sig")
+          network_object = (root / "Runtime/Object/NetworkObject/NetworkObject.cs").read_text(encoding="utf-8-sig")
+          network_object_serialized = (root / "Runtime/Object/NetworkObject/NetworkObject.Serialized.cs").read_text(encoding="utf-8-sig")
+          single_prefabs = (root / "Runtime/Managing/Object/PrefabObjects/SinglePrefabObjects.cs").read_text(encoding="utf-8-sig")
 
           assert "public abstract event Action<NetworkConnection, bool> OnAuthenticationResult;" in authenticator
           assert "public virtual void OnRemoteConnection(NetworkConnection connection)" in authenticator
@@ -49,6 +53,11 @@ jobs:
           assert "UnregisterBroadcast<T>(Action<T, Channel> handler)" in client_broadcast
           assert "Broadcast<T>(T message, Channel channel = Channel.Reliable)" in client_broadcast
           assert "Spawn(NetworkObject nob, NetworkConnection ownerConnection = null" in server_qol
+          assert "public event Action OnAuthenticated;" in client_manager
+          assert "StartConnection(string address, ushort port)" in client_manager
+          assert "SetIsSpawnable(bool value)" in network_object
+          assert "SetAssetPathHash(ulong value)" in network_object_serialized
+          assert "AddObject(NetworkObject networkObject" in single_prefabs
           assert (root / "Demos/Prefabs/NetworkManager.prefab").is_file()
           print("FishNet 4.7.4 package version, authenticator, broadcasts and server spawn API verified.")
           PY
@@ -87,6 +96,9 @@ jobs:
               "Assets/Scripts/Networking/AstreaApiClient.cs",
               "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs",
               "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs",
+              "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs",
+              "Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs",
+              "Assets/Editor/AstreaFishNetPrototypeSceneBuilder.cs",
               "Assets/Scripts/Armor/AstreaArmorSlot.cs",
               "Assets/Scripts/Combat/AstreaCombatController.cs",
               "Assets/Scripts/Combat/AstreaHealth.cs",
@@ -129,6 +141,17 @@ jobs:
           assert "SetClientTicket" in fishnet_auth
           assert "WaitForSecondsRealtime(10f)" in fishnet_auth
           assert "IPAddress.IsLoopback" in fishnet_auth
+
+          fishnet_test_player = (root / "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs").read_text()
+          assert "[ServerRpc]" in fishnet_test_player and "Vector2.ClampMagnitude" in fishnet_test_player
+          fishnet_test_client = (root / "Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs").read_text()
+          assert "ASTREA_TEST_JOIN_TICKET" in fishnet_test_client
+          assert "OnAuthenticated" in fishnet_test_client
+          assert "REMOTE_MOVEMENT_NOT_REPLICATED" in fishnet_test_client
+          fishnet_scene_builder = (root / "Assets/Editor/AstreaFishNetPrototypeSceneBuilder.cs").read_text()
+          assert "ASTREA_FishNet_NetworkTest.unity" in fishnet_scene_builder
+          assert "clientAuthority.boolValue = false" in fishnet_scene_builder
+          assert "SinglePrefabObjects" in fishnet_scene_builder
 
           fishnet_spawner = (root / "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs").read_text()
           assert "OnClientIdentityAuthenticated" in fishnet_spawner
