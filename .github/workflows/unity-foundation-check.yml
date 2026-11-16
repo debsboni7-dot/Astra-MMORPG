@@ -48,6 +48,7 @@ jobs:
           required = [
               "Assets/Scripts/Networking/AstreaApiClient.cs",
               "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs",
+              "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs",
               "Assets/Scripts/Armor/AstreaArmorSlot.cs",
               "Assets/Scripts/Combat/AstreaCombatController.cs",
               "Assets/Scripts/Combat/AstreaHealth.cs",
@@ -90,6 +91,12 @@ jobs:
           assert "SetClientTicket" in fishnet_auth
           assert "WaitForSecondsRealtime(10f)" in fishnet_auth
           assert "IPAddress.IsLoopback" in fishnet_auth
+
+          fishnet_spawner = (root / "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs").read_text()
+          assert "OnClientIdentityAuthenticated" in fishnet_spawner
+          assert "connection.IsAuthenticated" in fishnet_spawner
+          assert "ServerManager.Spawn(player, connection)" in fishnet_spawner
+          assert "AstreaServerPlayerIdentity" in fishnet_spawner
 
           api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
           assert "RequestFishNetJoinTicket" in api_client
