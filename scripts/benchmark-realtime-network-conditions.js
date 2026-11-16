@@ -89,14 +89,21 @@ try {
   const start = performance.now();
   let delivered = 0;
   let dropped = 0;
+  let lastInputSentAt = null;
   for (let sequence = 1; sequence <= samples; sequence += 1) {
     const willDrop = dropEvery > 0 && sequence % dropEvery === 0;
     const expected = willDrop ? null : second.waitFor(message => message.type === 'SNAPSHOT' && message.serverTick === sequence);
     const phase = (sequence - 1) % 3 - 1;
     const uplinkDelay = Math.max(0, oneWayDelayMs + phase * jitterMs);
+    // The prototype enforces 20 inputs/second. Keep a 55ms minimum send interval
+    // so jitter and intentionally skipped snapshots cannot trigger server throttling.
+    const beforePacing = performance.now();
+    const pacingDelay = lastInputSentAt === null ? 0 : Math.max(0, 55 - (beforePacing - lastInputSentAt));
+    await sleep(pacingDelay);
     const sentAt = performance.now();
     await sleep(uplinkDelay);
     first.send({ version: 1, type: 'INPUT', sequence, payload: { x: 1, z: 0 } });
+    lastInputSentAt = performance.now();
     if (willDrop) {
       dropped += 1;
       continue;
