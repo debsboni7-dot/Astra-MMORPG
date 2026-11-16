@@ -293,4 +293,4 @@ La validation CI renforce la preuve du prototype Node, mais ne ferme pas l'étap
 - [ ] Construire un serveur dédié et exécuter le scénario autoritaire avec deux clients Unity.
 - [ ] Comparer FishNet, NGO et la référence Node sur des mesures équivalentes avant de choisir l'architecture.
 
-Aucun package réseau Unity n'a été ajouté au manifeste. Cette revue documentaire ne clôt pas l'étape 3.
+Mise à jour du 16 novembre 2026 : FishNet 4.7.4 est déclaré via UPM uniquement dans la branche isolée `spike/fishnet-unity-6-3-evaluation`, avec Newtonsoft JSON 3.2.1. Le manifeste de la branche principale reste inchangé. La résolution UPM, la compilation Unity 6.3, le build serveur dédié et le test à deux clients restent à effectuer. Cette intégration de dépendance ne clôt pas l'étape 3.
