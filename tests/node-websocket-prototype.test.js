@@ -47,6 +47,16 @@ async function withRealtimeServer(run, options = {}) {
             client.send(JSON.stringify({ version: 1, type: 'AUTH', ticket }));
             return this.waitFor(message => message.type === 'WELCOME');
           },
+          waitClose(timeoutMs = 1500) {
+            if (client.readyState === WebSocket.CLOSED) return Promise.resolve(closeInfo);
+            return new Promise((resolve, reject) => {
+              const timer = setTimeout(() => reject(new Error('Timed out waiting for WebSocket close')), timeoutMs);
+              client.addEventListener('close', event => {
+                clearTimeout(timer);
+                resolve({ code: event.code, reason: event.reason });
+              }, { once: true });
+            });
+          },
           waitFor(predicate, timeoutMs = 1500) {
             const existing = messages.find(predicate);
             if (existing) return Promise.resolve(existing);
@@ -172,6 +182,34 @@ test('server limits movement input to 20 messages per second', async () => {
     assert.equal(latest.serverTick, 20);
     assert.deepEqual(latest.players[0].position, { x: 0.2, z: 0 });
   }, { now: () => 1000 });
+});
+
+test('reconnection restores the last authoritative position and sequence', async () => {
+  await withRealtimeServer(async ({ connect, issueTicket }) => {
+    const firstTicket = ticket(issueTicket, 'player-reconnect');
+    const first = connect(firstTicket);
+    await first.authenticate();
+    first.send({ version: 1, type: 'INPUT', sequence: 1, payload: { x: 1, z: 0 } });
+    await first.waitFor(message => message.type === 'SNAPSHOT' && message.serverTick === 1);
+    first.client.close();
+    await first.waitClose();
+
+    const reconnectTicket = ticket(issueTicket, 'player-reconnect');
+    const reconnected = connect(reconnectTicket);
+    await reconnected.authenticate();
+    const restored = reconnected.messages.find(message => message.type === 'SNAPSHOT');
+    const player = restored.players.find(item => item.playerId === 'player-reconnect');
+    assert.deepEqual(player.position, { x: 0.2, z: 0 });
+    assert.equal(player.lastSequence, 1);
+
+    reconnected.send({ version: 1, type: 'INPUT', sequence: 1, payload: { x: -1, z: 0 } });
+    const stale = await reconnected.waitFor(message => message.type === 'REJECT' && message.code === 'INVALID_SEQUENCE');
+    assert.equal(stale.sequence, 1);
+    reconnected.send({ version: 1, type: 'INPUT', sequence: 2, payload: { x: 0, z: 1 } });
+    const updated = await reconnected.waitFor(message => message.type === 'SNAPSHOT' && message.serverTick === 2);
+    const current = updated.players.find(item => item.playerId === 'player-reconnect');
+    assert.deepEqual(current.position, { x: 0.2, z: 0 });
+  });
 });
 
 test('expired one-use tickets are rejected', async () => {
