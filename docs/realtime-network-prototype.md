@@ -183,3 +183,10 @@ Les tests sont dans `tests/node-websocket-prototype.test.js` et sont inclus dans
 Le backend expose maintenant `POST /v1/realtime/tickets`. Le compte vient exclusivement du Bearer authentifié ; le personnage est recherché avec le couple `account_id + character_id` en PostgreSQL. Un ticket de 30 secondes est délivré et le serveur WebSocket peut attacher son gestionnaire d'upgrade au même serveur HTTP que l'API. Le point d'entrée de production de prototype initialise ces deux composants ensemble.
 
 Les tests ajoutés couvrent la route HTTP, le refus d'un personnage appartenant à un autre compte, le service de ticket et le partage du port HTTP/WebSocket. La validation CI de ces derniers changements doit être terminée avant de considérer le raccordement validé. Le test n'est pas encore un test Unity ni un test sur deux appareils.
+
+
+## Microbenchmark reproductible du candidat Node.js — 16 novembre 2026
+
+Le script `scripts/benchmark-realtime-websocket.js` mesure le délai entre l'envoi d'une intention par le client A et la réception du snapshot correspondant par le client B, avec deux clients indépendants sur loopback. Il calcule min, moyenne, p50, p95, p99, max, débit observé, taille des messages, temps CPU du processus et RSS avant/après. Il est lancé automatiquement dans la CI et peut être exécuté avec `npm run benchmark:realtime` (20 échantillons par défaut) ou `npm run benchmark:realtime -- 100`.
+
+**Limite importante :** cette mesure est un microbenchmark local sur runner CI, sans réseau WAN, sans téléphone Android, sans client Unity, sans perte ni gigue artificielle. Elle ne mesure pas une capacité de joueurs simultanés et ne permet pas à elle seule de choisir le protocole. Les résultats doivent être comparés sur une machine et une configuration identiques pour les candidats concurrents.
