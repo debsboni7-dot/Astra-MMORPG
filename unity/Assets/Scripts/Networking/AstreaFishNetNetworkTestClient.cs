@@ -113,6 +113,8 @@ namespace Astrea.Networking
 
             if (testClientId == "1")
             {
+                // Give the second client time to capture the remote player baseline.
+                yield return new WaitForSecondsRealtime(2f);
                 float moveDeadline = Time.realtimeSinceStartup + 1.5f;
                 while (Time.realtimeSinceStartup < moveDeadline)
                 {
