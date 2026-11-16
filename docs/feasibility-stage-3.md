@@ -178,3 +178,11 @@ Cette ventilation est une enveloppe de planification, pas encore un devis valid�
 - les coûts d'exploitation récurrents après lancement (serveurs de zones, base de données, bande passante, protection DDoS, sauvegardes, supervision, support et astreinte).
 
 Les coûts d'exploitation ne sont pas chiffrés tant que la cible de joueurs simultanés, le nombre de régions, la densité des zones et les profils de charge ne sont pas mesurés. Un million de comptes inscrits ne suffit pas à calculer les serveurs nécessaires.
+
+
+## 12. Résultats CI vérifiés sur le commit `a916d7ddc763c16fc96a1e35d4de580102da3338`
+
+- Workflow serveur et prototype navigateur : **succès**, run [43832520144](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520144). Il inclut les tests Node, PostgreSQL, sauvegarde/restauration, exécution du runner de migrations, benchmark réseau applicatif et tests Chromium desktop/mobile.
+- Workflow Unity Foundation : **succès**, run [43832520147](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520147). Il vérifie les API du tag FishNet 4.7.4, les valeurs par défaut serveur/transport, les métadonnées et compile les scripts runtime FishNet contre des stubs isolés.
+
+Ces deux runs valident les parties qu'ils exécutent. Aucun des deux n'ouvre Unity Editor. Le workflow end-to-end avec licence Unity reste le seul moyen préparé dans le dépôt pour vérifier résolution UPM, compilation Unity, build Linux server/client et mouvement répliqué entre deux clients.
