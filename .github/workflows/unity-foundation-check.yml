@@ -43,6 +43,12 @@ jobs:
           network_object = (root / "Runtime/Object/NetworkObject/NetworkObject.cs").read_text(encoding="utf-8-sig")
           network_object_serialized = (root / "Runtime/Object/NetworkObject/NetworkObject.Serialized.cs").read_text(encoding="utf-8-sig")
           single_prefabs = (root / "Runtime/Managing/Object/PrefabObjects/SinglePrefabObjects.cs").read_text(encoding="utf-8-sig")
+          network_transform = (root / "Runtime/Generated/Component/NetworkTransform/NetworkTransform.cs").read_text(encoding="utf-8-sig")
+          network_behaviour_qol = (root / "Runtime/Object/NetworkBehaviour/NetworkBehaviour.QOL.cs").read_text(encoding="utf-8-sig")
+          rpc_attributes = (root / "Runtime/Object/NetworkBehaviour/Attributes.cs").read_text(encoding="utf-8-sig")
+          server_manager = (root / "Runtime/Managing/Server/ServerManager.cs").read_text(encoding="utf-8-sig")
+          tugboat = (root / "Runtime/Transporting/Transports/Tugboat/Tugboat.cs").read_text(encoding="utf-8-sig")
+          manager_prefab = (root / "Demos/Prefabs/NetworkManager.prefab").read_text(encoding="utf-8-sig")
 
           assert "public abstract event Action<NetworkConnection, bool> OnAuthenticationResult;" in authenticator
           assert "public virtual void OnRemoteConnection(NetworkConnection connection)" in authenticator
@@ -58,6 +64,12 @@ jobs:
           assert "SetIsSpawnable(bool value)" in network_object
           assert "SetAssetPathHash(ulong value)" in network_object_serialized
           assert "AddObject(NetworkObject networkObject" in single_prefabs
+          assert "private bool _clientAuthoritative = true;" in network_transform
+          assert "public bool IsOwner => _networkObjectCache.IsOwner;" in network_behaviour_qol
+          assert "public class ServerRpcAttribute : RpcAttribute" in rpc_attributes
+          assert "private bool _startOnHeadless = true;" in server_manager
+          assert "private ushort _port = 7770;" in tugboat
+          assert "_spawnablePrefabs" in manager_prefab
           assert (root / "Demos/Prefabs/NetworkManager.prefab").is_file()
           print("FishNet 4.7.4 package version, authenticator, broadcasts and server spawn API verified.")
           PY
