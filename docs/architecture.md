@@ -244,3 +244,10 @@ Ces tests vérifient les routes et leurs contrats avec des dépendances simulée
 ### 11.11 Préparation du choix de protocole temps réel
 Le protocole n'est volontairement pas choisi à ce stade. Un cahier comparatif a été ajouté dans `docs/realtime-network-prototype.md`. Il compare WebSocket avec serveur Node.js, Unity Netcode for GameObjects/Unity Transport, FishNet et Mirror selon le coût, l'auto-hébergement, l'intégration Unity, l'autorité serveur, les performances et la maintenance.
 Le scénario commun impose deux clients, un état de déplacement validé par le serveur, le rejet des positions/dégâts falsifiés, puis des mesures de latence p50/p95/p99, trafic, CPU, mémoire, pertes et reconnexion. Aucune dépendance réseau n'a été ajoutée au manifeste Unity et aucune option n'est déclarée gagnante avant exécution comparative. La préparation du protocole ne ferme donc pas le critère de sortie de phase 3.
+
+
+### 11.12 Vérification de sauvegarde et restauration PostgreSQL
+Un script CI `scripts/test-postgres-backup-restore.sh` a été ajouté. Il crée une donnée témoin dans la base de test, produit une archive `pg_dump` au format custom, restaure cette archive dans une base PostgreSQL distincte, puis relit la donnée témoin. Le workflow `.github/workflows/browser-prototype-smoke.yml` installe le client PostgreSQL et exécute ce contrôle après les tests Node.
+- Le script passe la vérification de syntaxe Bash locale.
+- Le workflow GitHub Actions 43817906602 est lancé, mais le contrôle de sauvegarde/restauration n'est pas encore confirmé.
+- Ce test vérifie le mécanisme de sauvegarde/restauration dans le runner CI ; il ne remplace pas une politique de sauvegardes chiffrées, externalisées, rétention, ni un exercice de restauration d'une base de production.
