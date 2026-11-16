@@ -25,6 +25,43 @@ namespace Astrea.EditorTools
             Debug.Log("ASTREA cloud asset generation completed. Check warnings for missing character/animation imports.");
         }
 
+        public static void BuildFishNetNetworkTestBinaries()
+        {
+            AstreaFishNetPrototypeSceneBuilder.Build();
+            const string testScene = "Assets/Scenes/ASTREA_FishNet_NetworkTest.unity";
+            if (!System.IO.File.Exists(testScene))
+                throw new Exception("FishNet network test scene was not generated: " + testScene);
+
+            var scenes = new[] { testScene };
+            var serverOptions = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = "Build/ASTREA-FishNet-Server/ASTREA.x86_64",
+                target = BuildTarget.StandaloneLinux64,
+                subtarget = (int)StandaloneBuildSubtarget.Server,
+                options = BuildOptions.StrictMode
+            };
+            BuildReport serverReport = BuildPipeline.BuildPlayer(serverOptions);
+            if (serverReport.summary.result != BuildResult.Succeeded)
+                throw new Exception("FishNet Linux server build failed: " + serverReport.summary.result +
+                    ", errors: " + serverReport.summary.totalErrors);
+
+            var clientOptions = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = "Build/ASTREA-FishNet-Client/ASTREA.x86_64",
+                target = BuildTarget.StandaloneLinux64,
+                subtarget = (int)StandaloneBuildSubtarget.Player,
+                options = BuildOptions.StrictMode
+            };
+            BuildReport clientReport = BuildPipeline.BuildPlayer(clientOptions);
+            if (clientReport.summary.result != BuildResult.Succeeded)
+                throw new Exception("FishNet Linux client build failed: " + clientReport.summary.result +
+                    ", errors: " + clientReport.summary.totalErrors);
+
+            Debug.Log("ASTREA FishNet network test server and client binaries built successfully.");
+        }
+
         public static void BuildLinuxDedicatedServer()
         {
             GenerateStarterAssets();
