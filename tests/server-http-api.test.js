@@ -16,6 +16,7 @@ async function withServer(run, serverOptions = {}) {
     characterService: {
       async list(accountId) { calls.push({ action:'list', accountId }); return [{id:'char-1',displayName:'Ari',race:'human'}]; },
       async create(accountId, displayName, race) { calls.push({ action:'create', accountId, displayName, race }); return {id:'char-2',displayName,race}; },
+      async get(accountId, characterId) { calls.push({ action:'get-character', accountId, characterId }); return characterId === 'char-1' ? { id:'char-1' } : null; },
     },
     progressionService: { async getSnapshot() { return {}; } },
     ...serverOptions,
@@ -49,6 +50,41 @@ test('character routes require a valid bearer token and derive account ownership
     assert.equal(created.status,201);
     assert.deepEqual(calls.find(x=>x.action==='create'),{action:'create',accountId:'account-1',displayName:'Nova',race:'elf'});
   });
+});
+
+test('realtime tickets require authentication and an owned character', async () => {
+  const issued = [];
+  const realtimeTicketService = {
+    async issueForCharacter(accountId, characterId) {
+      issued.push({ accountId, characterId });
+      return { ticket: 'one-use-ticket-value', expiresIn: 30 };
+    },
+  };
+  await withServer(async (base, calls) => {
+    const denied = await fetch(base + '/v1/realtime/tickets', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ characterId: 'char-1' }),
+    });
+    assert.equal(denied.status, 401);
+    const invalid = await fetch(base + '/v1/realtime/tickets', {
+      method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+      body: JSON.stringify({ characterId: 123 }),
+    });
+    assert.equal(invalid.status, 400);
+    const missing = await fetch(base + '/v1/realtime/tickets', {
+      method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+      body: JSON.stringify({ characterId: 'not-owned' }),
+    });
+    assert.equal(missing.status, 404);
+    const accepted = await fetch(base + '/v1/realtime/tickets', {
+      method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+      body: JSON.stringify({ characterId: 'char-1', accountId: 'attacker' }),
+    });
+    assert.equal(accepted.status, 201);
+    assert.deepEqual(await accepted.json(), { ticket: 'one-use-ticket-value', expiresIn: 30 });
+    assert.deepEqual(issued, [{ accountId: 'account-1', characterId: 'char-1' }]);
+    assert.ok(calls.some(call => call.action === 'authenticate' && call.value === token));
+  }, { realtimeTicketService });
 });
 
 test('logout revokes the bearer token through the auth service', async () => {
