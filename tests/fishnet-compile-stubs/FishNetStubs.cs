@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using FishNet.Connection;
+using FishNet.Managing;
+using FishNet.Object;
 using FishNet.Transporting;
 using UnityEngine;
 
