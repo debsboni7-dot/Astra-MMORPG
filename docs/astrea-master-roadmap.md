@@ -269,3 +269,15 @@ La progression doit suivre les étapes numérotées du cadre de production, pas 
 - [ ] Comparer les résultats et licences avant toute décision de protocole.
 
 Cette validation ne ferme pas l'étape d'architecture et ne constitue pas une preuve de capacité de production.
+
+
+### Résultat du benchmark réseau avec conditions contrôlées (16 novembre 2026)
+
+- [x] Workflow GitHub Actions `43823726449` réussi sur le commit `90db3b3ed64d2001874eda12625ae078f4c1d954` : tests serveur/gameplay, PostgreSQL, backup/restore, benchmark WebSocket loopback, benchmark avec délai/gigue/suppression et Chromium desktop/mobile.
+- [x] Banc applicatif : 100 intentions, délai unidirectionnel simulé 25 ms, gigue ±10 ms, 10 snapshots supprimés sur 100. Délai action A → observation B : moyenne/p50 50,89 ms, p95 61,04 ms, p99 61,64 ms ; 90 snapshots livrés, débit observé 11,33 mises à jour/s.
+- [!] La suppression est effectuée dans le banc applicatif : ce n'est pas une perte de paquets IP/TCP, une mesure WAN ou un test Android/Unity. Ne pas extrapoler ces chiffres à la production.
+- [ ] Tester depuis deux appareils distants, dont Android.
+- [ ] Exécuter le scénario équivalent avec deux clients Unity pour FishNet et NGO.
+- [ ] Comparer les résultats, licences et coûts avant toute décision de protocole.
+
+La validation CI renforce la preuve du prototype Node, mais ne ferme pas l'étape 3 : le choix du protocole et l'intégration Unity/API restent ouverts.
