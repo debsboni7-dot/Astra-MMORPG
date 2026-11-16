@@ -212,6 +212,28 @@ test('reconnection restores the last authoritative position and sequence', async
   }, { now: () => 1000 });
 });
 
+test('reconnect tickets cannot switch character identity inside an existing player slot', async () => {
+  await withRealtimeServer(async ({ connect, issueTicket }) => {
+    const first = connect(issueTicket({
+      accountId: 'account-a', characterId: 'character-a', sessionId: 'shared-room', playerId: 'player-a',
+    }));
+    await first.authenticate();
+
+    const conflicting = connect(issueTicket({
+      accountId: 'account-a', characterId: 'character-b', sessionId: 'shared-room', playerId: 'player-a',
+    }));
+    await conflicting.waitOpen();
+    conflicting.client.send(JSON.stringify({
+      version: 1, type: 'AUTH',
+      ticket: issueTicket({
+        accountId: 'account-a', characterId: 'character-b', sessionId: 'shared-room', playerId: 'player-a',
+      }),
+    }));
+    const rejected = await conflicting.waitFor(message => message.type === 'REJECT');
+    assert.equal(rejected.code, 'PLAYER_IDENTITY_CONFLICT');
+  });
+});
+
 test('expired one-use tickets are rejected', async () => {
   let currentTime = 1000;
   await withRealtimeServer(async ({ connect, issueTicket }) => {
