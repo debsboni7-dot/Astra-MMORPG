@@ -22,6 +22,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify FishNet 4.7.4 source API used by ASTREA
+        run: |
+          git clone --depth 1 --branch 4.7.4 https://github.com/FirstGearGames/FishNet.git /tmp/fishnet
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/fishnet/Assets/FishNet")
+          package = json.loads((root / "package.json").read_text())
+          assert package["version"] == "4.7.4", package
+
+          authenticator = (root / "Runtime/Authenticating/Authenticator.cs").read_text(encoding="utf-8-sig")
+          server_broadcast = (root / "Runtime/Managing/Server/ServerManager.Broadcast.cs").read_text(encoding="utf-8-sig")
+          server_qol = (root / "Runtime/Managing/Server/ServerManager.QOL.cs").read_text(encoding="utf-8-sig")
+          client_broadcast = (root / "Runtime/Managing/Client/ClientManager.Broadcast.cs").read_text(encoding="utf-8-sig")
+
+          assert "public abstract event Action<NetworkConnection, bool> OnAuthenticationResult;" in authenticator
+          assert "public virtual void OnRemoteConnection(NetworkConnection connection)" in authenticator
+          assert "RegisterBroadcast<T>(Action<NetworkConnection, T, Channel> handler, bool requireAuthentication = true)" in server_broadcast
+          assert "UnregisterBroadcast<T>(Action<NetworkConnection, T, Channel> handler)" in server_broadcast
+          assert "Broadcast<T>(NetworkConnection connection, T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable)" in server_broadcast
+          assert "RegisterBroadcast<T>(Action<T, Channel> handler)" in client_broadcast
+          assert "UnregisterBroadcast<T>(Action<T, Channel> handler)" in client_broadcast
+          assert "Broadcast<T>(T message, Channel channel = Channel.Reliable)" in client_broadcast
+          assert "Spawn(NetworkObject nob, NetworkConnection ownerConnection = null" in server_qol
+          assert (root / "Demos/Prefabs/NetworkManager.prefab").is_file()
+          print("FishNet 4.7.4 package version, authenticator, broadcasts and server spawn API verified.")
+          PY
       - name: Validate Unity project metadata and zero-billing package policy
         run: |
           python3 - <<'PY'
