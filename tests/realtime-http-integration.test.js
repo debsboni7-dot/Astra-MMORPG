@@ -67,7 +67,12 @@ test('authenticated HTTP ticket issuance connects a character to WebSocket on th
     assert.equal(welcome.playerId, 'character-1');
     assert.equal(welcome.characterId, 'character-1');
   } finally {
-    if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) client.close();
+    if (client.readyState !== WebSocket.CLOSED) {
+      await new Promise(resolve => {
+        client.addEventListener('close', resolve, { once: true });
+        client.close();
+      });
+    }
     await new Promise(resolve => httpServer.close(resolve));
   }
 });
