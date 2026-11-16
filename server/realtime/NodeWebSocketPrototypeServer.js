@@ -232,7 +232,7 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
     response.end();
   });
 
-  server.on('upgrade', (request, socket) => {
+  function handleUpgrade(request, socket) {
     const key = request.headers['sec-websocket-key'];
     const version = request.headers['sec-websocket-version'];
     if (request.url !== ACCEPTED_PATH || version !== '13' || typeof key !== 'string' || Buffer.from(key, 'base64').length !== 16) {
@@ -289,11 +289,17 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
       clearTimeout(connection.authTimer);
       if (connection.player?.socket === socket) connection.player.socket = null;
     });
-  });
+  }
 
+  server.on('upgrade', handleUpgrade);
   return {
     server,
     issueTicket,
+    attachTo(httpServer) {
+      if (!httpServer || typeof httpServer.on !== 'function' || typeof httpServer.off !== 'function') throw new TypeError('A Node HTTP server is required');
+      httpServer.on('upgrade', handleUpgrade);
+      return () => httpServer.off('upgrade', handleUpgrade);
+    },
     get address() { return server.address(); },
     close() { return new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())); },
   };
