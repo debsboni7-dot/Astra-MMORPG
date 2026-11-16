@@ -209,7 +209,7 @@ test('reconnection restores the last authoritative position and sequence', async
     const updated = await reconnected.waitFor(message => message.type === 'SNAPSHOT' && message.serverTick === 2);
     const current = updated.players.find(item => item.playerId === 'player-reconnect');
     assert.deepEqual(current.position, { x: 0.2, z: 0 });
-  });
+  }, { now: () => 1000 });
 });
 
 test('expired one-use tickets are rejected', async () => {
