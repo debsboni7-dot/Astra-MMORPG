@@ -217,3 +217,26 @@ Un second banc d'essai est ajouté dans `scripts/benchmark-realtime-network-cond
 - Les résultats ne représentent pas un réseau WAN réel, un appareil Android ou un client Unity. Une future étape devra utiliser un émulateur réseau au niveau système ou des appareils distants pour valider pertes et gigue réseau réelles.
 
 **État :** le script et son intégration CI sont committés. Résultat d'exécution CI à confirmer avant de considérer ce test validé.
+
+
+### Résultats du banc d'essai avec délai/gigue/suppression (16 novembre 2026)
+
+Le workflow GitHub Actions `43823726449` a terminé avec succès sur le commit `90db3b3ed64d2001874eda12625ae078f4c1d954`. Le benchmark a envoyé 100 intentions depuis le client A avec 25 ms de délai applicatif unidirectionnel, une gigue déterministe de ±10 ms et une suppression volontaire d'un snapshot sur dix.
+
+| Mesure | Résultat |
+|---|---:|
+| Intentions envoyées | 100 |
+| Snapshots livrés | 90 |
+| Snapshots supprimés volontairement | 10 |
+| Taux de suppression applicative | 10 % |
+| Délai action A → observation B, minimum | 40,75 ms |
+| Moyenne | 50,89 ms |
+| p50 | 50,89 ms |
+| p95 | 61,04 ms |
+| p99 / maximum | 61,64 ms |
+| Débit observé | 11,33 mises à jour/s |
+| Durée totale | 7 941,67 ms |
+
+**Interprétation :** le banc confirme que le prototype tolère le scénario déterministe prévu et que le workflow complet passe. Le délai mesuré comprend les délais applicatifs simulés et le traitement local du runner. Ce n'est ni une mesure WAN ni une perte de paquets TCP/IP ; les snapshots supprimés sont écartés au niveau du banc d'essai. Le résultat ne prouve rien sur Android physique, Unity, les réseaux mobiles, la capacité serveur ou la production.
+
+Le workflow complet a également validé les tests Node, PostgreSQL, backup/restore, le benchmark WebSocket loopback et les trois scénarios Chromium desktop/mobile.
