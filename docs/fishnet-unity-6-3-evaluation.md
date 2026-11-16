@@ -1,0 +1,69 @@
+# ASTREA — FishNet Unity 6.3 evaluation spike
+
+Status: isolated investigation branch. No FishNet package has been installed and no production networking decision has been made.
+
+## Scope
+
+Qualify FishNet as a candidate for the ASTREA Unity client using the repository's editor target Unity 6.3 LTS (6000.3.28f1). Keep this spike separate from the main development branch. Do not modify the main Unity package manifest until the license, exact package artifact, and reproducible build path are approved.
+
+## License gate (must pass before package import)
+
+The upstream FishNet repository currently supplies a custom license, not an OSI-approved MIT/BSD license. Its grant is worldwide, non-exclusive, no-charge and royalty-free for games developed with the software. It also contains an exclusion concerning other networking solutions using, reverse engineering, or implementing FishNet software, and delegates third-party components to their own licenses.
+
+For ASTREA, the candidate must be used only as a game dependency, not as a component of another networking product. Keep FishNet and NGO evaluation artifacts isolated; do not combine their source code or create a derivative networking framework. Before import, archive the exact package and verify:
+- the exact license file shipped with the selected 4.7.4R artifact;
+- third-party notices and all bundled dependency licenses;
+- whether the Asset Store EULA or repository license governs the exact acquisition route;
+- redistribution terms for the game's client and dedicated server builds;
+- any attribution or notice obligations.
+
+If any term is unclear, stop and request legal review rather than assuming the package is unrestricted.
+
+## Reproducible package gate
+
+- Candidate: FishNet 4.7.4R, reported upstream as originating on Unity 6000.3.17.
+- Project editor target: Unity 6000.3.28f1.
+- Record the exact source URL, release/tag or Asset Store version, archive checksum, import date and package contents.
+- Do not use a floating Git branch or an unpinned dependency.
+- Import only into this spike branch after the license gate passes.
+- Keep the main `unity/Packages/manifest.json` unchanged.
+- Record compiler output and any API/package warnings. A successful import is not a successful player/server build.
+
+## Minimal authoritative two-client scenario
+
+1. Build one dedicated server and two independent clients.
+2. Authenticate each client through the existing HTTP API and request a short-lived realtime ticket. Never send the long-lived HTTP bearer token through FishNet.
+3. Join both clients to one isolated test session.
+4. Client A sends bounded movement input; server simulates and publishes an authoritative state; client B observes A.
+5. Repeat in the opposite direction.
+6. Submit malformed, stale, over-rate, non-finite and out-of-range input. Server must reject it without changing authoritative state.
+7. Attempt client-supplied position, damage, XP or reward values. Server must ignore/reject these as authority.
+8. Disconnect and reconnect with a fresh ticket; server restores state from trusted server persistence, not a client-declared transform.
+
+## Measurements
+
+Capture editor/package versions, build target, CPU architecture, server and client hardware, network topology, client count, tick/send rates, payload size, CPU/RAM, action-to-other-client observation p50/p95/p99, disconnect/reconnect outcomes and all rejected-input cases.
+
+Run the same scenario and limits for the Node.js reference and the eventual NGO spike. Do not compare results from different hardware or network paths as if they were equivalent.
+
+## Acceptance criteria
+
+- License and third-party notices audited for the exact artifact.
+- Unity 6000.3.28f1 imports without unresolved dependencies or compiler errors.
+- Dedicated server build succeeds.
+- Two clients can join and observe the same server-authoritative state.
+- Invalid inputs do not alter server state.
+- Ticket authentication does not expose the HTTP session bearer token.
+- Repeatable automated test and raw benchmark output are committed.
+- No regression in the existing Node/PostgreSQL/Chromium CI.
+
+## Explicit non-goals
+
+This spike does not prove WAN performance, Android device performance, console compatibility, million-player scale, production security, or final architecture selection. It does not install FishNet or change the main project manifest.
+
+## Upstream references
+
+- FishNet repository and custom license: https://github.com/FirstGearGames/FishNet
+- FishNet Unity compatibility: https://fish-networking.gitbook.io/docs/overview/readme/features/unity-compatibility
+- FishNet distribution page: https://assetstore.unity.com/packages/tools/network/fishnet-networking-evolved-207815
+- Existing ASTREA comparison: ../realtime-network-prototype.md
