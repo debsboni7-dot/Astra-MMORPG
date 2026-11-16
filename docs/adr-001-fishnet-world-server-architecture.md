@@ -130,3 +130,10 @@ Cette étape fournit le point d'accroche serveur pour la création de l'avatar, 
 ## Build Linux Dedicated Server
 
 Le point d'entrée `AstreaCloudBuild.BuildLinuxDedicatedServer` et le workflow manuel `unity-linux-server-build.yml` sont ajoutés. Il utilise Unity `6000.3.28f1`, cible `StandaloneLinux64` et définit le sous-cible `StandaloneBuildSubtarget.Server`. Le workflow vérifie la présence du secret `UNITY_LICENSE` avant de lancer le build. Il n'a pas été exécuté à ce stade.
+
+
+## Test end-to-end deux clients préparé
+
+Le dépôt dispose désormais d'une scène de test isolée construite par `AstreaFishNetPrototypeSceneBuilder`, d'un proxy réseau temporaire avec `NetworkObject` + `NetworkTransform` serveur-autoritaire, et d'un client de test automatisé. Le client 1 envoie une intention de déplacement via ServerRpc ; le client 2 doit constater le déplacement répliqué par le serveur.
+
+Le workflow manuel `unity-fishnet-two-client-integration.yml` orchestre PostgreSQL, les migrations, l'API Node, deux comptes/personnages, deux tickets à usage unique, le serveur Linux dédié et les deux clients Linux. Il n'a pas encore été exécuté ; sa réussite reste une porte bloquante.
