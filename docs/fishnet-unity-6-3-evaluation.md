@@ -153,3 +153,10 @@ Thank you for your clarification.
 
 Best regards,
 ASTREA development
+
+
+## Project owner's decision (2026-11-16)
+
+The project owner has chosen to proceed with FishNet for the current internal prototype and has explicitly deferred contacting FirstGearGames about licensing. No email is to be sent at this stage. The owner does not currently plan to publish ASTREA.
+
+This is a development-stage decision, not a legal determination or a claim that future commercial redistribution rights have been confirmed. Revisit licensing before any public release, external distribution, or production deployment. Technical integration and Unity compatibility testing may proceed on this isolated branch.
