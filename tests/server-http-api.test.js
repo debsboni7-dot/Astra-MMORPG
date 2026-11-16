@@ -63,10 +63,10 @@ test('HTTP API rejects malformed JSON and oversized request bodies', async () =>
   await withServer(async (base) => {
     const malformed=await fetch(base+'/v1/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:'{'});
     assert.equal(malformed.status,400);
-    assert.deepEqual(await malformed.json(),{error:'JSON invalide'});
+    assert.deepEqual(await malformed.json(),{error:'BAD_REQUEST'});
     const oversized=await fetch(base+'/v1/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({padding:'x'.repeat(17*1024)})});
     assert.equal(oversized.status,413);
-    assert.deepEqual(await oversized.json(),{error:'Corps de requête trop volumineux'});
+    assert.deepEqual(await oversized.json(),{error:'REQUEST_TOO_LARGE'});
   });
 });
 
@@ -122,4 +122,43 @@ test('untrusted X-Forwarded-For headers cannot bypass the local auth limiter', a
     const second = await post('203.0.113.77');
     assert.equal(second.status, 429);
   }, { authRateLimitLimit: 1, authRateLimitWindowMs: 60_000 });
+});
+
+
+test('unexpected service failures return 500 without leaking internal details', async () => {
+  await withServer(async (base) => {
+    const response = await fetch(base + '/v1/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'a@example.com', password: 'long-password-123' }),
+    });
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: 'INTERNAL_SERVER_ERROR' });
+  }, {
+    authService: {
+      async register() { throw new Error('database password and host must never leak'); },
+      async login() { throw new Error('database password and host must never leak'); },
+      async authenticate() { return null; },
+      async logout() {},
+    },
+  });
+});
+
+test('invalid service input remains a 400 client error', async () => {
+  await withServer(async (base) => {
+    const response = await fetch(base + '/v1/auth/register', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'invalid', password: 'short' }),
+    });
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: 'BAD_REQUEST' });
+  }, {
+    authService: {
+      async register() { throw new TypeError('invalid user input'); },
+      async login() { throw new TypeError('invalid user input'); },
+      async authenticate() { return null; },
+      async logout() {},
+    },
+  });
 });
