@@ -37,3 +37,10 @@ Cette protection convient aux tests et à une première exposition contrôlée, 
 
 ## Classification des erreurs HTTP
 Les erreurs de validation et de format de requête retournent un statut client (400, ou 413 pour un corps trop volumineux). Les erreurs métier connues conservent leurs statuts dédiés. Toute exception inattendue d'un service ou de la base retourne HTTP 500 avec le code générique `INTERNAL_SERVER_ERROR`, sans exposer le message interne. Une journalisation structurée et une supervision opérationnelle restent à ajouter avant production.
+
+
+## Prototype réseau temps réel (comparatif, non production)
+
+Un premier candidat Node.js WebSocket est disponible dans `server/realtime/NodeWebSocketPrototypeServer.js`. Ses tests à deux clients sont lancés par `npm test` via `tests/node-websocket-prototype.test.js`. Le prototype vérifie tickets à usage unique, autorité serveur sur le déplacement, snapshots partagés, séquences, limitation de débit et rejet des positions/dégâts falsifiés.
+
+Ce module est une base expérimentale : tickets, salles et positions sont en mémoire ; aucun matchmaking, endpoint public de ticket, persistance monde, client Unity ou déploiement TLS n'est fourni. Ne pas l'exposer en production. Voir `docs/realtime-network-prototype.md` pour le scénario, les métriques et les limites.
