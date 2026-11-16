@@ -180,7 +180,9 @@ Ne jamais passer un élément à « intégré » sur la seule présence d'un doc
 - [ ] Persister personnages, inventaires, quêtes, économie, territoires et monde.
 - [ ] Gérer zones, instances, transferts, reconnexions et déconnexions.
 - [~] Validation serveur et limitation de débit de prototype présentes sur l'authentification ; anti-triche de gameplay, limites distribuées et journalisation complète restent à développer.
-- [ ] Prévoir sauvegardes, restauration, supervision et reprise après incident.
+- [x] Tests d'intégration PostgreSQL : isolation des lectures de progression d'armes, progression magique et état de combat entre comptes distincts, validée dans GitHub Actions.
+- [~] Classification HTTP sûre (400/413/500) et tests des routes authentifiées de progression/magie ; journaux structurés, alertes et observabilité restent à développer.
+- [~] Test CI PostgreSQL 16 de sauvegarde/restauration et reconnexion du pool réussi ; politique de sauvegarde de production, chiffrement, rétention, stockage externe, supervision et reprise après incident restent à définir.
 
 ### Échelle, sécurité et lancement
 - [ ] Définir une cible réaliste de joueurs simultanés par zone/instance et la capacité par serveur.
@@ -243,7 +245,7 @@ La présente séquence s'arrête **avant toute génération ou modification de c
 ## Alignement avec la feuille de route officielle et ordre du développement 3D
 
 La progression doit suivre les étapes numérotées du cadre de production, pas sauter directement vers la création de contenu 3D :
-- **Étape 3 — Faisabilité et architecture : en cours.** Terminer les tests de sécurité et d'intégration, vérifier la persistance, puis exécuter le prototype réseau comparatif à deux clients et choisir le protocole sur preuves.
+- **Étape 3 — Faisabilité et architecture : en cours.** Les tests HTTP de sécurité, l'isolation PostgreSQL entre comptes, la reconnexion du pool, la sauvegarde/restauration CI et Chromium desktop/mobile passent. Un contrat de messages autoritaire neutre au transport est documenté. Il reste à exécuter le prototype réseau comparatif à deux clients, mesurer les candidats, choisir le protocole sur preuves et valider l'intégration Unity/API.
 - **Étape 4 — Direction artistique : ensuite.** Compléter les références visuelles, matériaux, silhouettes, éclairage et validation de style.
 - **Étape 5 — Outils et pipeline : ensuite.** Rendre reproductibles les imports, formats, licences, génération d'assets et contrôles.
 - **Étape 6 — Prototypes techniques et gameplay : ensuite.** P0 personnage/caméra/contrôles, puis les prototypes prévus dans le cahier de spécification.
