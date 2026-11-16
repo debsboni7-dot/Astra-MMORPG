@@ -60,6 +60,8 @@ Les routes dédiées au futur Authenticator FishNet sont distinctes du ticket We
 - `POST /v1/realtime/fishnet/tickets` : session Bearer requise, personnage vérifié comme appartenant au compte, ticket opaque valable 30 secondes.
 - `POST /v1/internal/realtime/fishnet/consume` : route serveur-à-serveur protégée par l'en-tête `X-Astrea-Server-Key`, retourne l'identité seulement si le ticket est valide, non expiré, non consommé et lié au serveur attendu.
 
+La demande de tickets FishNet est limitée à 10 requêtes par IP et par fenêtre de 60 secondes par défaut, comme les routes d'inscription/connexion. Le compteur reste en mémoire et devra être remplacé par une limite distribuée avant l'exposition publique.
+
 Le hash SHA-256 du ticket est stocké dans PostgreSQL ; le ticket brut n'est retourné qu'une seule fois au client. La consommation utilise un UPDATE conditionnel atomique, ce qui empêche deux serveurs de valider simultanément le même ticket. Configurer `REALTIME_SERVER_SECRET` (au moins 32 caractères aléatoires) et `REALTIME_SERVER_ID` dans l'environnement serveur, jamais dans le dépôt. Le secret ne doit être connu que de l'API et du processus Unity dédié.
 
 L'adaptateur Unity `AstreaApiClient.RequestFishNetJoinTicket` demande le ticket. `AstreaFishNetAuthenticator` consomme le ticket côté serveur Unity, et `AstreaFishNetPlayerSpawner` crée le joueur après authentification. Le tout est encore en attente de compilation Unity et de test à deux clients. La route de ticket WebSocket historique reste inchangée.
