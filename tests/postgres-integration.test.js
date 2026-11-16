@@ -50,14 +50,29 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       serverId: 'astrea-integration-zone',
       expiresAt: joinTicketExpiry,
     });
-    const consumedTicket = await repository.consumeRealtimeJoinTicket(joinTicketHash, 'astrea-integration-zone');
-    assert.deepEqual(consumedTicket, {
+    const concurrentConsumptions = await Promise.all([
+      repository.consumeRealtimeJoinTicket(joinTicketHash, 'astrea-integration-zone'),
+      repository.consumeRealtimeJoinTicket(joinTicketHash, 'astrea-integration-zone'),
+    ]);
+    const successfulConsumptions = concurrentConsumptions.filter(Boolean);
+    assert.equal(successfulConsumptions.length, 1, 'exactly one concurrent consumer must win');
+    assert.deepEqual(successfulConsumptions[0], {
       accountId: String(account.id),
       characterId: character.id,
       serverId: 'astrea-integration-zone',
     });
     assert.equal(await repository.consumeRealtimeJoinTicket(joinTicketHash, 'astrea-integration-zone'), null);
     assert.equal(await repository.consumeRealtimeJoinTicket(joinTicketHash, 'another-zone'), null);
+
+    const expiredTicketHash = createHash('sha256').update(randomBytes(32)).digest('hex');
+    await repository.createRealtimeJoinTicket({
+      tokenHash: expiredTicketHash,
+      accountId: String(account.id),
+      characterId: character.id,
+      serverId: 'astrea-integration-zone',
+      expiresAt: new Date(Date.now() - 1_000),
+    });
+    assert.equal(await repository.consumeRealtimeJoinTicket(expiredTicketHash, 'astrea-integration-zone'), null);
 
     const weaponProgression = createWeaponProgressionService(repository);
     const magicProgression = createMagicProgressionService(repository);
