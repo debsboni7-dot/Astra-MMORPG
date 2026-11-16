@@ -120,3 +120,12 @@ The first P0 source pass is committed:
 GitHub Actions Unity foundation check passed for commit `6d9def1283bf0c765a94f1286e2055453f5b81c0` (run [43722488782](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43722488782)). This is a static source/metadata validation only. It is **not** a Unity Editor compile, Play Mode test, Android device test or proof of camera/input feel.
 
 The starter scene builder now creates a SPRINT hold button at the upper-right control cluster. The actual scene asset is generated only by running the Unity Editor command; no generated scene or APK is claimed here. The generated humanoid still needs a skeleton and animation rig before a real character Play Mode test.
+
+
+## FishNet networking dependency (evaluation branch only)
+
+The isolated `spike/fishnet-unity-6-3-evaluation` branch pins FishNet 4.7.4 through Unity Package Manager using the Git URL in `Packages/manifest.json`. Newtonsoft JSON 3.2.1 is declared to match FishNet's package dependency. This does not modify the main development branch.
+
+On first opening this branch in Unity 6.3, allow Package Manager to resolve dependencies and generate `Packages/packages-lock.json`. Confirm that the resolved FishNet version is 4.7.4 and inspect compiler output before adding FishNet components to scenes. See [the integration checklist](../docs/fishnet-integration.md).
+
+No Unity import, compilation, dedicated-server build or FishNet multiplayer test has yet been executed. The current Node.js/WebSocket backend remains unchanged and is not yet bridged to FishNet.
