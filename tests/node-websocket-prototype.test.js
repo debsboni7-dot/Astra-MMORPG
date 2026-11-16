@@ -102,8 +102,9 @@ test('WebSocket upgrade handler can share the authenticated HTTP API server port
   realtime.attachTo(httpServer);
   await new Promise(resolve => httpServer.listen(0, '127.0.0.1', resolve));
   const url = `ws://127.0.0.1:${httpServer.address().port}/realtime/v1`;
-  const client = new WebSocket(url);
+  let client;
   try {
+    client = new WebSocket(url);
     await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Timed out opening shared-port WebSocket')), 1500);
       client.addEventListener('open', () => { clearTimeout(timer); resolve(); }, { once: true });
