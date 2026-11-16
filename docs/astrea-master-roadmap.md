@@ -175,7 +175,8 @@ Ne jamais passer un élément à « intégré » sur la seule présence d'un doc
 - [ ] Déployer PostgreSQL et configurer les secrets dans un hébergement sécurisé.
 - [ ] Créer l'adaptateur transactionnel PostgreSQL complet.
 - [ ] Connecter le client navigateur aux routes serveur.
-- [ ] Construire le serveur de simulation temps réel autoritaire.
+- [~] Premier prototype de référence Node.js WebSocket : test automatisé à deux clients, snapshots autoritaires et rejet des déplacements/dégâts falsifiés ; pas de client Unity, de matchmaking, de persistance monde ni de mesures réseau WAN.
+- [ ] Construire le serveur de simulation temps réel autoritaire de production après comparaison des candidats et validation de l'architecture.
 - [ ] Synchroniser positions, animations, combats, projectiles, états et interactions.
 - [ ] Persister personnages, inventaires, quêtes, économie, territoires et monde.
 - [ ] Gérer zones, instances, transferts, reconnexions et déconnexions.
@@ -245,7 +246,7 @@ La présente séquence s'arrête **avant toute génération ou modification de c
 ## Alignement avec la feuille de route officielle et ordre du développement 3D
 
 La progression doit suivre les étapes numérotées du cadre de production, pas sauter directement vers la création de contenu 3D :
-- **Étape 3 — Faisabilité et architecture : en cours.** Les tests HTTP de sécurité, l'isolation PostgreSQL entre comptes, la reconnexion du pool, la sauvegarde/restauration CI et Chromium desktop/mobile passent. Un contrat de messages autoritaire neutre au transport est documenté. Il reste à exécuter le prototype réseau comparatif à deux clients, mesurer les candidats, choisir le protocole sur preuves et valider l'intégration Unity/API.
+- **Étape 3 — Faisabilité et architecture : en cours.** Les tests HTTP de sécurité, l'isolation PostgreSQL entre comptes, la reconnexion du pool, la sauvegarde/restauration CI et Chromium desktop/mobile passent. Un contrat de messages autoritaire neutre au transport est documenté. Un premier candidat Node.js WebSocket fonctionne dans un test automatisé à deux clients, mais n'est pas encore connecté à Unity et ne fournit pas de mesures réseau réelles. Il reste à comparer FishNet et NGO dans Unity, mesurer les candidats, choisir le protocole sur preuves et valider l'intégration Unity/API.
 - **Étape 4 — Direction artistique : ensuite.** Compléter les références visuelles, matériaux, silhouettes, éclairage et validation de style.
 - **Étape 5 — Outils et pipeline : ensuite.** Rendre reproductibles les imports, formats, licences, génération d'assets et contrôles.
 - **Étape 6 — Prototypes techniques et gameplay : ensuite.** P0 personnage/caméra/contrôles, puis les prototypes prévus dans le cahier de spécification.
