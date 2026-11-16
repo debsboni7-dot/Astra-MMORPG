@@ -186,3 +186,10 @@ Les coûts d'exploitation ne sont pas chiffrés tant que la cible de joueurs sim
 - Workflow Unity Foundation : **succès**, run [43832520147](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520147). Il vérifie les API du tag FishNet 4.7.4, les valeurs par défaut serveur/transport, les métadonnées et compile les scripts runtime FishNet contre des stubs isolés.
 
 Ces deux runs valident les parties qu'ils exécutent. Aucun des deux n'ouvre Unity Editor. Le workflow end-to-end avec licence Unity reste le seul moyen préparé dans le dépôt pour vérifier résolution UPM, compilation Unity, build Linux server/client et mouvement répliqué entre deux clients.
+
+
+## 13. Blocage Unity réel identifié
+
+Le workflow end-to-end a bien été déclenché : [run 43832992881](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832992881). Il s'est arrêté au contrôle préalable `Check Unity license secret`, car le secret de dépôt `UNITY_LICENSE` est absent. Aucun téléchargement de package Unity, aucune compilation Editor, aucun build Linux et aucun test à deux clients n'ont donc été tentés dans ce run.
+
+Déblocage nécessaire : ajouter le contenu d'un fichier de licence Unity valide au secret GitHub Actions `UNITY_LICENSE` dans les paramètres du dépôt, puis relancer ce run. Ne jamais coller le contenu de la licence dans le code ou dans une conversation. La procédure actuelle d'activation Unity dépend du type de licence et peut nécessiter Unity Hub ; la voie d'activation manuelle Personal n'est pas garantie par Unity/GameCI.
