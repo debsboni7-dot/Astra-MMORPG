@@ -7,11 +7,13 @@ on:
       - "unity/**"
       - ".github/workflows/unity-foundation-check.yml"
       - ".github/workflows/meshy-import-existing-artifact.yml"
+      - "tests/fishnet-compile-stubs/**"
   pull_request:
     branches: [main]
     paths:
       - "unity/**"
       - ".github/workflows/unity-foundation-check.yml"
+      - "tests/fishnet-compile-stubs/**"
   workflow_dispatch:
 
 permissions:
