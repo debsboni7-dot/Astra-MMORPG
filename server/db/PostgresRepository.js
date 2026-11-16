@@ -33,6 +33,23 @@ export function createPostgresRepository(pool) {
       );
       return rows;
     },
+    async createRealtimeJoinTicket({ tokenHash, accountId, characterId, serverId, expiresAt }) {
+      await pool.query(
+        'INSERT INTO realtime_join_tickets (token_hash,account_id,character_id,server_id,expires_at) VALUES ($1,$2,$3,$4,$5)',
+        [tokenHash, accountId, characterId, serverId, expiresAt],
+      );
+    },
+    async consumeRealtimeJoinTicket(tokenHash, serverId) {
+      const { rows } = await pool.query(
+        `UPDATE realtime_join_tickets
+         SET consumed_at=NOW()
+         WHERE token_hash=$1 AND server_id=$2 AND consumed_at IS NULL AND expires_at>NOW()
+         RETURNING account_id AS "accountId",character_id AS "characterId",server_id AS "serverId"`,
+        [tokenHash, serverId],
+      );
+      if (!rows[0]) return null;
+      return { ...rows[0], accountId: String(rows[0].accountId) };
+    },
     async createSession({ accountId, tokenHash, expiresAt }) {
       await pool.query('INSERT INTO account_sessions (account_id,token_hash,expires_at) VALUES ($1,$2,$3)', [accountId, tokenHash, expiresAt]);
     },
