@@ -105,8 +105,9 @@ test('WebSocket upgrade handler can share the authenticated HTTP API server port
   const client = new WebSocket(url);
   try {
     await new Promise((resolve, reject) => {
-      client.addEventListener('open', resolve, { once: true });
-      client.addEventListener('error', reject, { once: true });
+      const timer = setTimeout(() => reject(new Error('Timed out opening shared-port WebSocket')), 1500);
+      client.addEventListener('open', () => { clearTimeout(timer); resolve(); }, { once: true });
+      client.addEventListener('error', error => { clearTimeout(timer); reject(error); }, { once: true });
     });
     const welcomed = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Timed out waiting for WELCOME')), 1500);
