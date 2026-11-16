@@ -110,3 +110,46 @@ The archive identity and its visible embedded license/dependency inventory are n
 - Commit: `871ee7feda3566f4aeda855c4e575fb64a1d6c9d` (`docs(network): record FishNet 4.7.4R archive audit`).
 - Workflow conclusion: success. The automated-tests job passed, including server/gameplay unit tests, PostgreSQL backup/restore, two-client WebSocket loopback benchmark, controlled latency/jitter/snapshot-suppression benchmark, and desktop/mobile Chromium prototype tests.
 - This workflow does not import the FishNet Unity package, run the Unity editor/compiler, build a dedicated server, or test FishNet clients. It verifies the existing ASTREA backend and browser prototype only.
+
+
+## Licensing clarification request (prepared, not sent)
+
+Official documentation states that FishNet has no restrictions for personal or commercial use and no concurrent-user limit. The public GitHub repository nevertheless supplies the custom license reproduced in the exact archive. The Unity Asset Store listing identifies the Asset Store EULA as its license agreement and currently lists FishNet 4.7.4R with Unity 6000.3.17 as the original Unity version.
+
+These are distinct acquisition routes. Do not assume that the GitHub archive and the Asset Store download are governed by identical terms. The uploaded archive was the GitHub release asset, not a verified Asset Store download.
+
+Official support contact published by FirstGearGames: FirstGearGames@gmail.com. A clarification request has been prepared for the developer but has not been sent.
+
+Questions to obtain in writing:
+1. Does the custom license shipped inside the GitHub 4.7.4R unitypackage authorize redistribution of the unmodified FishNet runtime assemblies/source as part of ASTREA's commercial game client?
+2. Does the same grant cover redistribution inside a dedicated-server build operated by ASTREA or its hosting provider?
+3. Are there required copyright/license notices in shipped client or server distributions, and where must they appear?
+4. Does the Asset Store 4.7.4R download use the Standard Unity Asset Store EULA instead, and does that EULA explicitly cover both client and dedicated-server redistribution?
+5. Is there any difference in these permissions between a free FishNet release and a Pro release?
+
+No email has been sent and no legal approval has been inferred from the public documentation. Keep the license gate open until the exact acquisition path and redistribution rights are confirmed.
+
+### Draft email
+
+Subject: Licensing clarification for commercial game client and dedicated server (FishNet 4.7.4R)
+
+Hello FirstGearGames,
+
+I am developing ASTREA, a commercial multiplayer MMORPG in Unity 6.3 LTS. I am evaluating FishNet 4.7.4R for use as a networking dependency.
+
+I inspected the GitHub release archive FishNetworking.4.7.4R.unitypackage and its embedded custom license. I also noticed that the Unity Asset Store listing identifies the Standard Unity Asset Store EULA as its license agreement.
+
+Before integrating FishNet, could you please clarify in writing:
+
+- Whether the GitHub 4.7.4R license permits redistribution of FishNet runtime code as part of a commercial game's client build.
+- Whether the same permission covers a dedicated-server build distributed to or operated by our hosting provider.
+- Whether any license or copyright notices must be included in either distribution.
+- Whether acquiring 4.7.4R through the Unity Asset Store changes these permissions or provides clearer client/server redistribution rights.
+- Whether any additional conditions apply to a free release compared with FishNet Pro.
+
+I intend to use FishNet only as an internal networking dependency of ASTREA, not to create or distribute another networking product.
+
+Thank you for your clarification.
+
+Best regards,
+ASTREA development
