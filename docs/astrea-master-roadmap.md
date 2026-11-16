@@ -360,3 +360,8 @@ Le rapport de faisabilité conserve l'enveloppe de référence de **2 000 000 EU
 - [x] Run serveur/Node/PostgreSQL/backup/restore/migrations/Chromium : [43832520144](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520144) réussi.
 - [x] Run Unity Foundation, API FishNet 4.7.4 et compilation C# isolée : [43832520147](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520147) réussi.
 - [ ] Unity Editor, UPM, build dédié Linux et test réel à deux clients : workflow manuel prêt, exécution non faite.
+
+
+### Blocage de validation Unity
+
+Le workflow end-to-end [43832992881](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832992881) s'est arrêté avant le build, car le secret GitHub Actions `UNITY_LICENSE` n'est pas configuré. Aucun build Unity n'a été effectué. Ajouter une licence Unity valide dans les secrets du dépôt, puis relancer le workflow, est maintenant la seule action externe bloquante identifiée pour la validation Unity.
