@@ -221,7 +221,7 @@ Le fichier `tests/server-http-api.test.js` ajoute des tests HTTP exécutant le v
 - déconnexion : transmission du jeton au service de révocation ;
 - JSON invalide et corps supérieur à la limite : rejet contrôlé.
 
-Ces tests vérifient les routes et leurs contrats avec des dépendances simulées. Ils ne remplacent pas un test de bout en bout avec une vraie base PostgreSQL, ni un test du client Unity. La suite serveur et gameplay a réussi sur le commit `1f3844b`; le test Chromium de ce commit est encore en cours au moment de cette mise à jour.
+Ces tests vérifient les routes et leurs contrats avec des dépendances simulées. Ils ne remplacent pas un test de bout en bout avec une vraie base PostgreSQL, ni un test du client Unity. La suite serveur, gameplay et le contrôle Chromium mobile/desktop ont réussi sur le commit `f57e23b` (workflow GitHub Actions 43816917659). Cela valide le prototype navigateur et les contrats HTTP simulés, pas un lancement Unity ni une connexion réelle du client Unity.
 
 
 ### 11.9 Test d'intégration PostgreSQL ajouté
@@ -229,3 +229,13 @@ Ces tests vérifient les routes et leurs contrats avec des dépendances simulée
 - `tests/postgres-integration.test.js` applique les quatre migrations sur cette vraie instance et vérifie inscription/connexion, sessions, création et isolement des personnages, persistance JSONB, transaction et rollback.
 - Le test est ignoré localement si `DATABASE_URL` n'est pas fourni ; dans GitHub Actions, le service PostgreSQL est configuré pour que le test s'exécute.
 - Cette validation porte sur le backend et la base dans le runner CI. Elle ne prouve pas encore le raccordement du client Unity, ni une base de production ou un serveur multijoueur temps réel.
+
+
+### 11.10 Limitation de débit des routes d'authentification
+- `server/http/createAstreaHttpServer.js` applique une limite aux requêtes POST d'inscription et de connexion.
+- Valeurs par défaut : 10 requêtes par fenêtre fixe de 60 secondes, par adresse IP TCP et par route.
+- Un dépassement retourne HTTP 429, `{ error: 'RATE_LIMITED' }` et un en-tête `Retry-After` en secondes.
+- Le stockage des compteurs est en mémoire et borné à 5 000 clés. Il est réinitialisé au redémarrage et n'est pas partagé entre plusieurs instances.
+- Un test HTTP vérifie les deux premières requêtes acceptées, la troisième refusée et l'en-tête `Retry-After`.
+- Le workflow de validation du changement (run 43817394716) était encore en cours lors de la dernière consultation. Ne pas considérer cette modification comme validée avant son succès.
+- Avant production, remplacer/compléter ce mécanisme par une limitation distribuée au reverse proxy ou API gateway, avec proxy de confiance explicitement configuré et tests multi-instance.
