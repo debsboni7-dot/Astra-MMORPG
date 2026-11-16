@@ -251,3 +251,12 @@ Un script CI `scripts/test-postgres-backup-restore.sh` a été ajouté. Il crée
 - Le script passe la vérification de syntaxe Bash locale.
 - Le contrôle GitHub Actions 43818282149 a réussi pour l'étape « Verify PostgreSQL backup and restore » : sauvegarde PostgreSQL 16, restauration dans une base distincte et relecture de la donnée témoin. Le workflow complet poursuit encore les tests Chromium au moment de cette mise à jour.
 - Ce test vérifie le mécanisme de sauvegarde/restauration dans le runner CI ; il ne remplace pas une politique de sauvegardes chiffrées, externalisées, rétention, ni un exercice de restauration d'une base de production.
+
+
+### 11.13 Classification des erreurs HTTP
+Le serveur HTTP distingue désormais les erreurs de requête des erreurs internes :
+- JSON invalide et entrées de validation rejetées : HTTP 400 avec code générique `BAD_REQUEST`.
+- Corps trop volumineux : HTTP 413 avec code `REQUEST_TOO_LARGE`.
+- Erreurs métier déjà identifiées : codes HTTP spécifiques conservés (401, 404, 409, 429).
+- Erreur inattendue d'un service ou de la base : HTTP 500 avec `INTERNAL_SERVER_ERROR`, sans exposer le message interne, les identifiants SQL ou les secrets.
+Des tests HTTP vérifient la réponse 500 sans fuite de détail et le maintien du 400 pour une entrée invalide. Le test ne constitue pas une journalisation opérationnelle : une stratégie de logs structurés, corrélation et alertes reste à définir.
