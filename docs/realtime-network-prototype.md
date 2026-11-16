@@ -52,7 +52,7 @@ Aucun protocole n'est choisi sur la seule popularité ou facilité de prise en m
 
 - L'adaptateur Unity HTTP actuel couvre l'authentification et les personnages, pas la simulation temps réel.
 - Le backend Node.js existant reste le backend applicatif et la persistance ; il n'est pas encore le serveur de monde.
-- Le manifeste Unity ne contient actuellement ni Netcode for GameObjects, ni Unity Transport, ni FishNet, ni Mirror.
+- Sur la branche principale, le manifeste reste sans framework réseau. Sur la branche isolée `spike/fishnet-unity-6-3-evaluation`, FishNet 4.7.4 est désormais déclaré comme dépendance UPM épinglée ; NGO, Unity Transport et Mirror ne sont pas installés.
 - L'exécution Unity Editor, le build serveur dédié et les tests sur deux clients ne sont pas disponibles dans les validations Chromium/Node existantes.
 - Ne pas installer une dépendance réseau ni figer un protocole avant l'étape comparative et la vérification des licences.
 
@@ -81,7 +81,7 @@ Cette revue confirme que NGO/Unity Transport et FishNet sont des candidats plaus
 - **Netcode for GameObjects (NGO) :** la documentation d'installation exige un compte Unity actif avec une licence valide et prend en charge Unity 2021.3+ ainsi qu'Android/iOS, PC et la plupart des consoles sous conditions. La documentation Unity indique que les versions 2.0+ sont sous Unity Companion License, alors que les anciennes versions restent MIT. Il faudra vérifier la version précise et ses conditions d'utilisation, sans supposer que « gratuit » signifie sans condition. Références : [installation officielle](https://github.com/Unity-Technologies/com.unity.multiplayer.docs/blob/main/docs/installation/installation.md), [changement de licence expliqué par Unity](https://discussions.unity.com/t/multiplayer-development-status-and-next-milestones-september-2024/1521688).
 - **Unity Transport :** reste la couche transport à examiner avec NGO ; la compatibilité du couple de versions exactes doit être figée ensemble, et pas choisie indépendamment.
 
-**Conséquence pour ASTREA :** FishNet remonte comme candidat technique à examiner en priorité dans le prototype Unity, notamment en raison de la version Unity 6.3 proche de sa version d'origine et de l'absence annoncée de péage CCU. Ce n'est pas encore une décision d'architecture : son contrat de licence personnalisé, les dépendances tierces, l'exécution serveur dédié et les mesures à deux clients restent des portes obligatoires. Mirror descend en priorité tant que son support explicite de Unity 6.3 n'est pas établi. Aucun package n'a été installé.
+**Conséquence pour ASTREA :** FishNet remonte comme candidat technique à examiner en priorité dans le prototype Unity, notamment en raison de la version Unity 6.3 proche de sa version d'origine et de l'absence annoncée de péage CCU. Ce n'est pas encore une décision d'architecture : son contrat de licence personnalisé, les dépendances tierces, l'exécution serveur dédié et les mesures à deux clients restent des portes obligatoires. Mirror descend en priorité tant que son support explicite de Unity 6.3 n'est pas établi. À la date de cette revue, aucun package réseau n'était installé. Depuis, FishNet 4.7.4 a été déclaré uniquement dans le manifeste de la branche isolée `spike/fishnet-unity-6-3-evaluation`. La résolution réelle par Unity reste à effectuer.
 
 
 ## Ordre de priorité proposé pour les essais (sans décision finale)
@@ -263,3 +263,10 @@ Sources officielles consultées :
 FishNet devient le **premier candidat à prototyper** dans le projet Unity, et NGO reste le comparateur officiel. Raisons : FishNet est distribué gratuitement sur l'Asset Store, annonce explicitement le support Unity 6 LTS et sa version publiée cible une version 6000.3 très proche de notre éditeur. NGO conserve l'avantage de l'intégration officielle et de la documentation transport, mais le catalogue Unity 6000.3 consulté présente NGO 2.14.0 comme préversion ; il faudra identifier une version stable compatible avant le test comparatif.
 
 Cette priorité n'est **pas une décision finale de protocole**. Aucun package n'a été installé et le manifeste Unity reste inchangé. Avant intégration, il faut relever les versions exactes, lire les licences incluses dans les archives de packages, créer un build serveur dédié et faire communiquer deux clients distincts. Le backend Node/PostgreSQL reste responsable des comptes et de la persistance applicative ; le candidat réseau ne doit pas être autorisé à faire confiance aux positions, dégâts ou récompenses fournis par les clients.
+
+
+## Mise à jour de l'intégration FishNet (16 novembre 2026)
+
+À la demande du propriétaire, FishNet 4.7.4 devient le premier candidat intégré au prototype Unity, sans contact préalable avec FirstGearGames. La dépendance est déclarée uniquement sur la branche isolée, via le Package Manager Git URL épinglé au tag 4.7.4. La question de licence est différée tant qu'ASTREA reste un prototype interne et devra être réexaminée avant toute publication ou distribution externe.
+
+La déclaration UPM n'est pas encore une importation vérifiée : il faut ouvrir le projet sous Unity 6000.3.28f1, résoudre le package, compiler, puis réaliser le test serveur dédié + deux clients. Le backend Node/WebSocket reste inchangé et aucun pont FishNet/backend n'est encore codé.
