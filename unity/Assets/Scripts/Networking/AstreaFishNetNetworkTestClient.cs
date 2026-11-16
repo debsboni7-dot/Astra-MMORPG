@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using FishNet.Managing;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace Astrea.Networking
 {
