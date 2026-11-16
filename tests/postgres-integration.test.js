@@ -4,6 +4,9 @@ import { readFile } from 'node:fs/promises';
 import { createPostgresRepository } from '../server/db/PostgresRepository.js';
 import { createAuthService } from '../server/auth/AuthService.js';
 import { createCharacterService } from '../server/characters/CharacterService.js';
+import { createWeaponProgressionService } from '../server/progression/WeaponProgressionService.js';
+import { createMagicProgressionService } from '../server/progression/MagicProgressionService.js';
+import { createMagicCombatService } from '../server/combat/MagicCombatService.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -33,6 +36,20 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
     assert.equal(character.race, 'elf');
     assert.equal((await characters.list(account.id)).length, 1);
     assert.equal((await characters.list('999999999')).length, 0);
+
+    const weaponProgression = createWeaponProgressionService(repository);
+    const magicProgression = createMagicProgressionService(repository);
+    const magicCombat = createMagicCombatService(repository);
+    assert.equal((await weaponProgression.getSnapshot(account.id, character.id)).characterId, character.id);
+    assert.ok((await magicProgression.getSnapshot(account.id, character.id)).snapshot);
+    assert.equal((await magicCombat.getSnapshot(account.id, character.id)).combat.hp, 100);
+    for (const operation of [
+      () => weaponProgression.getSnapshot('999999999', character.id),
+      () => magicProgression.getSnapshot('999999999', character.id),
+      () => magicCombat.getSnapshot('999999999', character.id),
+    ]) {
+      await assert.rejects(operation(), error => error.code === 'CHARACTER_NOT_FOUND');
+    }
 
     await repository.withCharacterTransaction(account.id, character.id, async (record, saveProgression, saveCombatState) => {
       assert.equal(record.characterData.race, 'elf');
