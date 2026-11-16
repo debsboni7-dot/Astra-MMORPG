@@ -25,6 +25,28 @@ namespace Astrea.EditorTools
             Debug.Log("ASTREA cloud asset generation completed. Check warnings for missing character/animation imports.");
         }
 
+        public static void BuildLinuxDedicatedServer()
+        {
+            GenerateStarterAssets();
+            string[] scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+            if (scenes.Length == 0)
+                throw new Exception("No enabled scenes in Build Settings.");
+
+            var options = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = "Build/ASTREA-LinuxServer/ASTREA.x86_64",
+                target = BuildTarget.StandaloneLinux64,
+                subtarget = (int)StandaloneBuildSubtarget.Server,
+                options = BuildOptions.StrictMode
+            };
+            BuildReport report = BuildPipeline.BuildPlayer(options);
+            if (report.summary.result != BuildResult.Succeeded)
+                throw new Exception("ASTREA Linux Dedicated Server build failed: " + report.summary.result +
+                    ", errors: " + report.summary.totalErrors);
+            Debug.Log("ASTREA Linux Dedicated Server built: " + report.summary.outputPath);
+        }
+
         public static void BuildAndroid()
         {
             GenerateStarterAssets();
