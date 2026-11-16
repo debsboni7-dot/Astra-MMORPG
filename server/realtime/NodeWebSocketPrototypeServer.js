@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 
 const MAX_MESSAGE_BYTES = 4 * 1024;
+const MAX_PENDING_TICKETS = 5_000;
 const MAX_INPUTS_PER_SECOND = 20;
 const TICKET_TTL_MS = 30_000;
 const STEP_SECONDS = 0.05;
@@ -76,8 +77,15 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
     if (![accountId, characterId, sessionId, playerId].every(value => typeof value === 'string' && value.length > 0 && value.length <= 128)) {
       throw new TypeError('Ticket identity fields must be non-empty strings of at most 128 characters');
     }
+    const currentTime = now();
+    for (const [digest, ticket] of tickets) {
+      if (ticket.expiresAt <= currentTime) tickets.delete(digest);
+    }
+    if (tickets.size >= MAX_PENDING_TICKETS) {
+      throw Object.assign(new Error('Realtime ticket capacity reached'), { code: 'REALTIME_CAPACITY' });
+    }
     const token = randomBytes(32).toString('base64url');
-    tickets.set(sha256(token), { accountId, characterId, sessionId, playerId, expiresAt: now() + TICKET_TTL_MS });
+    tickets.set(sha256(token), { accountId, characterId, sessionId, playerId, expiresAt: currentTime + TICKET_TTL_MS });
     return token;
   }
 
