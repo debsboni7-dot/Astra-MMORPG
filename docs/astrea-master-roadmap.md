@@ -353,3 +353,10 @@ Le rapport [`docs/feasibility-stage-3.md`](feasibility-stage-3.md) rassemble la 
 ### Cohérence budget / faisabilité — 16 novembre 2026
 
 Le rapport de faisabilité conserve l'enveloppe de référence de **2 000 000 EUR sur 10 mois pour le prototype**, et non pour le MMORPG complet. La ventilation antérieure est reprise dans `docs/feasibility-stage-3.md`. Les coûts récurrents d'exploitation restent séparés et ne seront estimés qu'après les mesures de concurrence, de zones et de bande passante.
+
+
+### Preuves CI étape 3 — 16 novembre 2026
+
+- [x] Run serveur/Node/PostgreSQL/backup/restore/migrations/Chromium : [43832520144](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520144) réussi.
+- [x] Run Unity Foundation, API FishNet 4.7.4 et compilation C# isolée : [43832520147](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520147) réussi.
+- [ ] Unity Editor, UPM, build dédié Linux et test réel à deux clients : workflow manuel prêt, exécution non faite.
