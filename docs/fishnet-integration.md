@@ -50,3 +50,19 @@ When the branch is opened in Unity 6.3 with Git available:
 
 FishNet's official installation guide documents importing a .unitypackage or using the Package Manager Git URL:
 https://fish-networking.gitbook.io/docs/tutorials/getting-started/installing-fish-networking
+
+
+## État après le banc d'intégration (16 novembre 2026)
+
+Le dépôt contient maintenant :
+- une route Node d'émission de ticket FishNet, authentifiée par session et propriétaire de personnage ;
+- une table PostgreSQL de tickets avec hash SHA-256, TTL 30 secondes et consommation atomique à usage unique ;
+- une route interne de consommation protégée par `REALTIME_SERVER_SECRET` ;
+- une méthode Unity `AstreaApiClient.RequestFishNetJoinTicket` ;
+- `AstreaFishNetAuthenticator` et `AstreaFishNetPlayerSpawner` ;
+- un proxy réseau temporaire, un client test et un générateur de scène Editor ;
+- un workflow manuel de build et test deux clients Linux.
+
+La CI a vérifié le tag FishNet 4.7.4, les API utilisées, les scripts runtime C# contre des stubs isolés, les métadonnées Unity, les tests Node/PostgreSQL, le runner de migrations et les tests Chromium. Ces contrôles ne sont pas une compilation Unity Editor.
+
+Le workflow complet `unity-fishnet-two-client-integration.yml` n'a pas encore été exécuté. Le NetworkManager, la scène, les prefabs, la résolution UPM, le build Linux et la réplication réelle restent à valider par Unity.
