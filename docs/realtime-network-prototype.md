@@ -298,3 +298,9 @@ Voir [ADR-001 — Architecture du serveur de monde et intégration FishNet](adr-
 - [ ] Test sur réseau distant et Android physique.
 
 Le test réseau Node déjà réussi ne ferme aucun de ces critères Unity.
+
+## État actualisé du pont FishNet (16 novembre 2026)
+
+Le pont n'est plus seulement une proposition documentaire : les routes de ticket Node/PostgreSQL, l'adaptateur Unity, l'Authenticator FishNet, le spawner serveur, le proxy de test et le client automatisé sont présents sur la branche isolée. Un workflow manuel construit les deux binaires Linux et tente le scénario réel à deux clients.
+
+Les tests backend et les contrôles de source sont passés. La scène Unity n'a pas encore été ouverte/compilée par Unity Editor et le workflow end-to-end n'a pas été lancé. Le protocole de production et la capacité restent donc non validés.
