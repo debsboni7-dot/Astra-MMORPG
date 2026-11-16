@@ -51,7 +51,7 @@ namespace Astrea.Networking
 
         public event Action<NetworkConnection, AstreaJoinTicketConsumeIdentity> OnClientIdentityAuthenticated;
 
-        private readonly HashSet<int> pendingConnections = new HashSet<int>();
+        private readonly Dictionary<int, NetworkConnection> pendingConnections = new Dictionary<int, NetworkConnection>();
         private readonly Dictionary<int, AstreaJoinTicketConsumeIdentity> authenticatedIdentities =
             new Dictionary<int, AstreaJoinTicketConsumeIdentity>();
         private readonly Dictionary<int, Coroutine> authenticationTimeouts = new Dictionary<int, Coroutine>();
@@ -129,7 +129,7 @@ namespace Astrea.Networking
             AstreaJoinTicketBroadcast message,
             Channel channel)
         {
-            if (connection.IsAuthenticated || pendingConnections.Contains(connection.ClientId))
+            if (connection.IsAuthenticated || pendingConnections.ContainsKey(connection.ClientId))
             {
                 connection.Disconnect(true);
                 return;
@@ -141,7 +141,7 @@ namespace Astrea.Networking
                 return;
             }
 
-            pendingConnections.Add(connection.ClientId);
+            pendingConnections[connection.ClientId] = connection;
             StartCoroutine(ConsumeTicketAndAuthenticate(connection, message.Ticket));
         }
 
@@ -176,7 +176,8 @@ namespace Astrea.Networking
 
                 yield return request.SendWebRequest();
 
-                if (!pendingConnections.Contains(connection.ClientId))
+                if (!pendingConnections.TryGetValue(connection.ClientId, out NetworkConnection pending)
+                    || !ReferenceEquals(pending, connection))
                     yield break;
 
                 if (request.result != UnityWebRequest.Result.Success || request.responseCode != 200)
@@ -217,7 +218,9 @@ namespace Astrea.Networking
             string errorCode,
             AstreaJoinTicketConsumeIdentity identity)
         {
-            pendingConnections.Remove(connection.ClientId);
+            if (pendingConnections.TryGetValue(connection.ClientId, out NetworkConnection pending)
+                && ReferenceEquals(pending, connection))
+                pendingConnections.Remove(connection.ClientId);
             if (!accepted && !string.IsNullOrEmpty(errorCode))
                 Debug.LogWarning("ASTREA realtime authentication rejected: " + errorCode);
             if (authenticationTimeouts.TryGetValue(connection.ClientId, out Coroutine timeout))
@@ -240,7 +243,9 @@ namespace Astrea.Networking
             if (args.ConnectionState != RemoteConnectionState.Stopped)
                 return;
 
-            pendingConnections.Remove(connection.ClientId);
+            if (pendingConnections.TryGetValue(connection.ClientId, out NetworkConnection pending)
+                && ReferenceEquals(pending, connection))
+                pendingConnections.Remove(connection.ClientId);
             authenticatedIdentities.Remove(connection.ClientId);
             if (authenticationTimeouts.TryGetValue(connection.ClientId, out Coroutine timeout))
             {
