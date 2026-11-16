@@ -190,3 +190,18 @@ Les tests ajoutés couvrent la route HTTP, le refus d'un personnage appartenant 
 Le script `scripts/benchmark-realtime-websocket.js` mesure le délai entre l'envoi d'une intention par le client A et la réception du snapshot correspondant par le client B, avec deux clients indépendants sur loopback. Il calcule min, moyenne, p50, p95, p99, max, débit observé, taille des messages, temps CPU du processus et RSS avant/après. Il est lancé automatiquement dans la CI et peut être exécuté avec `npm run benchmark:realtime` (20 échantillons par défaut) ou `npm run benchmark:realtime -- 100`.
 
 **Limite importante :** cette mesure est un microbenchmark local sur runner CI, sans réseau WAN, sans téléphone Android, sans client Unity, sans perte ni gigue artificielle. Elle ne mesure pas une capacité de joueurs simultanés et ne permet pas à elle seule de choisir le protocole. Les résultats doivent être comparés sur une machine et une configuration identiques pour les candidats concurrents.
+
+
+## Résultat du benchmark loopback CI (16 novembre 2026)
+
+Le workflow GitHub Actions `43821673511` a terminé avec succès. Le job `automated-tests` a validé les tests serveur/gameplay, la sauvegarde/restauration PostgreSQL, le benchmark WebSocket et les tests Chromium desktop/mobile.
+
+Mesures du runner CI, sur 20 échanges entre deux clients Node.js connectés en loopback :
+
+- Délai action A → snapshot observé par B : moyenne **0,562 ms**, médiane **0,535 ms**, p95 **0,682 ms**, p99 **0,724 ms**.
+- Débit observé pendant cette séquence : **18,84 mises à jour/s**.
+- Taille moyenne du snapshot : **297,9 octets**.
+- CPU mesuré par le processus pendant le test : **15,72 ms**.
+- RSS du processus : **62 808 064 octets** avant et **64 626 688 octets** après.
+
+Ces valeurs caractérisent uniquement ce runner CI et ce test court de loopback. Elles ne sont pas transposables à un réseau WAN, à Android, à Unity, à un serveur dédié de production ou à une capacité de joueurs simultanés. Elles ne permettent pas de choisir le protocole final. Les essais FishNet et NGO à deux clients Unity restent à effectuer.
