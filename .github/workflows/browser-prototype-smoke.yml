@@ -41,6 +41,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run server and gameplay unit tests
         run: npm test
+      - name: Verify ordered server migration runner against PostgreSQL
+        run: node scripts/apply-server-migrations.js
       - name: Verify PostgreSQL backup and restore
         run: bash scripts/test-postgres-backup-restore.sh
       - name: Benchmark two-client WebSocket loopback
