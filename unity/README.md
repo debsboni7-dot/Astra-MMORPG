@@ -144,3 +144,8 @@ The isolated branch now contains `AstreaFishNetAuthenticator`, which presents th
 ### FishNet player spawn handoff
 
 `AstreaFishNetPlayerSpawner` creates the network player only after the authenticator reports a validated account/character identity and FishNet has marked the connection authenticated. The assigned player prefab must contain a FishNet `NetworkObject` and be registered in the NetworkManager's Spawnable Prefabs. The server-only `AstreaServerPlayerIdentity` component binds the account and character IDs for server-side gameplay/persistence systems. No final network player prefab is configured or tested yet.
+
+
+### Linux Dedicated Server build
+
+A manual GitHub Actions workflow is available at `.github/workflows/unity-linux-server-build.yml`. It builds with Unity 6000.3.28f1, `StandaloneLinux64`, and `StandaloneBuildSubtarget.Server`. It requires the repository secret `UNITY_LICENSE` and a manual `confirm_build=yes`. It has not yet been run; a successful CI source check is not a Unity build.
