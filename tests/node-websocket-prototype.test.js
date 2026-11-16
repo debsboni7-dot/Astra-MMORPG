@@ -77,8 +77,8 @@ async function withRealtimeServer(run, options = {}) {
       },
     });
   } finally {
+    realtime.destroyConnections();
     for (const client of clients) if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) client.close();
-    await new Promise(resolve => setTimeout(resolve, 20));
     await realtime.close();
   }
 }
