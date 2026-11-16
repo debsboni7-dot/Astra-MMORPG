@@ -18,12 +18,6 @@ namespace Astrea.Networking
         public string Ticket;
     }
 
-    public struct AstreaJoinTicketResponseBroadcast : IBroadcast
-    {
-        public bool Accepted;
-        public string ErrorCode;
-    }
-
     [Serializable]
     internal sealed class AstreaJoinTicketConsumeRequest
     {
@@ -78,7 +72,6 @@ namespace Astrea.Networking
             NetworkManager.ServerManager.RegisterBroadcast<AstreaJoinTicketBroadcast>(OnJoinTicketBroadcast, false);
             NetworkManager.ServerManager.OnRemoteConnectionState += OnRemoteConnectionState;
             NetworkManager.ClientManager.OnClientConnectionState += OnClientConnectionState;
-            NetworkManager.ClientManager.RegisterBroadcast<AstreaJoinTicketResponseBroadcast>(OnJoinTicketResponse);
         }
 
         public override void OnRemoteConnection(NetworkConnection connection)
@@ -129,12 +122,6 @@ namespace Astrea.Networking
 
             // A ticket is single-use. Do not retain it after presenting it to the server.
             clientTicket = null;
-        }
-
-        private void OnJoinTicketResponse(AstreaJoinTicketResponseBroadcast response, Channel channel)
-        {
-            if (!response.Accepted)
-                Debug.LogWarning("ASTREA realtime authentication rejected: " + response.ErrorCode);
         }
 
         private void OnJoinTicketBroadcast(
@@ -240,13 +227,7 @@ namespace Astrea.Networking
             if (accepted && identity != null)
                 authenticatedIdentities[connection.ClientId] = identity;
 
-            NetworkManager.ServerManager.Broadcast(connection, new AstreaJoinTicketResponseBroadcast
-            {
-                Accepted = accepted,
-                ErrorCode = accepted ? string.Empty : errorCode
-            }, false, Channel.Reliable);
-
-            // FishNet marks the connection authenticated synchronously from this event.
+            // FishNet sends its own authentication result to the client from this event.
             OnAuthenticationResult?.Invoke(connection, accepted);
             if (accepted && identity != null)
                 OnClientIdentityAuthenticated?.Invoke(connection, identity);
@@ -277,7 +258,6 @@ namespace Astrea.Networking
             NetworkManager.ServerManager.UnregisterBroadcast<AstreaJoinTicketBroadcast>(OnJoinTicketBroadcast);
             NetworkManager.ServerManager.OnRemoteConnectionState -= OnRemoteConnectionState;
             NetworkManager.ClientManager.OnClientConnectionState -= OnClientConnectionState;
-            NetworkManager.ClientManager.UnregisterBroadcast<AstreaJoinTicketResponseBroadcast>(OnJoinTicketResponse);
         }
     }
 }
