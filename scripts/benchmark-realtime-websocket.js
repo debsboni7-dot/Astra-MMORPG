@@ -40,15 +40,16 @@ function createClient(url) {
       const existing = messages.find(item => predicate(item.message));
       if (existing) return Promise.resolve(existing);
       return new Promise((resolve, reject) => {
+        const waiter = {
+          predicate,
+          resolve: value => { clearTimeout(timer); resolve(value); },
+        };
         const timer = setTimeout(() => {
-          const index = waiters.findIndex(waiter => waiter.resolve === resolve);
+          const index = waiters.indexOf(waiter);
           if (index >= 0) waiters.splice(index, 1);
           reject(new Error('Timed out waiting for benchmark message'));
         }, 3000);
-        waiters.push({
-          predicate,
-          resolve: value => { clearTimeout(timer); resolve(value); },
-        });
+        waiters.push(waiter);
       });
     },
   };
