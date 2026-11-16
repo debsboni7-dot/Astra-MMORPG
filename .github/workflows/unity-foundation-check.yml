@@ -50,6 +50,14 @@ jobs:
           assert (root / "Demos/Prefabs/NetworkManager.prefab").is_file()
           print("FishNet 4.7.4 package version, authenticator, broadcasts and server spawn API verified.")
           PY
+      - name: Compile ASTREA FishNet source against isolated API stubs
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Compile FishNet authenticator and player spawner source
+        run: dotnet build tests/fishnet-compile-stubs/FishNetCompileStubs.csproj --configuration Release
+
       - name: Validate Unity project metadata and zero-billing package policy
         run: |
           python3 - <<'PY'
