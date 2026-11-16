@@ -16,7 +16,16 @@ export function createAuthService(repository, { sessionTtlSeconds = SESSION_TTL_
     if (await repository.findAccountByEmail(normalizedEmail)) throw Object.assign(new Error('Compte déjà existant'), { code: 'ACCOUNT_EXISTS' });
     const salt = randomBytes(16);
     const derived = await scrypt(password, salt, 64);
-    const account = await repository.createAccount({ email: normalizedEmail, passwordHash: Buffer.from(derived).toString('hex'), passwordSalt: salt.toString('hex') });
+    let account;
+    try {
+      account = await repository.createAccount({ email: normalizedEmail, passwordHash: Buffer.from(derived).toString('hex'), passwordSalt: salt.toString('hex') });
+    } catch (error) {
+      // The database UNIQUE constraint is the final guard against simultaneous registrations.
+      if (error?.code === '23505' && error?.constraint === 'accounts_email_key') {
+        throw Object.assign(new Error('Compte déjà existant'), { code: 'ACCOUNT_EXISTS' });
+      }
+      throw error;
+    }
     return { id: account.id, email: account.email };
   }
   async function login({ email, password }) {
