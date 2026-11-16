@@ -129,3 +129,10 @@ The isolated `spike/fishnet-unity-6-3-evaluation` branch pins FishNet 4.7.4 thro
 On first opening this branch in Unity 6.3, allow Package Manager to resolve dependencies and generate `Packages/packages-lock.json`. Confirm that the resolved FishNet version is 4.7.4 and inspect compiler output before adding FishNet components to scenes. See [the integration checklist](../docs/fishnet-integration.md).
 
 No Unity import, compilation, dedicated-server build or FishNet multiplayer test has yet been executed. The current Node.js/WebSocket backend remains unchanged and is not yet bridged to FishNet.
+
+
+### FishNet account handoff (prototype)
+
+On the isolated `spike/fishnet-unity-6-3-evaluation` branch, `AstreaApiClient.RequestFishNetJoinTicket` requests a 30-second, one-use join ticket from `POST /v1/realtime/fishnet/tickets` after account login. The API stores only a SHA-256 ticket hash in PostgreSQL and provides a server-only consume endpoint protected by `REALTIME_SERVER_SECRET`.
+
+This is only the account-to-ticket handoff. The FishNet custom Authenticator, its server-to-server ticket-consume client, player spawning, and the two-client server test are still pending. Do not connect the client directly to FishNet using the long-lived HTTP bearer token.
