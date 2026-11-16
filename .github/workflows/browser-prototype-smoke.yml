@@ -45,6 +45,8 @@ jobs:
         run: bash scripts/test-postgres-backup-restore.sh
       - name: Benchmark two-client WebSocket loopback
         run: npm run benchmark:realtime
+      - name: Benchmark controlled latency, jitter and snapshot suppression
+        run: npm run benchmark:realtime:conditions -- 100 25 10 10
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Test mobile and desktop browser prototype
