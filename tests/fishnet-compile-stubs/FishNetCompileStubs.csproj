@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="FishNetStubs.cs" />
+    <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs" />
+    <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs" />
+  </ItemGroup>
+</Project>
