@@ -130,7 +130,7 @@ jobs:
           assert "BuildLinuxDedicatedServer" in cloud_build
           assert "BuildTarget.StandaloneLinux64" in cloud_build
           assert "StandaloneBuildSubtarget.Server" in cloud_build
-          assert (root.parent.parent / ".github/workflows/unity-linux-server-build.yml").is_file()
+          assert (root.parent / ".github/workflows/unity-linux-server-build.yml").is_file()
 
           api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
           assert "RequestFishNetJoinTicket" in api_client
