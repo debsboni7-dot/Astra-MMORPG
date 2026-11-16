@@ -242,6 +242,8 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
   });
 
   function handleUpgrade(request, socket) {
+    sockets.add(socket);
+    socket.once('close', () => sockets.delete(socket));
     const key = request.headers['sec-websocket-key'];
     const version = request.headers['sec-websocket-version'];
     if (request.url !== ACCEPTED_PATH || version !== '13' || typeof key !== 'string' || Buffer.from(key, 'base64').length !== 16) {
@@ -258,7 +260,6 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
       '\r\n',
     ].join('\r\n'));
 
-    sockets.add(socket);
     const connection = { socket, authenticated: false, player: null, room: null, buffer: Buffer.alloc(0), authTimer: null };
     connection.authTimer = setTimeout(() => {
       if (connection.authenticated || socket.destroyed) return;
