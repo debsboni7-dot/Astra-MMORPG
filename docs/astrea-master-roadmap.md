@@ -256,3 +256,15 @@ La progression doit suivre les étapes numérotées du cadre de production, pas 
 - Les étapes 10 et 11 développent ensuite combat/armes et magie/techniques, en cohérence avec les prototypes et le Vertical Slice.
 
 **Règle impérative :** tant que l'étape 3 n'est pas validée, continuer les travaux prévus à l'étape 3. Après sa validation, passer à l'étape suivante de la feuille de route, sans anticiper les étapes 8 et 9. Le développement 3D reste bien prévu dans ASTREA, aux étapes 8 et 9 ; il n'est ni supprimé ni oublié, seulement réalisé à son tour.
+
+
+## Preuve CI du benchmark réseau (16 novembre 2026)
+
+- [x] Benchmark WebSocket loopback à deux clients exécuté dans GitHub Actions, workflow `43821673511` : job complet réussi, incluant tests serveur/gameplay, PostgreSQL, backup/restore et Chromium desktop/mobile.
+- [x] Mesures enregistrées dans `docs/realtime-network-prototype.md` et `docs/architecture.md` : 20 échanges, 0,535 ms p50, 0,682 ms p95, 0,724 ms p99, 18,84 mises à jour/s observées.
+- [ ] Répéter les mesures avec latence, gigue et pertes contrôlées.
+- [ ] Mesurer depuis deux appareils distants, dont Android.
+- [ ] Exécuter le scénario équivalent avec deux clients Unity pour FishNet et NGO.
+- [ ] Comparer les résultats et licences avant toute décision de protocole.
+
+Cette validation ne ferme pas l'étape d'architecture et ne constitue pas une preuve de capacité de production.
