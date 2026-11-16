@@ -145,3 +145,32 @@ Le jeton de session HTTP longue durée ne doit pas apparaître dans l'URL, les j
 ### Critère d'acceptation additionnel
 
 Le test comparatif doit vérifier que les deux clients reçoivent le même état serveur après les intentions validées, et qu'une tentative d'usurpation de position ou de dégâts est rejetée sans altérer la persistance. Les limites de débit et la fréquence de 20 Hz doivent être identiques pour tous les candidats.
+
+
+## Premier prototype exécutable — Node.js WebSocket (16 novembre 2026)
+
+Un premier candidat de référence est maintenant présent dans `server/realtime/NodeWebSocketPrototypeServer.js`. Il utilise le serveur HTTP natif de Node et un petit sous-ensemble de trames WebSocket pour éviter toute dépendance supplémentaire dans ce prototype. Il ne s'agit pas encore d'un choix de protocole.
+
+### Comportements couverts par les tests automatisés
+
+- Deux clients WebSocket distincts s'authentifient et reçoivent le même snapshot autoritaire après un déplacement.
+- Le ticket d'entrée est aléatoire, à usage unique, haché en mémoire et expire après 30 secondes.
+- Les messages de jeu sont refusés avant authentification ; une connexion non authentifiée est fermée après 10 secondes.
+- Les séquences répétées ou en retard sont rejetées.
+- Les entrées de déplacement sont limitées à 20 messages par seconde et à des axes finis compris entre -1 et 1.
+- Les vecteurs diagonaux sont normalisés ; le client ne peut pas imposer sa position, ses dégâts ou ses récompenses.
+- Les actions non implémentées et les tickets expirés/rejoués sont rejetés.
+- Le temps de déplacement est calculé depuis l'horloge serveur et plafonné ; un client ne peut pas accumuler un déplacement arbitraire en envoyant une rafale.
+
+Les tests sont dans `tests/node-websocket-prototype.test.js` et sont inclus dans `npm test`. La suite Node.js et le contrôle PostgreSQL ont réussi dans le run CI du commit `293908d1ce620058bd60f56a179818022b66c122` ; la validation Chromium de ce run doit encore se terminer avant de déclarer le workflow complet réussi.
+
+### Limites explicites
+
+- Les tickets, sessions et positions sont en mémoire ; redémarrage du processus = perte de l'état de test.
+- Aucun endpoint HTTP public ne délivre les tickets. L'appel `issueTicket` est une fonction interne et doit recevoir des identités déjà vérifiées côté serveur.
+- Aucun matchmaking, zone, instance, transfert, persistance PostgreSQL du monde ou reconnexion validée n'est implémenté.
+- Le test utilise deux clients Node.js sur loopback, pas deux clients Unity ni deux appareils distants.
+- Aucune mesure réseau de performance, de latence WAN, de charge, de pertes ou de capacité n'est encore produite.
+- Le serveur est un prototype de comparaison contrôlé, pas un service prêt à exposer sur Internet. Avant toute exposition : remplacer le parseur WebSocket minimal par une implémentation éprouvée, ajouter TLS/reverse proxy, contrôle d'origine, limites distribuées, observabilité et tests de sécurité.
+
+**Statut candidat :** première preuve fonctionnelle de réplication autoritaire Node WebSocket. FishNet et NGO restent à comparer dans Unity ; aucune décision finale n'est prise.
