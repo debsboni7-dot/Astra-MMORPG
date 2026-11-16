@@ -36,6 +36,8 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
     assert.equal(character.race, 'elf');
     assert.equal((await characters.list(account.id)).length, 1);
     assert.equal((await characters.list('999999999')).length, 0);
+    assert.equal((await characters.get(account.id, character.id)).id, character.id);
+    assert.equal(await characters.get('999999999', character.id), null);
 
     const weaponProgression = createWeaponProgressionService(repository);
     const magicProgression = createMagicProgressionService(repository);
