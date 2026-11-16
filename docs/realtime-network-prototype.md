@@ -56,10 +56,19 @@ Aucun protocole n'est choisi sur la seule popularité ou facilité de prise en m
 - L'exécution Unity Editor, le build serveur dédié et les tests sur deux clients ne sont pas disponibles dans les validations Chromium/Node existantes.
 - Ne pas installer une dépendance réseau ni figer un protocole avant l'étape comparative et la vérification des licences.
 
+## Vérification documentaire initiale (16 novembre 2026)
+
+- **Unity Netcode for GameObjects + Unity Transport :** la documentation officielle décrit NGO comme une couche réseau haut niveau et Unity Transport comme transport sous-jacent. Unity Transport prend en charge UDP et WebSockets ; la documentation Unity indique que NGO vise Unity 6, Android/iOS, PC et certaines plateformes fermées sous réserve de conditions propres aux consoles. Références : [NGO sur GitHub](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects), [Unity Transport](https://github.com/Unity-Technologies/com.unity.multiplayer.docs/blob/main/transport/about.md), [compatibilité NGO](https://docs.unity.cn/Packages/com.unity.netcode.gameobjects%402.5/manual/index.html).
+- **Mirror :** le dépôt annonce une licence MIT, des transports interchangeables, et indique Unity 6.0 dans ses versions de démarrage. La compatibilité doit néanmoins être testée avec notre version exacte Unity 6.3 et notre pipeline serveur. Références : [dépôt Mirror](https://github.com/MirrorNetworking/Mirror), [licence MIT](https://github.com/MirrorNetworking/Mirror/blob/master/LICENSE).
+- **FishNet :** sa documentation déclare Unity 6 LTS entièrement pris en charge. La licence exacte et les dépendances tierces doivent être auditées dans les fichiers de licence du commit retenu avant intégration. Références : [compatibilité Unity](https://fish-networking.gitbook.io/docs/overview/readme/features/unity-compatibility), [dépôt FishNet](https://github.com/FirstGearGames/FishNet).
+- **WebSocket Node.js :** candidat intéressant pour réutiliser l'infrastructure applicative existante et le prototype navigateur, mais la fiabilité, le rythme de simulation, la charge CPU et la latence devront être mesurés ; aucune bibliothèque serveur supplémentaire n'a été choisie.
+
+Cette revue confirme que NGO/Unity Transport et FishNet sont des candidats plausibles sur Unity 6, mais ne valide ni la compatibilité exacte de notre projet Unity 6.3, ni la licence complète de chaque dépendance, ni les performances. Aucun paquet n'a été installé.
+
 ## État
 
 - [x] Options candidates et critères d'évaluation documentés.
 - [x] Scénario commun et métriques définis.
-- [ ] Vérification actuelle des versions, licences et compatibilités candidates.
+- [~] Compatibilité générale Unity 6 vérifiée pour NGO/Unity Transport, FishNet et Mirror ; compatibilité exacte Unity 6.3, audit complet des licences et dépendances encore à confirmer.
 - [ ] Prototype comparatif à deux clients exécuté.
 - [ ] Rapport de mesures et décision de protocole approuvée.
