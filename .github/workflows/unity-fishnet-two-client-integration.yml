@@ -1,6 +1,15 @@
 name: ASTREA FishNet two-client integration
 
 on:
+  push:
+    branches:
+      - spike/fishnet-unity-6-3-evaluation
+    paths:
+      - '.github/workflows/unity-fishnet-two-client-integration.yml'
+      - 'unity/**'
+      - 'server/**'
+      - 'scripts/**'
+      - 'tests/**'
   workflow_dispatch:
     inputs:
       confirm_build:
@@ -17,9 +26,11 @@ permissions:
 
 jobs:
   fishnet-two-client:
-    if: inputs.confirm_build == 'yes'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.confirm_build == 'yes') ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-fishnet-integration]'))
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     services:
       postgres:
         image: postgres:16
