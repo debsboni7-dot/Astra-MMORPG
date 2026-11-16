@@ -160,3 +160,15 @@ ASTREA development
 The project owner has chosen to proceed with FishNet for the current internal prototype and has explicitly deferred contacting FirstGearGames about licensing. No email is to be sent at this stage. The owner does not currently plan to publish ASTREA.
 
 This is a development-stage decision, not a legal determination or a claim that future commercial redistribution rights have been confirmed. Revisit licensing before any public release, external distribution, or production deployment. Technical integration and Unity compatibility testing may proceed on this isolated branch.
+
+
+## Mise à jour d'avancement — 16 novembre 2026
+
+La branche isolée est passée de la simple déclaration UPM à une tranche d'intégration :
+- ticket d'accès FishNet durable côté Node/PostgreSQL ;
+- authenticator FishNet qui consomme le ticket auprès de l'API ;
+- spawn serveur après authentification ;
+- scène de test générée et test client automatisé ;
+- build Linux server/client et workflow end-to-end préparés.
+
+Le workflow Unity Foundation vérifie les signatures exactes du tag 4.7.4 et compile les scripts runtime contre des stubs de contrat. Ce résultat ne remplace pas Unity Editor. L'étape bloquante reste l'exécution du workflow end-to-end avec `UNITY_LICENSE`, puis la correction des erreurs réelles et la validation à deux clients.
