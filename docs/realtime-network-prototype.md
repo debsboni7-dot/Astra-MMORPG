@@ -270,3 +270,31 @@ Cette priorité n'est **pas une décision finale de protocole**. Aucun package n
 À la demande du propriétaire, FishNet 4.7.4 devient le premier candidat intégré au prototype Unity, sans contact préalable avec FirstGearGames. La dépendance est déclarée uniquement sur la branche isolée, via le Package Manager Git URL épinglé au tag 4.7.4. La question de licence est différée tant qu'ASTREA reste un prototype interne et devra être réexaminée avant toute publication ou distribution externe.
 
 La déclaration UPM n'est pas encore une importation vérifiée : il faut ouvrir le projet sous Unity 6000.3.28f1, résoudre le package, compiler, puis réaliser le test serveur dédié + deux clients. Le backend Node/WebSocket reste inchangé et aucun pont FishNet/backend n'est encore codé.
+
+
+## Décision d'architecture de prototype (16 novembre 2026)
+
+FishNet 4.7.4 est maintenant le framework choisi pour le prochain essai de serveur Unity dédié, sur la seule branche `spike/fishnet-unity-6-3-evaluation`. Ce choix est une décision de prototype, pas une validation de compatibilité, un protocole de production ou une promesse de capacité.
+
+L'architecture cible du prototype est la suivante :
+- Unity/FishNet porte la simulation temps réel autoritaire par zone.
+- Node.js reste responsable des comptes, sessions HTTPS, personnages et règles métier persistantes.
+- PostgreSQL conserve les données durables ; l'état fréquent de simulation reste en mémoire côté serveur de zone.
+- Le client reçoit un ticket opaque à usage unique et de courte durée via HTTPS, puis le présente au FishNet Authenticator. Le serveur Unity doit valider/consommer ce ticket auprès de l'API Node avant d'autoriser la connexion. Le jeton Bearer de compte ne doit jamais être envoyé sur le canal temps réel.
+- Le prototype Node WebSocket reste la baseline de mesure ; il n'est pas le transport de FishNet et son ticket actuel n'est pas directement réutilisable.
+
+L'objectif d'un million concerne les comptes inscrits dans un royaume logique, pas un million de connexions simultanées sur un seul processus. Un royaume devra pouvoir répartir les zones et instances sur plusieurs processus/machines, selon les résultats mesurés. Le nombre de joueurs simultanés par zone reste inconnu.
+
+Voir [ADR-001 — Architecture du serveur de monde et intégration FishNet](adr-001-fishnet-world-server-architecture.md) pour les responsabilités, le flux de ticket, les risques et les critères d'acceptation.
+
+### État réel après la décision
+- [x] FishNet 4.7.4 déclaré dans le manifeste UPM de la branche isolée.
+- [x] Architecture de prototype et frontière Node API / serveur Unity documentées.
+- [ ] Résolution du package par Unity 6000.3.28f1 et compilation Editor.
+- [ ] Build Linux Dedicated Server.
+- [ ] Authenticator FishNet relié à un ticket consommable et vérifié côté Node.
+- [ ] Deux clients Unity connectés au serveur dédié.
+- [ ] Comparaison des mesures FishNet et Node sur scénarios équivalents.
+- [ ] Test sur réseau distant et Android physique.
+
+Le test réseau Node déjà réussi ne ferme aucun de ces critères Unity.
