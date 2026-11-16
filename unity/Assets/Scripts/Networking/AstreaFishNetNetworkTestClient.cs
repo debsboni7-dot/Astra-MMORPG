@@ -16,6 +16,7 @@ namespace Astrea.Networking
 
         private string testClientId;
         private bool authenticated;
+        private bool finished;
 
         private void Awake()
         {
@@ -150,6 +151,9 @@ namespace Astrea.Networking
 
         private void Finish(int exitCode, string result)
         {
+            if (finished)
+                return;
+            finished = true;
             Debug.Log("ASTREA_FISHNET_TEST_RESULT=" + result);
             Application.Quit(exitCode);
         }
