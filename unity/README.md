@@ -139,3 +139,8 @@ This is only the account-to-ticket handoff. The FishNet custom Authenticator, it
 
 
 The isolated branch now contains `AstreaFishNetAuthenticator`, which presents the short-lived ticket through a FishNet pre-auth broadcast and asks the Node API to consume it. Configure `ASTREA_API_BASE_URL`, `REALTIME_SERVER_SECRET` (32+ random characters), and `REALTIME_SERVER_ID` as environment variables in the dedicated server process. Never commit these values or serialize the secret into a Unity scene/prefab. The authenticator exposes the validated account/character identity through `OnClientIdentityAuthenticated`; a server-side spawn coordinator still needs to subscribe to this event. Unity compilation and live two-client validation remain pending.
+
+
+### FishNet player spawn handoff
+
+`AstreaFishNetPlayerSpawner` creates the network player only after the authenticator reports a validated account/character identity and FishNet has marked the connection authenticated. The assigned player prefab must contain a FishNet `NetworkObject` and be registered in the NetworkManager's Spawnable Prefabs. The server-only `AstreaServerPlayerIdentity` component binds the account and character IDs for server-side gameplay/persistence systems. No final network player prefab is configured or tested yet.
