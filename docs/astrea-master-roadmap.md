@@ -238,3 +238,18 @@ La préparation documentaire est suffisamment structurée pour ouvrir le travail
 
 ### Règle d'arrêt appliquée
 La présente séquence s'arrête **avant toute génération ou modification de code**. Les livrables sont des documents de préparation. Les prototypes P0 à P5 et le Vertical Slice ne sont pas déclarés réalisés.
+
+
+## Alignement avec la feuille de route officielle et ordre du développement 3D
+
+La progression doit suivre les étapes numérotées du cadre de production, pas sauter directement vers la création de contenu 3D :
+- **Étape 3 — Faisabilité et architecture : en cours.** Terminer les tests de sécurité et d'intégration, vérifier la persistance, puis exécuter le prototype réseau comparatif à deux clients et choisir le protocole sur preuves.
+- **Étape 4 — Direction artistique : ensuite.** Compléter les références visuelles, matériaux, silhouettes, éclairage et validation de style.
+- **Étape 5 — Outils et pipeline : ensuite.** Rendre reproductibles les imports, formats, licences, génération d'assets et contrôles.
+- **Étape 6 — Prototypes techniques et gameplay : ensuite.** P0 personnage/caméra/contrôles, puis les prototypes prévus dans le cahier de spécification.
+- **Étape 7 — Vertical Slice : ensuite.** Une petite portion jouable représentative et validée.
+- **Étape 8 — Personnages et animations : étape de production 3D.** C'est ici que commence la production structurée des personnages et de leurs animations finales.
+- **Étape 9 — Monde et environnements 3D : étape de production 3D.** C'est ici que commence la construction structurée des environnements et du monde.
+- Les étapes 10 et 11 développent ensuite combat/armes et magie/techniques, en cohérence avec les prototypes et le Vertical Slice.
+
+**Règle impérative :** tant que l'étape 3 n'est pas validée, continuer les travaux prévus à l'étape 3. Après sa validation, passer à l'étape suivante de la feuille de route, sans anticiper les étapes 8 et 9. Le développement 3D reste bien prévu dans ASTREA, aux étapes 8 et 9 ; il n'est ni supprimé ni oublié, seulement réalisé à son tour.
