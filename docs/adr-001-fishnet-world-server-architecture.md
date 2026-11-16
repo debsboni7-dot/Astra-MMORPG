@@ -106,3 +106,15 @@ Une première tranche backend est maintenant intégrée sur la branche isolée :
 Les tests Node couvrent l'émission, l'ownership, le hash au repos, le rejet de rejeu et le secret serveur. Le test PostgreSQL CI couvre la migration et la consommation atomique sur une vraie instance PostgreSQL.
 
 **Non terminé :** le custom Authenticator FishNet qui enverra le ticket au serveur, le client HTTP serveur-à-serveur, l'identification/spawn du joueur et le test deux clients FishNet. Ces éléments nécessitent une compilation Unity réelle et une validation du contrat exact de la version 4.7.4.
+
+
+## Mise à jour — Authenticator FishNet (prototype de code)
+
+Le dépôt contient maintenant `AstreaFishNetAuthenticator`, basé sur l'API Authenticator de FishNet 4.7.4 :
+- le client transmet un ticket par broadcast fiable après la connexion transport ;
+- le serveur refuse les tickets mal formés et les connexions qui n'en présentent pas en 10 secondes ;
+- le serveur appelle l'endpoint interne Node en HTTPS avec le secret d'environnement `REALTIME_SERVER_SECRET` ;
+- l'identité retournée est liée à la connexion et exposée par l'événement `OnClientIdentityAuthenticated` ;
+- les réponses tardives après déconnexion sont ignorées.
+
+Le composant n'a pas encore été compilé par Unity. Il faut encore le placer dans un NetworkManager FishNet, configurer les variables d'environnement du serveur, connecter le retour d'identité au spawn du personnage, puis vérifier le flux avec deux clients réels. L'existence du code et les assertions source CI ne constituent pas une compilation.
