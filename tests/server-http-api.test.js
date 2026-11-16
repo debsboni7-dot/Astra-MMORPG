@@ -4,7 +4,7 @@ import { createAstreaHttpServer } from '../server/http/createAstreaHttpServer.js
 
 const token = 't'.repeat(48);
 
-async function withServer(run) {
+async function withServer(run, serverOptions = {}) {
   const calls = [];
   const server = createAstreaHttpServer({
     authService: {
@@ -18,6 +18,7 @@ async function withServer(run) {
       async create(accountId, displayName, race) { calls.push({ action:'create', accountId, displayName, race }); return {id:'char-2',displayName,race}; },
     },
     progressionService: { async getSnapshot() { return {}; } },
+    ...serverOptions,
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -67,4 +68,18 @@ test('HTTP API rejects malformed JSON and oversized request bodies', async () =>
     assert.equal(oversized.status,413);
     assert.deepEqual(await oversized.json(),{error:'Corps de requête trop volumineux'});
   });
+});
+
+
+test('registration and login routes enforce a per-IP rate limit with Retry-After', async () => {
+  await withServer(async (base) => {
+    for (let i = 0; i < 2; i += 1) {
+      const response = await fetch(base + '/v1/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'a@example.com', password: 'long-password-123' }) });
+      assert.equal(response.status, 200);
+    }
+    const limited = await fetch(base + '/v1/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'a@example.com', password: 'long-password-123' }) });
+    assert.equal(limited.status, 429);
+    assert.equal((await limited.json()).error, 'RATE_LIMITED');
+    assert.ok(Number(limited.headers.get('retry-after')) >= 1);
+  }, { authRateLimitLimit: 2, authRateLimitWindowMs: 60_000 });
 });
