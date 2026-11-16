@@ -17,6 +17,15 @@ async function withRealtimeServer(run, options = {}) {
         clients.push(client);
         const messages = [];
         const waiters = [];
+        const opened = new Promise((resolve, reject) => {
+          if (client.readyState === WebSocket.OPEN) resolve();
+          else {
+            client.addEventListener('open', resolve, { once: true });
+            client.addEventListener('error', reject, { once: true });
+          }
+        });
+        let closeInfo = null;
+        client.addEventListener('close', event => { closeInfo = { code: event.code, reason: event.reason }; });
         client.addEventListener('message', event => {
           const message = JSON.parse(event.data);
           messages.push(message);
@@ -30,11 +39,8 @@ async function withRealtimeServer(run, options = {}) {
           client,
           messages,
           async waitOpen() {
-            if (client.readyState === WebSocket.OPEN) return;
-            await new Promise((resolve, reject) => {
-              client.addEventListener('open', resolve, { once: true });
-              client.addEventListener('error', reject, { once: true });
-            });
+            await opened;
+            assert.equal(client.readyState, WebSocket.OPEN, `WebSocket closed before authentication: ${JSON.stringify(closeInfo)}`);
           },
           async authenticate() {
             await this.waitOpen();
