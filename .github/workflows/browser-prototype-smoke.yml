@@ -2,7 +2,7 @@ name: Browser prototype and server tests
 
 on:
   push:
-    branches: [main, feat/blender-unreal-cloud-pipeline]
+    branches: [main, feat/blender-unreal-cloud-pipeline, spike/fishnet-unity-6-3-evaluation]
   pull_request:
     branches: [main]
   workflow_dispatch:
