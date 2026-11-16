@@ -329,3 +329,11 @@ Le workflow CI de serveur et navigateur ne remplace pas Unity Editor. Le workflo
 ### Rapport consolidé de faisabilité — 16 novembre 2026
 
 Le rapport [`docs/feasibility-stage-3.md`](feasibility-stage-3.md) rassemble la faisabilité par plateforme, l'architecture cible, le modèle de montée en charge, les exigences numériques pour les statistiques à 10 milliards, les exigences non fonctionnelles, le registre des risques et les portes de sortie. Il confirme que l'étape reste ouverte jusqu'à la compilation Unity 6.3, au build serveur dédié, au test deux clients FishNet et à la validation réseau distante/Android.
+
+
+### Build serveur Unity dédié
+
+- [x] Point d'entrée Unity Editor pour Linux Dedicated Server ajouté.
+- [x] Workflow manuel protégé par confirmation et secret de licence Unity ajouté.
+- [ ] Exécuter le workflow avec une licence Unity valide.
+- [ ] Corriger toute erreur de résolution/compilation et obtenir un build Linux serveur réussi.
