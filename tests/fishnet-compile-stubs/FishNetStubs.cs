@@ -9,7 +9,10 @@ using UnityEngine;
 namespace UnityEngine
 {
     [AttributeUsage(AttributeTargets.Field)] public sealed class SerializeField : Attribute { }
-    public class Object { }
+    public class Object
+    {
+        public static T[] FindObjectsOfType<T>() where T : Object => Array.Empty<T>();
+    }
     public class GameObject : Object
     {
         public T AddComponent<T>() where T : class, new() => new T();
@@ -19,6 +22,7 @@ namespace UnityEngine
     {
         public GameObject gameObject => new GameObject();
         public T GetComponent<T>() where T : class => null;
+        public Transform transform => new Transform();
     }
     public class MonoBehaviour : Component
     {
@@ -36,6 +40,17 @@ namespace UnityEngine
     {
         public static Vector3 zero => new Vector3();
         public static Vector3 right => new Vector3();
+        public static Vector3 operator +(Vector3 left, Vector3 right) => new Vector3();
+        public static Vector3 operator *(Vector3 value, float scalar) => new Vector3();
+        public static float Distance(Vector3 left, Vector3 right) => 0f;
+    }
+    public struct Vector2
+    {
+        public float x;
+        public float y;
+        public float sqrMagnitude => 0f;
+        public static Vector2 right => new Vector2();
+        public static Vector2 ClampMagnitude(Vector2 value, float maxLength) => value;
     }
     public struct Quaternion
     {
@@ -47,8 +62,22 @@ namespace UnityEngine
     }
     public static class Debug
     {
+        public static void Log(object message) { }
         public static void LogWarning(object message) { }
         public static void LogError(object message) { }
+    }
+    public static class Mathf
+    {
+        public static float Min(float a, float b) => a < b ? a : b;
+    }
+    public static class Time
+    {
+        public static float deltaTime => 0.016f;
+        public static float realtimeSinceStartup => 0f;
+    }
+    public static class Application
+    {
+        public static void Quit(int exitCode) { }
     }
     public static class JsonUtility
     {
@@ -110,6 +139,11 @@ namespace FishNet.Connection
 
 namespace FishNet.Object
 {
+    [AttributeUsage(AttributeTargets.Method)] public sealed class ServerRpcAttribute : Attribute { }
+    public class NetworkBehaviour : MonoBehaviour
+    {
+        public bool IsOwner { get; set; }
+    }
     public sealed class NetworkObject : MonoBehaviour { }
 }
 
@@ -131,7 +165,9 @@ namespace FishNet.Managing.Client
     public sealed class ClientManager
     {
         public bool Started { get; set; }
+        public event Action OnAuthenticated;
         public event Action<ClientConnectionStateArgs> OnClientConnectionState;
+        public bool StartConnection(string address, ushort port) => true;
         public void RegisterBroadcast<T>(Action<T, Channel> handler) where T : struct, FishNet.Broadcast.IBroadcast { }
         public void UnregisterBroadcast<T>(Action<T, Channel> handler) where T : struct, FishNet.Broadcast.IBroadcast { }
         public void Broadcast<T>(T message, Channel channel) where T : struct, FishNet.Broadcast.IBroadcast { }
