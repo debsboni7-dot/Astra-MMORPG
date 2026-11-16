@@ -32,7 +32,7 @@ namespace Astrea.Networking
     }
 
     [Serializable]
-    internal sealed class AstreaJoinTicketConsumeIdentity
+    public sealed class AstreaJoinTicketConsumeIdentity
     {
         public string accountId;
         public string characterId;
@@ -237,10 +237,7 @@ namespace Astrea.Networking
             }
 
             if (accepted && identity != null)
-            {
                 authenticatedIdentities[connection.ClientId] = identity;
-                OnClientIdentityAuthenticated?.Invoke(connection, identity);
-            }
 
             NetworkManager.ServerManager.Broadcast(connection, new AstreaJoinTicketResponseBroadcast
             {
@@ -248,7 +245,10 @@ namespace Astrea.Networking
                 ErrorCode = accepted ? string.Empty : errorCode
             }, false, Channel.Reliable);
 
+            // FishNet marks the connection authenticated synchronously from this event.
             OnAuthenticationResult?.Invoke(connection, accepted);
+            if (accepted && identity != null)
+                OnClientIdentityAuthenticated?.Invoke(connection, identity);
         }
 
         private void OnRemoteConnectionState(NetworkConnection connection, RemoteConnectionStateArgs args)
