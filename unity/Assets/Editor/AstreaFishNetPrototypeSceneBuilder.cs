@@ -1,7 +1,6 @@
 #if UNITY_EDITOR
 using System;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Astrea.Networking;
@@ -157,7 +156,9 @@ namespace Astrea.EditorTools
             using (SHA256 sha = SHA256.Create())
             {
                 byte[] digest = sha.ComputeHash(Encoding.UTF8.GetBytes(value.Trim().ToLowerInvariant()));
-                ulong hash = BitConverter.ToUInt64(digest, 0);
+                ulong hash = 0UL;
+                for (int i = 0; i < 8; i++)
+                    hash |= (ulong)digest[i] << (i * 8);
                 return hash == 0UL ? 1UL : hash;
             }
         }
