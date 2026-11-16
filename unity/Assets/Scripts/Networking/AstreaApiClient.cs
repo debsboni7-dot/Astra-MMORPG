@@ -17,6 +17,8 @@ namespace Astrea.Networking
 
         [Serializable] private sealed class Credentials { public string email; public string password; }
         [Serializable] private sealed class CharacterCreate { public string displayName; public string race; }
+        [Serializable] private sealed class FishNetTicketRequest { public string characterId; }
+        [Serializable] public sealed class FishNetJoinTicketResponse { public string ticket; public int expiresIn; }
         [Serializable] public sealed class Account { public string id; public string email; }
         [Serializable] public sealed class LoginResponse { public string token; public Account account; public int expiresIn; }
         [Serializable] public sealed class CharacterRecord { public string id; public string displayName; public string race; }
@@ -83,6 +85,29 @@ namespace Astrea.Networking
                 }
                 CharacterEnvelope result = JsonUtility.FromJson<CharacterEnvelope>(request.downloadHandler.text);
                 completed?.Invoke(result != null && result.character != null, result != null ? result.character : null, null);
+            });
+        }
+
+        public IEnumerator RequestFishNetJoinTicket(string characterId, Action<bool, FishNetJoinTicketResponse, string> completed)
+        {
+            if (string.IsNullOrWhiteSpace(characterId))
+            {
+                completed?.Invoke(false, null, "INVALID_CHARACTER_ID");
+                yield break;
+            }
+
+            var payload = JsonUtility.ToJson(new FishNetTicketRequest { characterId = characterId });
+            yield return Send("POST", "/v1/realtime/fishnet/tickets", payload, true, (request, error) =>
+            {
+                if (error != null || request.responseCode != 201)
+                {
+                    completed?.Invoke(false, null, error ?? request.downloadHandler.text);
+                    return;
+                }
+
+                FishNetJoinTicketResponse result = JsonUtility.FromJson<FishNetJoinTicketResponse>(request.downloadHandler.text);
+                bool valid = result != null && !string.IsNullOrEmpty(result.ticket) && result.expiresIn > 0;
+                completed?.Invoke(valid, valid ? result : null, valid ? null : "INVALID_TICKET_RESPONSE");
             });
         }
 
