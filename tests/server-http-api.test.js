@@ -56,6 +56,7 @@ test('realtime tickets require authentication and an owned character', async () 
   const issued = [];
   const realtimeTicketService = {
     async issueForCharacter(accountId, characterId) {
+      if (characterId !== 'char-1') throw Object.assign(new Error('Character not found'), { code: 'CHARACTER_NOT_FOUND' });
       issued.push({ accountId, characterId });
       return { ticket: 'one-use-ticket-value', expiresIn: 30 };
     },
