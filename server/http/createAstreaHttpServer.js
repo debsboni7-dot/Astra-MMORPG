@@ -20,7 +20,7 @@ function bearer(request) {
   return match?.[1] || null;
 }
 
-export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null, authRateLimitLimit = 10, authRateLimitWindowMs = 60_000 }) {
+export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null, realtimeTicketService = null, authRateLimitLimit = 10, authRateLimitWindowMs = 60_000 }) {
   if (!authService || !characterService || !progressionService) throw new TypeError('Auth, character and progression services are required');
   if (!Number.isInteger(authRateLimitLimit) || authRateLimitLimit < 1 || !Number.isInteger(authRateLimitWindowMs) || authRateLimitWindowMs < 1) throw new TypeError('Auth rate-limit settings must be positive integers');
   const authRateBuckets = new Map();
@@ -49,6 +49,17 @@ export function createAstreaHttpServer({ authService, characterService, progress
       if (request.method === 'POST' && url.pathname === '/v1/auth/login') {
         const session = await authService.login(await readJson(request));
         return send(response, 200, session);
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/realtime/tickets') {
+        const account = await authService.authenticate(bearer(request));
+        if (!account) return send(response, 401, { error: 'UNAUTHENTICATED' });
+        if (!realtimeTicketService) return send(response, 503, { error: 'REALTIME_UNAVAILABLE' });
+        const body = await readJson(request);
+        if (typeof body.characterId !== 'string' || body.characterId.length < 1 || body.characterId.length > 128) {
+          throw new TypeError('Invalid characterId');
+        }
+        const ticket = await realtimeTicketService.issueForCharacter(account.id, body.characterId);
+        return send(response, 201, ticket);
       }
       if (request.method === 'GET' && url.pathname === '/v1/characters') {
         const account = await authService.authenticate(bearer(request));
