@@ -5,6 +5,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>CS0067</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FishNetStubs.cs" />
