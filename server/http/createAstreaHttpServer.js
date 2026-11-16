@@ -39,7 +39,7 @@ export function createAstreaHttpServer({ authService, characterService, progress
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url, 'http://localhost');
-      if (request.method === 'POST' && (url.pathname === '/v1/auth/register' || url.pathname === '/v1/auth/login')) {
+      if (request.method === 'POST' && (url.pathname === '/v1/auth/register' || url.pathname === '/v1/auth/login' || url.pathname === '/v1/realtime/fishnet/tickets')) {
         const retryAfter = authRateLimit(request, url.pathname);
         if (retryAfter) return send(response, 429, { error: 'RATE_LIMITED' }, { 'retry-after': String(retryAfter) });
       }
