@@ -302,7 +302,6 @@ test('pending ticket storage is bounded and expired tickets are pruned', () => {
     sessionId: 'capacity-room',
     playerId: 'player-after-expiry',
   }));
-  realtime.server.close();
 });
 
 test('expired one-use tickets are rejected', async () => {
