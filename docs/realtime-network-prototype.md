@@ -240,3 +240,26 @@ Le workflow GitHub Actions `43823726449` a terminé avec succès sur le commit `
 **Interprétation :** le banc confirme que le prototype tolère le scénario déterministe prévu et que le workflow complet passe. Le délai mesuré comprend les délais applicatifs simulés et le traitement local du runner. Ce n'est ni une mesure WAN ni une perte de paquets TCP/IP ; les snapshots supprimés sont écartés au niveau du banc d'essai. Le résultat ne prouve rien sur Android physique, Unity, les réseaux mobiles, la capacité serveur ou la production.
 
 Le workflow complet a également validé les tests Node, PostgreSQL, backup/restore, le benchmark WebSocket loopback et les trois scénarios Chromium desktop/mobile.
+
+
+## Revue comparative ciblée — Unity 6.3 LTS (16 novembre 2026)
+
+La vérification des sources officielles et des fiches de distribution précise les candidats avant toute installation :
+
+| Critère | FishNet 4.7.4R | Unity Netcode for GameObjects |
+|---|---|---|
+| Compatibilité Unity | La documentation FishNet indique Unity 6 LTS entièrement pris en charge ; la fiche Asset Store indique une version d'origine 6000.3.17, proche de notre éditeur 6000.3.28f1. | L'installation officielle indique Unity 2021.3+ et Android/iOS/PC ; la page de packages Unity 6000.3 consultée liste NGO 2.14.0 en préversion. |
+| Coût du framework | Fiche Unity Asset Store indiquée FREE ; licence de distribution affichée : Standard Unity Asset Store EULA. | Package Unity sans prix d'achat affiché, mais nécessite un compte Unity actif et une licence valide. Les services Unity hébergés ne sont pas nécessaires pour le test auto-hébergé. |
+| Transport | Architecture à transports interchangeables ; le transport concret devra être choisi et vérifié avec le serveur dédié. | Unity Transport officiel, couche bas niveau utilisant UDP et WebSockets, avec pipelines de fiabilité, ordre et fragmentation. |
+| Plateformes | La compatibilité Unity 6 est déclarée par FishNet ; Android et builds serveur doivent être réellement testés dans notre projet. | Android/iOS et la plupart des consoles indiqués dans les prérequis NGO ; les plateformes fermées ont leurs conditions propres. |
+| Licence | Fiche Asset Store : Standard Unity Asset Store EULA. Vérifier les notices et licences de tout transport ou dépendance tierce ajouté. | Vérifier les conditions exactes du package et de la version installée ; ne pas présumer qu'une licence de package équivaut à une licence MIT. |
+
+Sources officielles consultées :
+- FishNet : [compatibilité Unity](https://github.com/FirstGearGames/FishNet-Documentation/blob/main/overview/readme/features/unity-compatibility.md), [fiche Asset Store](https://assetstore.unity.com/packages/tools/network/fishnet-networking-evolved-207815), [présentation et modèle serveur](https://fish-networking.gitbook.io/docs).
+- Unity NGO : [installation et plateformes](https://github.com/Unity-Technologies/com.unity.multiplayer.docs/blob/main/docs/installation/installation.md), [packages disponibles pour Unity 6000.3](https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/packages-all/pack-preview/com-unity-netcode-gameobjects), [transport officiel](https://github.com/Unity-Technologies/com.unity.multiplayer.docs/blob/main/transport/about.md), [choix des frameworks Unity](https://docs.unity.com/multiplayer/netcode/netcode).
+
+### Décision provisoire de l'investigation
+
+FishNet devient le **premier candidat à prototyper** dans le projet Unity, et NGO reste le comparateur officiel. Raisons : FishNet est distribué gratuitement sur l'Asset Store, annonce explicitement le support Unity 6 LTS et sa version publiée cible une version 6000.3 très proche de notre éditeur. NGO conserve l'avantage de l'intégration officielle et de la documentation transport, mais le catalogue Unity 6000.3 consulté présente NGO 2.14.0 comme préversion ; il faudra identifier une version stable compatible avant le test comparatif.
+
+Cette priorité n'est **pas une décision finale de protocole**. Aucun package n'a été installé et le manifeste Unity reste inchangé. Avant intégration, il faut relever les versions exactes, lire les licences incluses dans les archives de packages, créer un build serveur dédié et faire communiquer deux clients distincts. Le backend Node/PostgreSQL reste responsable des comptes et de la persistance applicative ; le candidat réseau ne doit pas être autorisé à faire confiance aux positions, dégâts ou récompenses fournis par les clients.
