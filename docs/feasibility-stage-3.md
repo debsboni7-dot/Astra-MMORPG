@@ -156,3 +156,25 @@ Le workflow est préparé, pas exécuté. Le dépôt ne prétend donc pas encore
 Un générateur de scène Unity Editor crée une scène de test séparée du jeu, avec le prefab NetworkManager FishNet 4.7.4, un prefab proxy de test (cube temporaire), un NetworkTransform configuré serveur-autoritaire, la collection de prefabs spawnables, l'Authenticator, le spawner et un client harness automatisé. Un workflow manuel construit le serveur Linux dédié et deux clients Linux, démarre PostgreSQL et Node, génère deux tickets, puis vérifie que le client 2 observe le mouvement envoyé par le client 1 et validé par le serveur.
 
 Le workflow exige le secret Unity Personal `UNITY_LICENSE` et une confirmation manuelle. Il n'a pas été lancé. La scène et le test automatisé sont donc préparés, pas validés.
+
+
+## 11. Cohérence budgétaire avec la référence de production
+
+Le budget de référence conservé pour ASTREA est **2 000 000 EUR sur un prototype de 10 mois**. Il ne représente pas le coût total de réalisation et d'exploitation du MMORPG complet. La première estimation plus basse de 550 000 USD avait été rejetée comme insuffisante.
+
+| Poste de référence | Montant |
+|---|---:|
+| Équipe de production | 1 150 000 EUR |
+| Art, animation et audio | 300 000 EUR |
+| Réseau et sécurité | 180 000 EUR |
+| Logiciels et équipements | 90 000 EUR |
+| QA et tests | 120 000 EUR |
+| Juridique et recrutement | 60 000 EUR |
+| Réserve | 100 000 EUR |
+| **Total** | **2 000 000 EUR** |
+
+Cette ventilation est une enveloppe de planification, pas encore un devis validé. Elle doit être rapprochée d'un organigramme réel, du coût chargé par rôle, du calendrier de recrutement et des livrables précis du prototype vertical. Le travail réseau de cette étape confirme aussi qu'il faut séparer :
+- le budget de développement du prototype ;
+- les coûts d'exploitation récurrents après lancement (serveurs de zones, base de données, bande passante, protection DDoS, sauvegardes, supervision, support et astreinte).
+
+Les coûts d'exploitation ne sont pas chiffrés tant que la cible de joueurs simultanés, le nombre de régions, la densité des zones et les profils de charge ne sont pas mesurés. Un million de comptes inscrits ne suffit pas à calculer les serveurs nécessaires.
