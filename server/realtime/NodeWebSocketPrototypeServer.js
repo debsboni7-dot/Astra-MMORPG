@@ -143,6 +143,7 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
         z: 0,
         lastSequence: 0,
         inputTimes: [],
+        lastInputAt: null,
         socket: null,
       };
       room.set(ticket.playerId, player);
@@ -213,8 +214,14 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
     }
     player.inputTimes.push(currentTime);
     player.lastSequence = sequence;
-    player.x += payload.x * MOVE_SPEED * STEP_SECONDS;
-    player.z += payload.z * MOVE_SPEED * STEP_SECONDS;
+    const elapsedSeconds = player.lastInputAt === null
+      ? STEP_SECONDS
+      : Math.min(Math.max((currentTime - player.lastInputAt) / 1000, 0), 0.1);
+    player.lastInputAt = currentTime;
+    const magnitude = Math.hypot(payload.x, payload.z);
+    const normalization = magnitude > 1 ? 1 / magnitude : 1;
+    player.x += payload.x * normalization * MOVE_SPEED * elapsedSeconds;
+    player.z += payload.z * normalization * MOVE_SPEED * elapsedSeconds;
     serverTick += 1;
     broadcast(room);
   }
