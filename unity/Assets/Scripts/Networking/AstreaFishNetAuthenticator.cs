@@ -218,6 +218,8 @@ namespace Astrea.Networking
             AstreaJoinTicketConsumeIdentity identity)
         {
             pendingConnections.Remove(connection.ClientId);
+            if (!accepted && !string.IsNullOrEmpty(errorCode))
+                Debug.LogWarning("ASTREA realtime authentication rejected: " + errorCode);
             if (authenticationTimeouts.TryGetValue(connection.ClientId, out Coroutine timeout))
             {
                 StopCoroutine(timeout);
