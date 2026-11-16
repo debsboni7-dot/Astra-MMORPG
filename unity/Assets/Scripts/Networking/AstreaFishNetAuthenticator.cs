@@ -50,6 +50,7 @@ namespace Astrea.Networking
     /// the dedicated server consumes it through the private Node.js API endpoint.
     /// Never place the long-lived account bearer token in FishNet messages.
     /// </summary>
+    // API contract pinned and checked against FishNet tag 4.7.4 in GitHub Actions.
     public sealed class AstreaFishNetAuthenticator : Authenticator
     {
         public override event Action<NetworkConnection, bool> OnAuthenticationResult;
