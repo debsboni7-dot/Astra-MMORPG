@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 
 const MAX_MESSAGE_BYTES = 4 * 1024;
@@ -156,6 +156,7 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
     connection.player = player;
     connection.room = room;
     connection.authenticated = true;
+    clearTimeout(connection.authTimer);
     send(connection.socket, {
       version: 1,
       type: 'WELCOME',
@@ -240,7 +241,13 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
       '\r\n',
     ].join('\r\n'));
 
-    const connection = { socket, authenticated: false, player: null, room: null, buffer: Buffer.alloc(0) };
+    const connection = { socket, authenticated: false, player: null, room: null, buffer: Buffer.alloc(0), authTimer: null };
+    connection.authTimer = setTimeout(() => {
+      if (connection.authenticated || socket.destroyed) return;
+      sendReject(connection, 'AUTH_TIMEOUT');
+      socket.end(encodeFrame(Buffer.from([0x03, 0xf0]), 0x8));
+    }, 10_000);
+    connection.authTimer.unref();
     socket.on('data', chunk => {
       connection.buffer = Buffer.concat([connection.buffer, chunk]);
       try {
@@ -266,9 +273,11 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
       }
     });
     socket.on('close', () => {
+      clearTimeout(connection.authTimer);
       if (connection.player?.socket === socket) connection.player.socket = null;
     });
     socket.on('error', () => {
+      clearTimeout(connection.authTimer);
       if (connection.player?.socket === socket) connection.player.socket = null;
     });
   });
