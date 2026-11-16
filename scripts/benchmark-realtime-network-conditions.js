@@ -94,8 +94,8 @@ try {
     const expected = willDrop ? null : second.waitFor(message => message.type === 'SNAPSHOT' && message.serverTick === sequence);
     const phase = (sequence - 1) % 3 - 1;
     const uplinkDelay = Math.max(0, oneWayDelayMs + phase * jitterMs);
-    await sleep(uplinkDelay);
     const sentAt = performance.now();
+    await sleep(uplinkDelay);
     first.send({ version: 1, type: 'INPUT', sequence, payload: { x: 1, z: 0 } });
     if (willDrop) {
       dropped += 1;
@@ -119,7 +119,7 @@ try {
       deliveredSnapshots: delivered,
       suppressedSnapshots: dropped,
       suppressionRatePercent: Number((dropped / samples * 100).toFixed(2)),
-      observedDelayMs: delays.length ? {
+      intentToOtherClientObservationMs: delays.length ? {
         min: Number(Math.min(...delays).toFixed(2)),
         mean: Number((delays.reduce((a, b) => a + b, 0) / delays.length).toFixed(2)),
         p50: Number(percentile(sorted, 0.5).toFixed(2)),
