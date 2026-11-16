@@ -30,7 +30,7 @@ function makeHarness() {
   return { records, service };
 }
 
-async function withServer(run, service) {
+async function withServer(run, service, serverOptions = {}) {
   const server = createAstreaHttpServer({
     authService: {
       async authenticate(token) { return token === sessionToken ? { id: 'account-1' } : null; },
@@ -42,6 +42,7 @@ async function withServer(run, service) {
     progressionService: { async getSnapshot() { return {}; } },
     fishNetJoinTicketService: service,
     realtimeServerSecret: serverSecret,
+    ...serverOptions,
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -133,4 +134,21 @@ test('FishNet HTTP ticket issuance requires an authenticated owner and internal 
     assert.equal(replay.status, 401);
     assert.deepEqual(await replay.json(), { error: 'INVALID_OR_EXPIRED_TICKET' });
   }, service);
+});
+
+
+test('FishNet join ticket issuance is rate limited per IP', async () => {
+  const { service } = makeHarness();
+  await withServer(async base => {
+    const issue = () => fetch(base + '/v1/realtime/fishnet/tickets', {
+      method: 'POST',
+      headers: { authorization: 'Bearer ' + sessionToken, 'content-type': 'application/json' },
+      body: JSON.stringify({ characterId: 'character-1' }),
+    });
+    assert.equal((await issue()).status, 201);
+    const limited = await issue();
+    assert.equal(limited.status, 429);
+    assert.equal((await limited.json()).error, 'RATE_LIMITED');
+    assert.ok(Number(limited.headers.get('retry-after')) >= 1);
+  }, service, { authRateLimitLimit: 1, authRateLimitWindowMs: 60_000 });
 });
