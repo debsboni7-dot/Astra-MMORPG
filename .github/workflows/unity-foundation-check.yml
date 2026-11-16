@@ -2,7 +2,7 @@ name: ASTREA Unity foundation checks
 
 on:
   push:
-    branches: [feat/blender-unreal-cloud-pipeline]
+    branches: [feat/blender-unreal-cloud-pipeline, spike/fishnet-unity-6-3-evaluation]
     paths:
       - "unity/**"
       - ".github/workflows/unity-foundation-check.yml"
@@ -37,6 +37,9 @@ jobs:
           assert deps.get("com.unity.inputsystem") == "1.20.1", deps
           assert deps.get("com.unity.cinemachine") == "3.1.7", deps
           assert deps.get("com.unity.addressables") == "2.10.3", deps
+          if "spike/fishnet-unity-6-3-evaluation" in __import__("os").environ.get("GITHUB_REF", ""):
+              assert deps.get("com.firstgeargames.fishnet") == "https://github.com/FirstGearGames/FishNet.git?path=Assets/FishNet#4.7.4", deps
+              assert deps.get("com.unity.nuget.newtonsoft-json") == "3.2.1", deps
           assert not any(name.startswith("com.unity.services.") for name in deps), deps
 
           version = (root / "ProjectSettings/ProjectVersion.txt").read_text()
