@@ -1,6 +1,6 @@
 import { MAGIC_RACE_RULES } from '../../prototype/src/magic/MagicSkillTree.js';
 export function createCharacterService(repository) {
-  if (typeof repository?.createCharacter !== 'function' || typeof repository?.listCharacters !== 'function' || typeof repository?.findCharacterByAccount !== 'function') {
+  if (typeof repository?.createCharacter !== 'function' || typeof repository?.listCharacters !== 'function') {
     throw new TypeError('Character repository methods are required');
   }
   async function create(accountId, displayName, race = 'human') {
@@ -18,6 +18,7 @@ export function createCharacterService(repository) {
   }
   async function get(accountId, characterId) {
     if (!accountId || typeof characterId !== 'string' || !characterId) throw new TypeError('Authenticated account and character are required');
+    if (typeof repository.findCharacterByAccount !== 'function') throw new TypeError('Character repository lookup is required');
     return repository.findCharacterByAccount(accountId, characterId);
   }
   return Object.freeze({ create, list, get });
