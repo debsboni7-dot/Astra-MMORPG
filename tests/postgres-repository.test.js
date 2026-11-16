@@ -6,7 +6,7 @@ function fakePool(){
   const queries=[];
   const character={id:'char-1',accountId:'account-1',characterData:{race:'elf'},weaponProgression:{},magicProgression:{race:'elf'},magicCombatState:{mana:100}};
   const client={
-    async query(sql,params=[]){queries.push({sql,params});if(sql.includes('SELECT id,account_id'))return {rows:[structuredClone(character)]};return {rows:[]};},
+    async query(sql,params=[]){queries.push({sql,params});if(sql.includes('SELECT id,account_id'))return {rows:params[0]===character.id&&params[1]===character.accountId?[structuredClone(character)]:[]};return {rows:[]};},
     release(){queries.push({sql:'RELEASE',params:[]});},
   };
   const pool={
@@ -40,5 +40,33 @@ test('character transaction locks and loads race, magic combat state and writes 
   assert.ok(queries.some(q=>q.sql.includes('UPDATE characters SET magic_progression')));
   assert.ok(queries.some(q=>q.sql.includes('UPDATE characters SET magic_combat_state')));
   assert.ok(queries.some(q=>q.sql==='COMMIT'));
+  assert.ok(queries.some(q=>q.sql==='RELEASE'));
+});
+
+
+test('character transaction refuses another account and rolls back without running game logic',async()=>{
+  const {repository,queries}=fakePool();
+  let callbackCalled=false;
+  await assert.rejects(
+    ()=>repository.withCharacterTransaction('attacker-account','char-1',async()=>{callbackCalled=true;}),
+    error=>error.code==='CHARACTER_NOT_FOUND',
+  );
+  assert.equal(callbackCalled,false);
+  assert.ok(queries.some(q=>q.sql==='ROLLBACK'));
+  assert.ok(!queries.some(q=>q.sql==='COMMIT'));
+});
+
+test('character transaction rolls back every write when a persistence callback fails',async()=>{
+  const {repository,queries}=fakePool();
+  await assert.rejects(
+    ()=>repository.withCharacterTransaction('account-1','char-1',async(_character,saveProgression)=>{
+      await saveProgression({schools:{}},'magic');
+      throw new Error('simulated persistence failure');
+    }),
+    /simulated persistence failure/,
+  );
+  assert.ok(queries.some(q=>q.sql.includes('UPDATE characters SET magic_progression')));
+  assert.ok(queries.some(q=>q.sql==='ROLLBACK'));
+  assert.ok(!queries.some(q=>q.sql==='COMMIT'));
   assert.ok(queries.some(q=>q.sql==='RELEASE'));
 });
