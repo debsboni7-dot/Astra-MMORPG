@@ -249,5 +249,5 @@ Le scénario commun impose deux clients, un état de déplacement validé par le
 ### 11.12 Vérification de sauvegarde et restauration PostgreSQL
 Un script CI `scripts/test-postgres-backup-restore.sh` a été ajouté. Il crée une donnée témoin dans la base de test, produit une archive `pg_dump` au format custom, restaure cette archive dans une base PostgreSQL distincte, puis relit la donnée témoin. Le workflow `.github/workflows/browser-prototype-smoke.yml` installe le client PostgreSQL et exécute ce contrôle après les tests Node.
 - Le script passe la vérification de syntaxe Bash locale.
-- Le workflow GitHub Actions 43817906602 est lancé, mais le contrôle de sauvegarde/restauration n'est pas encore confirmé.
+- Le contrôle GitHub Actions 43818282149 a réussi pour l'étape « Verify PostgreSQL backup and restore » : sauvegarde PostgreSQL 16, restauration dans une base distincte et relecture de la donnée témoin. Le workflow complet poursuit encore les tests Chromium au moment de cette mise à jour.
 - Ce test vérifie le mécanisme de sauvegarde/restauration dans le runner CI ; il ne remplace pas une politique de sauvegardes chiffrées, externalisées, rétention, ni un exercice de restauration d'une base de production.
