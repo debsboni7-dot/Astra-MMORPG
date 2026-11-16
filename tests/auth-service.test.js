@@ -55,3 +55,24 @@ test('logout revokes the session token', async () => {
   await auth.logout(token);
   assert.equal(await auth.authenticate(token), null);
 });
+
+
+test('registration maps a concurrent database email uniqueness conflict to ACCOUNT_EXISTS', async () => {
+  const repository = fixture();
+  repository.createAccount = async ({ email, passwordHash, passwordSalt }) => {
+    if (repository.accounts.has(email)) {
+      throw Object.assign(new Error('duplicate key'), { code: '23505', constraint: 'accounts_email_key' });
+    }
+    const account = { id: 'race-safe', email, passwordHash, passwordSalt };
+    repository.accounts.set(email, account);
+    return account;
+  };
+  const auth = createAuthService(repository);
+  const results = await Promise.allSettled([
+    auth.register({ email: 'race@example.com', password: 'long-password-123' }),
+    auth.register({ email: 'race@example.com', password: 'long-password-456' }),
+  ]);
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+  const rejected = results.find(result => result.status === 'rejected');
+  assert.equal(rejected.reason.code, 'ACCOUNT_EXISTS');
+});
