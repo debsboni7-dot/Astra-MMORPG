@@ -324,3 +324,8 @@ Le workflow CI de serveur et navigateur ne remplace pas Unity Editor. Le workflo
 - [ ] Créer/configurer un prefab réseau avec NetworkObject et l'enregistrer dans Spawnable Prefabs.
 - [ ] Compiler et tester le spawn en Unity Play Mode.
 - [ ] Vérifier qu'un deuxième client voit le premier joueur et inversement.
+
+
+### Rapport consolidé de faisabilité — 16 novembre 2026
+
+Le rapport [`docs/feasibility-stage-3.md`](feasibility-stage-3.md) rassemble la faisabilité par plateforme, l'architecture cible, le modèle de montée en charge, les exigences numériques pour les statistiques à 10 milliards, les exigences non fonctionnelles, le registre des risques et les portes de sortie. Il confirme que l'étape reste ouverte jusqu'à la compilation Unity 6.3, au build serveur dédié, au test deux clients FishNet et à la validation réseau distante/Android.
