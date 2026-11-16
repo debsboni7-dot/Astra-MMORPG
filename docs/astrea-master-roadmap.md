@@ -281,3 +281,16 @@ Cette validation ne ferme pas l'étape d'architecture et ne constitue pas une pr
 - [ ] Comparer les résultats, licences et coûts avant toute décision de protocole.
 
 La validation CI renforce la preuve du prototype Node, mais ne ferme pas l'étape 3 : le choix du protocole et l'intégration Unity/API restent ouverts.
+
+
+### Comparatif réseau Unity 6.3 — résultat documentaire (16 novembre 2026)
+
+- [x] Sources officielles consultées pour FishNet, NGO, Unity Transport et la compatibilité Unity 6.3.
+- [x] FishNet classé premier candidat à prototyper : distribution Asset Store gratuite, support Unity 6 LTS annoncé, version publiée conçue pour Unity 6000.3.17.
+- [x] NGO conservé comme comparateur officiel ; la page Unity 6000.3 consultée présente NGO 2.14.0 en préversion, donc la version stable compatible doit être déterminée avant installation.
+- [ ] Auditer les licences exactes des archives de packages et de leurs dépendances.
+- [ ] Installer un seul candidat dans une branche de test isolée après vérification des licences ; ne pas modifier le projet principal avant compilation.
+- [ ] Construire un serveur dédié et exécuter le scénario autoritaire avec deux clients Unity.
+- [ ] Comparer FishNet, NGO et la référence Node sur des mesures équivalentes avant de choisir l'architecture.
+
+Aucun package réseau Unity n'a été ajouté au manifeste. Cette revue documentaire ne clôt pas l'étape 3.
