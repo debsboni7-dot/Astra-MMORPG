@@ -260,3 +260,12 @@ Le serveur HTTP distingue désormais les erreurs de requête des erreurs interne
 - Erreurs métier déjà identifiées : codes HTTP spécifiques conservés (401, 404, 409, 429).
 - Erreur inattendue d'un service ou de la base : HTTP 500 avec `INTERNAL_SERVER_ERROR`, sans exposer le message interne, les identifiants SQL ou les secrets.
 Des tests HTTP vérifient la réponse 500 sans fuite de détail et le maintien du 400 pour une entrée invalide. Le test ne constitue pas une journalisation opérationnelle : une stratégie de logs structurés, corrélation et alertes reste à définir.
+
+
+### 11.14 Contrats HTTP de progression et de combat magique
+Une couverture supplémentaire a été ajoutée à `tests/server-http-api.test.js` pour les routes de maîtrise d'armes, progression magique et combat magique :
+- Les lectures de progression d'armes, d'état magique, d'arbre d'école et d'état de combat refusent les requêtes sans jeton valide.
+- Les mêmes routes acceptent une session valide.
+- Les routes d'équipement de technique et de lancement de sort transmettent au service l'identifiant de compte dérivé de la session authentifiée, jamais celui fourni dans le corps de la requête.
+- Le test vérifie aussi que l'identifiant de personnage et les paramètres d'action arrivent au service attendu.
+Cette couverture utilise des services simulés : elle vérifie le contrat HTTP et l'autorisation à la frontière API, pas le calcul réel du combat ni l'exécution Unity. Le workflow CI de ce commit doit réussir avant de considérer cette couverture comme validée.
