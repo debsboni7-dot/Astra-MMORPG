@@ -207,7 +207,7 @@ Ce schéma décrit une cible logique et des intégrations futures ; les flèches
 - Le code présent prouve l'existence d'un adaptateur API, pas qu'une connexion réelle depuis Unity a été exécutée. Aucun test d'intégration Unity ↔ PostgreSQL n'est déclaré réussi à ce stade.
 
 ### 11.7 Contrôles à compléter avant une exposition réseau
-- Ajouter une limitation de débit pour l'inscription, la connexion et les routes sensibles.
+- [x] Ajouter une limitation de débit de prototype pour l'inscription et la connexion ; compléter par une solution distribuée avant exposition publique.
 - Imposer HTTPS hors environnement local de développement.
 - Ajouter des tests automatisés sur les limites de taille, les erreurs JSON, les jetons invalides, les accès inter-comptes et les requêtes répétées.
 - Vérifier le cycle de vie des sessions et le traitement des erreurs de base de données.
@@ -237,7 +237,7 @@ Ces tests vérifient les routes et leurs contrats avec des dépendances simulée
 - Un dépassement retourne HTTP 429, `{ error: 'RATE_LIMITED' }` et un en-tête `Retry-After` en secondes.
 - Le stockage des compteurs est en mémoire et borné à 5 000 clés. Il est réinitialisé au redémarrage et n'est pas partagé entre plusieurs instances.
 - Un test HTTP vérifie les deux premières requêtes acceptées, la troisième refusée et l'en-tête `Retry-After`.
-- Le workflow de validation du changement (run 43817394716) était encore en cours lors de la dernière consultation. Ne pas considérer cette modification comme validée avant son succès.
+- Le workflow GitHub Actions 43817394716 a terminé avec succès : tests Node/serveur, gameplay, PostgreSQL et contrôles Chromium mobile/desktop. Cette preuve valide la protection dans le contexte de test CI, pas une protection distribuée de production.
 - Avant production, remplacer/compléter ce mécanisme par une limitation distribuée au reverse proxy ou API gateway, avec proxy de confiance explicitement configuré et tests multi-instance.
 
 
