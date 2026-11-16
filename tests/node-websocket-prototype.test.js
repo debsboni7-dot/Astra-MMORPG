@@ -29,11 +29,15 @@ async function withRealtimeServer(run, options = {}) {
         return {
           client,
           messages,
-          async authenticate() {
+          async waitOpen() {
+            if (client.readyState === WebSocket.OPEN) return;
             await new Promise((resolve, reject) => {
               client.addEventListener('open', resolve, { once: true });
               client.addEventListener('error', reject, { once: true });
             });
+          },
+          async authenticate() {
+            await this.waitOpen();
             client.send(JSON.stringify({ version: 1, type: 'AUTH', ticket }));
             return this.waitFor(message => message.type === 'WELCOME');
           },
@@ -115,7 +119,8 @@ test('tickets are one-use and required before any gameplay input', async () => {
     const first = connect(value);
     await first.authenticate();
     const replay = connect(value);
-    replay.client.send(JSON.stringify({ version: 1, type: 'INPUT', sequence: 1, payload: { x: 1, z: 0 } }));
+    await replay.waitOpen();
+    replay.client.send(JSON.stringify({ version: 1, type: 'AUTH', ticket: value }));
     const rejected = await replay.waitFor(message => message.type === 'REJECT');
     assert.equal(rejected.code, 'UNAUTHENTICATED');
   });
@@ -142,6 +147,7 @@ test('expired one-use tickets are rejected', async () => {
     const value = ticket(issueTicket, 'player-a');
     currentTime += 30_001;
     const client = connect(value);
+    await client.waitOpen();
     client.client.send(JSON.stringify({ version: 1, type: 'AUTH', ticket: value }));
     const rejected = await client.waitFor(message => message.type === 'REJECT');
     assert.equal(rejected.code, 'INVALID_OR_EXPIRED_TICKET');
