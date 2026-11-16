@@ -162,3 +162,79 @@ test('invalid service input remains a 400 client error', async () => {
     },
   });
 });
+
+
+test('progression and magic combat routes require authentication and use the session account', async () => {
+  const calls = [];
+  const services = {
+    progressionService: {
+      async getSnapshot(accountId, characterId) {
+        calls.push({ action: 'weapon-snapshot', accountId, characterId });
+        return { characterId, progression: {} };
+      },
+    },
+    magicProgressionService: {
+      async getSnapshot(accountId, characterId) {
+        calls.push({ action: 'magic-snapshot', accountId, characterId });
+        return { characterId, snapshot: {} };
+      },
+      async getTree(accountId, characterId, school) {
+        calls.push({ action: 'magic-tree', accountId, characterId, school });
+        return { school };
+      },
+      async equipTechnique(input) {
+        calls.push({ action: 'magic-equip', ...input });
+        return { equipped: true };
+      },
+    },
+    magicCombatService: {
+      async getSnapshot(accountId, characterId) {
+        calls.push({ action: 'combat-snapshot', accountId, characterId });
+        return { characterId, combat: {} };
+      },
+      async castSpell(input) {
+        calls.push({ action: 'cast', ...input });
+        return { cast: { executed: true } };
+      },
+    },
+  };
+  await withServer(async (base) => {
+    const paths = [
+      '/v1/characters/char-1/progression/weapons',
+      '/v1/characters/char-1/progression/magic',
+      '/v1/characters/char-1/progression/magic/fire',
+      '/v1/characters/char-1/combat/magic',
+    ];
+    for (const path of paths) {
+      const denied = await fetch(base + path);
+      assert.equal(denied.status, 401, path);
+    }
+
+    const headers = { authorization: 'Bearer ' + token, 'content-type': 'application/json' };
+    for (const path of paths) {
+      const accepted = await fetch(base + path, { headers });
+      assert.equal(accepted.status, 200, path);
+    }
+    const equipped = await fetch(base + '/v1/characters/char-1/progression/magic/equip', {
+      method: 'POST', headers,
+      body: JSON.stringify({ school: 'fire', skillId: 'fire-bolt', slotType: 'normal', slotIndex: 0, accountId: 'attacker' }),
+    });
+    assert.equal(equipped.status, 200);
+    const cast = await fetch(base + '/v1/characters/char-1/combat/magic/cast', {
+      method: 'POST', headers,
+      body: JSON.stringify({ school: 'fire', targetId: 'target-1', requestId: 'request-12345678', accountId: 'attacker' }),
+    });
+    assert.equal(cast.status, 200);
+  }, services);
+
+  assert.deepEqual(calls.map(call => call.action), [
+    'weapon-snapshot', 'magic-snapshot', 'magic-tree', 'combat-snapshot', 'magic-equip', 'cast',
+  ]);
+  for (const call of calls) {
+    assert.equal(call.accountId, 'account-1');
+    assert.notEqual(call.accountId, 'attacker');
+    assert.equal(call.characterId, 'char-1');
+  }
+  assert.equal(calls.find(call => call.action === 'magic-tree').school, 'fire');
+  assert.equal(calls.find(call => call.action === 'cast').requestId, 'request-12345678');
+});
