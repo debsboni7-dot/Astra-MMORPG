@@ -54,6 +54,7 @@ function decodeClientFrames(buffer, onFrame) {
       headerLength = 10;
     }
     if (length > MAX_MESSAGE_BYTES) throw new Error('MESSAGE_TOO_LARGE');
+    if (opcode >= 0x8 && length > 125) throw new Error('INVALID_CONTROL_FRAME');
     if (buffer.length - offset < headerLength + 4 + length) break;
     const maskOffset = offset + headerLength;
     const mask = buffer.subarray(maskOffset, maskOffset + 4);
@@ -129,7 +130,7 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
       rooms.set(ticket.sessionId, room);
     }
     let player = room.get(ticket.playerId);
-    if (player && player.accountId !== ticket.accountId) {
+    if (player && (player.accountId !== ticket.accountId || player.characterId !== ticket.characterId)) {
       sendReject(connection, 'PLAYER_IDENTITY_CONFLICT');
       connection.socket.end(encodeFrame(Buffer.from([0x03, 0xf0]), 0x8));
       return;
@@ -267,6 +268,7 @@ export function createNodeWebSocketPrototypeServer({ now = Date.now } = {}) {
             socket.write(encodeFrame(payload, 0xA));
             return;
           }
+          if (opcode === 0xA) return;
           if (opcode !== 0x1) {
             sendReject(connection, 'TEXT_FRAMES_REQUIRED');
             return;
