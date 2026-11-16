@@ -302,3 +302,18 @@ Le test a été exécuté avec PostgreSQL 16 dans GitHub Actions et l'ensemble d
 Le workflow GitHub Actions `43821673511` a réussi l'ensemble du job automatisé, dont les tests serveur/gameplay, PostgreSQL, sauvegarde/restauration, benchmark WebSocket et Chromium desktop/mobile. Le benchmark de 20 échanges entre deux clients Node.js sur loopback a mesuré 0,562 ms de moyenne, 0,535 ms p50, 0,682 ms p95 et 0,724 ms p99 ; débit observé 18,84 mises à jour/s ; snapshot moyen 297,9 octets ; CPU processus 15,72 ms ; RSS 62 808 064 octets avant et 64 626 688 octets après.
 
 **Portée :** mesure de microbenchmark sur runner CI uniquement. Cela ne valide ni réseau WAN, ni appareil Android, ni client Unity, ni capacité de production. Aucun protocole final n'est choisi. Les essais comparatifs FishNet et NGO avec deux clients Unity restent requis.
+
+
+## 12. Décision de prototype FishNet et serveur de monde (16 novembre 2026)
+
+L'ADR [ADR-001 — Architecture du serveur de monde et intégration FishNet](adr-001-fishnet-world-server-architecture.md) précise la décision prise après le comparatif documentaire et le premier benchmark Node.
+
+- FishNet 4.7.4 est le framework retenu pour le prochain prototype Unity dédié, uniquement sur la branche isolée.
+- Le serveur Unity/FishNet sera autoritaire pour l'état temps réel de la zone.
+- Node.js reste l'autorité des comptes, sessions, personnages et opérations persistantes.
+- PostgreSQL reste le stockage durable. Les états de mouvement fréquents ne seront pas écrits en base à chaque tick.
+- Le client obtiendra un ticket éphémère via HTTPS. Le serveur FishNet devra le faire consommer et valider par l'API Node avec une authentification serveur-à-serveur. Le ticket WebSocket actuel est distinct et n'est pas compatible directement.
+- Le prototype Node WebSocket reste la référence mesurée, sans être confondu avec FishNet.
+- Un million de comptes inscrits correspond à un royaume logique distribué en zones/instances ; ce n'est pas une cible de concurrence simultanée pour un processus unique.
+
+Cette décision ne signifie pas que FishNet a été résolu ou compilé par Unity. La compilation, le build Linux Dedicated Server, le raccordement d'authentification, le test à deux clients et les mesures comparatives restent des portes bloquantes. La branche principale n'est pas modifiée par l'intégration FishNet.
