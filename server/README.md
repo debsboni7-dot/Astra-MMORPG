@@ -33,3 +33,7 @@ La race du personnage est maintenant enregistrée dans `character_data.race`. La
 ## Limitation de débit : portée et limites
 La limitation intégrée protège les routes d'inscription et de connexion avec un compteur à fenêtre fixe, basé sur l'adresse IP de la connexion TCP et la route. La limite par défaut est de 10 requêtes par fenêtre de 60 secondes. Les dépassements reçoivent HTTP 429 et un en-tête `Retry-After`. La table mémoire est bornée à 5 000 clés et les entrées les plus anciennes sont évincées lorsque cette limite est atteinte.
 Cette protection convient aux tests et à une première exposition contrôlée, pas à un lancement public : elle n'est ni partagée entre plusieurs processus, ni persistante, et ne doit pas faire confiance à `X-Forwarded-For` sans configuration explicite d'un proxy de confiance. Avant production, ajouter une limite distribuée au niveau du reverse proxy/API gateway, surveiller les faux positifs et tester les scénarios multi-instance.
+
+
+## Classification des erreurs HTTP
+Les erreurs de validation et de format de requête retournent un statut client (400, ou 413 pour un corps trop volumineux). Les erreurs métier connues conservent leurs statuts dédiés. Toute exception inattendue d'un service ou de la base retourne HTTP 500 avec le code générique `INTERNAL_SERVER_ERROR`, sans exposer le message interne. Une journalisation structurée et une supervision opérationnelle restent à ajouter avant production.
