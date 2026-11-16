@@ -92,3 +92,56 @@ Cette revue confirme que NGO/Unity Transport et FishNet sont des candidats plaus
 4. **Mirror** : candidat mis en attente. Sa licence MIT est attractive, mais sa documentation actuelle recommande Unity 2020/2021 LTS et ne garantit pas le support des versions plus récentes. Ne pas le retenir sans une preuve de compatibilité Unity 6.3.
 
 Ce classement définit l'ordre d'investigation, pas un choix de protocole ni une autorisation d'ajouter un paquet. Le test comparatif doit conserver les mêmes règles de validation, le même scénario et les mêmes métriques pour chaque candidat.
+
+
+## Contrat de messages neutre au transport (proposition de test)
+
+Ce contrat sert à comparer les candidats sans préjuger du protocole final. Il décrit le comportement observable attendu dans le test à deux clients ; il ne constitue pas encore une API implémentée.
+
+### Enveloppe commune
+
+Chaque message applicatif utilise une enveloppe versionnée :
+- `version` : entier, valeur initiale `1`.
+- `type` : nom d'un message autorisé.
+- `sequence` : entier strictement croissant par client pour ses intentions.
+- `clientTime` : horodatage indicatif du client, jamais utilisé seul pour valider une action.
+- `payload` : données propres au type, validées côté serveur.
+
+Le serveur ajoute ses propres `serverTick` et `serverTime`. L'horloge client ne décide jamais de la position, des dégâts, du mana, des temps de recharge ni des récompenses.
+
+### Messages client vers serveur
+
+| Type | Payload minimal | Règle serveur |
+|---|---|---|
+| `AUTH` | ticket de connexion à usage unique | authentifier avant toute action de jeu ; refuser les tickets expirés ou déjà consommés |
+| `INPUT` | axes de déplacement bornés, orientation souhaitée, séquence | valider fréquence, taille, séquence et limites de déplacement ; simuler côté serveur |
+| `ACTION` | identifiant d'action, identifiant de requête | vérifier état, portée, recharge, coût et conditions dans le serveur de simulation |
+| `PING` | nonce | répondre sans modifier l'état du jeu |
+
+Le jeton de session HTTP longue durée ne doit pas apparaître dans l'URL, les journaux ou les messages d'erreur. Le candidat navigateur devra obtenir un ticket éphémère par une route HTTPS authentifiée avant la connexion temps réel.
+
+### Messages serveur vers client
+
+| Type | Payload minimal | Règle |
+|---|---|---|
+| `WELCOME` | identifiant de session, tick courant, identifiant joueur | envoyé après authentification |
+| `SNAPSHOT` | tick serveur, séquence acquittée, entités visibles et états autoritaires | source de vérité pour la réplication |
+| `ACTION_RESULT` | identifiant de requête, résultat accepté/refusé, état utile | le client n'invente pas le résultat |
+| `REJECT` | code générique, séquence concernée | ne pas exposer les détails internes |
+| `PONG` | nonce, temps serveur | mesure de latence |
+| `DISCONNECT` | code contrôlé | fermeture propre et reconnexion explicite |
+
+### Garde-fous communs aux candidats
+
+- Taille maximale initiale d'un message de test : 4 Kio.
+- Fréquence initiale d'envoi des intentions de mouvement : plafonnée à 20 messages/s/client pour le scénario comparatif ; cette valeur est un paramètre de test, pas une fréquence de production approuvée.
+- Refuser les séquences répétées, les types inconnus, les valeurs non finies, les vecteurs hors bornes et les actions envoyées avant authentification.
+- Ne jamais accepter une position finale, des dégâts, de l'XP ou un résultat de sort fournis comme faits par le client.
+- Le serveur calcule la position et diffuse un snapshot ; le client peut interpoler visuellement mais ne modifie pas l'état persistant.
+- À la reconnexion, recharger l'état depuis le serveur et reprendre depuis un snapshot autoritaire ; ne pas restaurer la dernière position déclarée par le client.
+- Les tickets de connexion doivent être aléatoires, à usage unique, à durée courte, stockés sous forme hachée et consommés atomiquement.
+- Les données de test et logs doivent exclure mots de passe, jetons de session et tickets en clair.
+
+### Critère d'acceptation additionnel
+
+Le test comparatif doit vérifier que les deux clients reçoivent le même état serveur après les intentions validées, et qu'une tentative d'usurpation de position ou de dégâts est rejetée sans altérer la persistance. Les limites de débit et la fréquence de 20 Hz doivent être identiques pour tous les candidats.
