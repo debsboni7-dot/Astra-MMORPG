@@ -125,3 +125,8 @@ Le composant n'a pas encore été compilé par Unity. Il faut encore le placer d
 Le composant `AstreaFishNetPlayerSpawner` écoute l'événement émis après que FishNet a accepté le résultat d'authentification. Il crée ensuite un `NetworkObject`, y attache l'identité compte/personnage côté serveur et le spawn avec le `NetworkConnection` propriétaire. Les connexions non authentifiées ne sont donc pas éligibles au spawn. Le prefab doit contenir un `NetworkObject` et être enregistré dans les Spawnable Prefabs du NetworkManager.
 
 Cette étape fournit le point d'accroche serveur pour la création de l'avatar, mais aucun prefab de joueur réseau final n'est encore configuré. Elle n'est pas validée en Play Mode ni sur deux clients.
+
+
+## Build Linux Dedicated Server
+
+Le point d'entrée `AstreaCloudBuild.BuildLinuxDedicatedServer` et le workflow manuel `unity-linux-server-build.yml` sont ajoutés. Il utilise Unity `6000.3.28f1`, cible `StandaloneLinux64` et définit le sous-cible `StandaloneBuildSubtarget.Server`. Le workflow vérifie la présence du secret `UNITY_LICENSE` avant de lancer le build. Il n'a pas été exécuté à ce stade.
