@@ -47,6 +47,7 @@ jobs:
 
           required = [
               "Assets/Scripts/Networking/AstreaApiClient.cs",
+              "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs",
               "Assets/Scripts/Armor/AstreaArmorSlot.cs",
               "Assets/Scripts/Combat/AstreaCombatController.cs",
               "Assets/Scripts/Combat/AstreaHealth.cs",
@@ -80,6 +81,15 @@ jobs:
           for path in root.rglob("*.cs"):
               source = path.read_text()
               assert source.count("{") == source.count("}"), f"Unbalanced braces: {path}"
+
+          fishnet_auth = (root / "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs").read_text()
+          assert ": Authenticator" in fishnet_auth
+          assert "RegisterBroadcast<AstreaJoinTicketBroadcast>(OnJoinTicketBroadcast, false)" in fishnet_auth
+          assert "REALTIME_SERVER_SECRET" in fishnet_auth
+          assert "/v1/internal/realtime/fishnet/consume" in fishnet_auth
+          assert "SetClientTicket" in fishnet_auth
+          assert "WaitForSecondsRealtime(10f)" in fishnet_auth
+          assert "IPAddress.IsLoopback" in fishnet_auth
 
           api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
           assert "RequestFishNetJoinTicket" in api_client
