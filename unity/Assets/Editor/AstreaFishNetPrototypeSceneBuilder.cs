@@ -132,7 +132,8 @@ namespace Astrea.EditorTools
                 throw new InvalidOperationException("Failed to save ASTREA network test proxy prefab.");
 
             AssetDatabase.SaveAssets();
-            NetworkObject prefab = AssetDatabase.LoadAssetAtPath<NetworkObject>(NetworkPlayerPrefabPath);
+            GameObject savedPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(NetworkPlayerPrefabPath);
+            NetworkObject prefab = savedPrefab != null ? savedPrefab.GetComponent<NetworkObject>() : null;
             if (prefab == null)
                 throw new InvalidOperationException("Saved network test prefab has no NetworkObject.");
             return prefab;
