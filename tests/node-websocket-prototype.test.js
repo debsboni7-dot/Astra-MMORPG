@@ -219,16 +219,12 @@ test('reconnect tickets cannot switch character identity inside an existing play
     }));
     await first.authenticate();
 
-    const conflicting = connect(issueTicket({
+    const conflictTicket = issueTicket({
       accountId: 'account-a', characterId: 'character-b', sessionId: 'shared-room', playerId: 'player-a',
-    }));
+    });
+    const conflicting = connect(conflictTicket);
     await conflicting.waitOpen();
-    conflicting.client.send(JSON.stringify({
-      version: 1, type: 'AUTH',
-      ticket: issueTicket({
-        accountId: 'account-a', characterId: 'character-b', sessionId: 'shared-room', playerId: 'player-a',
-      }),
-    }));
+    conflicting.client.send(JSON.stringify({ version: 1, type: 'AUTH', ticket: conflictTicket }));
     const rejected = await conflicting.waitFor(message => message.type === 'REJECT');
     assert.equal(rejected.code, 'PLAYER_IDENTITY_CONFLICT');
   });
