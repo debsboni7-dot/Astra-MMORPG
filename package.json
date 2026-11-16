@@ -9,7 +9,8 @@
     "start:server": "node server/index.js",
     "test": "node --test tests/*.test.js",
     "test:browser": "node --test --test-concurrency=1 tests/browser/prototype-smoke.test.js",
-    "benchmark:realtime": "node scripts/benchmark-realtime-websocket.js"
+    "benchmark:realtime": "node scripts/benchmark-realtime-websocket.js",
+    "benchmark:realtime:conditions": "node scripts/benchmark-realtime-network-conditions.js"
   },
   "dependencies": {
     "pg": "^8.13.1"
