@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using FishNet.Authenticating;
 using FishNet.Broadcast;
@@ -58,6 +59,7 @@ namespace Astrea.Networking
         private readonly HashSet<int> pendingConnections = new HashSet<int>();
         private readonly Dictionary<int, AstreaJoinTicketConsumeIdentity> authenticatedIdentities =
             new Dictionary<int, AstreaJoinTicketConsumeIdentity>();
+        private readonly Dictionary<int, Coroutine> authenticationTimeouts = new Dictionary<int, Coroutine>();
 
         private string clientTicket;
         private string apiBaseUrl;
@@ -76,6 +78,20 @@ namespace Astrea.Networking
             NetworkManager.ServerManager.OnRemoteConnectionState += OnRemoteConnectionState;
             NetworkManager.ClientManager.OnClientConnectionState += OnClientConnectionState;
             NetworkManager.ClientManager.RegisterBroadcast<AstreaJoinTicketResponseBroadcast>(OnJoinTicketResponse);
+        }
+
+        public override void OnRemoteConnection(NetworkConnection connection)
+        {
+            if (authenticationTimeouts.TryGetValue(connection.ClientId, out Coroutine existing))
+                StopCoroutine(existing);
+            authenticationTimeouts[connection.ClientId] = StartCoroutine(RejectIfAuthenticationTimesOut(connection));
+        }
+
+        private IEnumerator RejectIfAuthenticationTimesOut(NetworkConnection connection)
+        {
+            yield return new WaitForSecondsRealtime(10f);
+            if (!connection.IsAuthenticated)
+                CompleteAuthentication(connection, false, "AUTH_TIMEOUT", null);
         }
 
         /// <summary>Set this after the authenticated HTTP API returns a one-use join ticket.</summary>
@@ -150,9 +166,7 @@ namespace Astrea.Networking
                 yield break;
             }
 
-            if (!apiBaseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                && !apiBaseUrl.StartsWith("http://127.0.0.1", StringComparison.OrdinalIgnoreCase)
-                && !apiBaseUrl.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase))
+            if (!IsAllowedApiUrl(apiBaseUrl))
             {
                 CompleteAuthentication(connection, false, "API_REQUIRES_HTTPS", null);
                 yield break;
@@ -193,6 +207,19 @@ namespace Astrea.Networking
             }
         }
 
+        private static bool IsAllowedApiUrl(string value)
+        {
+            if (!Uri.TryCreate(value, UriKind.Absolute, out Uri uri))
+                return false;
+            if (uri.Scheme == Uri.UriSchemeHttps)
+                return true;
+            if (uri.Scheme != Uri.UriSchemeHttp)
+                return false;
+            if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return IPAddress.TryParse(uri.Host, out IPAddress address) && IPAddress.IsLoopback(address);
+        }
+
         private void CompleteAuthentication(
             NetworkConnection connection,
             bool accepted,
@@ -200,6 +227,11 @@ namespace Astrea.Networking
             AstreaJoinTicketConsumeIdentity identity)
         {
             pendingConnections.Remove(connection.ClientId);
+            if (authenticationTimeouts.TryGetValue(connection.ClientId, out Coroutine timeout))
+            {
+                StopCoroutine(timeout);
+                authenticationTimeouts.Remove(connection.ClientId);
+            }
 
             if (accepted && identity != null)
             {
@@ -223,6 +255,11 @@ namespace Astrea.Networking
 
             pendingConnections.Remove(connection.ClientId);
             authenticatedIdentities.Remove(connection.ClientId);
+            if (authenticationTimeouts.TryGetValue(connection.ClientId, out Coroutine timeout))
+            {
+                StopCoroutine(timeout);
+                authenticationTimeouts.Remove(connection.ClientId);
+            }
         }
 
         private void OnDestroy()
@@ -230,6 +267,9 @@ namespace Astrea.Networking
             if (NetworkManager == null)
                 return;
 
+            foreach (Coroutine timeout in authenticationTimeouts.Values)
+                if (timeout != null) StopCoroutine(timeout);
+            authenticationTimeouts.Clear();
             NetworkManager.ServerManager.UnregisterBroadcast<AstreaJoinTicketBroadcast>(OnJoinTicketBroadcast);
             NetworkManager.ServerManager.OnRemoteConnectionState -= OnRemoteConnectionState;
             NetworkManager.ClientManager.OnClientConnectionState -= OnClientConnectionState;
