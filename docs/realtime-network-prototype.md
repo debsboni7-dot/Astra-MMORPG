@@ -168,8 +168,10 @@ Les tests sont dans `tests/node-websocket-prototype.test.js` et sont inclus dans
 
 - Les tickets, sessions et positions sont en mémoire ; redémarrage du processus = perte de l'état de test.
 - Aucun endpoint HTTP public ne délivre les tickets. L'appel `issueTicket` est une fonction interne et doit recevoir des identités déjà vérifiées côté serveur.
-- Aucun matchmaking, zone, instance, transfert, persistance PostgreSQL du monde ou reconnexion validée n'est implémenté.
+- La reconnexion dans le même processus est testée : un nouveau ticket du même compte/personnage restaure la dernière position et la dernière séquence autoritaires ; les anciennes séquences sont rejetées. La reconnexion après redémarrage ou entre plusieurs instances n'est pas implémentée.
 - Le test utilise deux clients Node.js sur loopback, pas deux clients Unity ni deux appareils distants.
+- Le ticket de reconnexion est également lié au compte et au personnage d'origine ; un ticket qui tente de réutiliser le même emplacement de joueur avec un autre personnage est rejeté.
+
 - Aucune mesure réseau de performance, de latence WAN, de charge, de pertes ou de capacité n'est encore produite.
 - Le serveur est un prototype de comparaison contrôlé, pas un service prêt à exposer sur Internet. Avant toute exposition : remplacer le parseur WebSocket minimal par une implémentation éprouvée, ajouter TLS/reverse proxy, contrôle d'origine, limites distribuées, observabilité et tests de sécurité.
 
