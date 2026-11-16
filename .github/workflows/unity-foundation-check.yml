@@ -46,6 +46,7 @@ jobs:
           assert "6000.3.28f1" in version, version
 
           required = [
+              "Assets/Scripts/Networking/AstreaApiClient.cs",
               "Assets/Scripts/Armor/AstreaArmorSlot.cs",
               "Assets/Scripts/Combat/AstreaCombatController.cs",
               "Assets/Scripts/Combat/AstreaHealth.cs",
@@ -79,6 +80,10 @@ jobs:
           for path in root.rglob("*.cs"):
               source = path.read_text()
               assert source.count("{") == source.count("}"), f"Unbalanced braces: {path}"
+
+          api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
+          assert "RequestFishNetJoinTicket" in api_client
+          assert "/v1/realtime/fishnet/tickets" in api_client
 
           combat = (root / "Assets/Scripts/Combat/AstreaCombatController.cs").read_text()
           input_router = (root / "Assets/Scripts/Input/AstreaInputRouter.cs").read_text()
