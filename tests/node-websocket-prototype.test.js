@@ -133,7 +133,6 @@ test('WebSocket upgrade handler can share the authenticated HTTP API server port
     assert.equal(welcome.characterId, 'character-shared');
   } finally {
     realtime.destroyConnections();
-    if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) client.close();
     await new Promise(resolve => httpServer.close(resolve));
   }
 });
