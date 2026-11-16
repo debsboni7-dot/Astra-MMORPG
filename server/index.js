@@ -5,6 +5,8 @@ import { createMagicProgressionService } from './progression/MagicProgressionSer
 import { createMagicCombatService } from './combat/MagicCombatService.js';
 import { createCharacterService } from './characters/CharacterService.js';
 import { createAstreaHttpServer } from './http/createAstreaHttpServer.js';
+import { createNodeWebSocketPrototypeServer } from './realtime/NodeWebSocketPrototypeServer.js';
+import { createRealtimeTicketService } from './realtime/RealtimeTicketService.js';
 
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 const { Pool } = await import('pg');
@@ -15,7 +17,10 @@ const progressionService = createWeaponProgressionService(repository);
 const magicProgressionService = createMagicProgressionService(repository);
 const magicCombatService = createMagicCombatService(repository);
 const characterService = createCharacterService(repository);
-const server = createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService, magicCombatService });
+const realtimeServer = createNodeWebSocketPrototypeServer();
+const realtimeTicketService = createRealtimeTicketService({ characterService, realtimeServer });
+const server = createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService, magicCombatService, realtimeTicketService });
+realtimeServer.attachTo(server);
 const port = Number(process.env.PORT || 3000);
 server.listen(port, '0.0.0.0', () => process.stdout.write(`ASTREA API listening on :${port}\n`));
 for (const signal of ['SIGINT', 'SIGTERM']) {
