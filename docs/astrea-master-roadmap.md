@@ -262,6 +262,7 @@ La progression doit suivre les étapes numérotées du cadre de production, pas 
 
 - [x] Benchmark WebSocket loopback à deux clients exécuté dans GitHub Actions, workflow `43821673511` : job complet réussi, incluant tests serveur/gameplay, PostgreSQL, backup/restore et Chromium desktop/mobile.
 - [x] Mesures enregistrées dans `docs/realtime-network-prototype.md` et `docs/architecture.md` : 20 échanges, 0,535 ms p50, 0,682 ms p95, 0,724 ms p99, 18,84 mises à jour/s observées.
+- [~] Banc d'essai déterministe de délai/gigue et suppression applicative de snapshots ajouté ; exécution CI à confirmer. Ce n'est pas une simulation de perte de paquets IP.
 - [ ] Répéter les mesures avec latence, gigue et pertes contrôlées.
 - [ ] Mesurer depuis deux appareils distants, dont Android.
 - [ ] Exécuter le scénario équivalent avec deux clients Unity pour FishNet et NGO.
