@@ -102,3 +102,11 @@ The user-provided archive was inspected without importing or executing it.
 The archive identity and its visible embedded license/dependency inventory are now checked. This clears the *archive identity* sub-gate, not the legal redistribution gate or Unity compatibility gate.
 
 **Do not import into the main ASTREA project yet.** Before a controlled Unity import, obtain written clarification on game client/server redistribution and keep the package's notices. Then import only on this spike branch, resolve the two assembly GUID references, inspect compiler warnings, and produce a dedicated server build plus two-client test. The archive inspection itself is not a Unity compile, runtime test, security audit, or performance result.
+
+
+## CI verification after archive audit (2026-11-16)
+
+- GitHub Actions run: https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43827710814
+- Commit: `871ee7feda3566f4aeda855c4e575fb64a1d6c9d` (`docs(network): record FishNet 4.7.4R archive audit`).
+- Workflow conclusion: success. The automated-tests job passed, including server/gameplay unit tests, PostgreSQL backup/restore, two-client WebSocket loopback benchmark, controlled latency/jitter/snapshot-suppression benchmark, and desktop/mobile Chromium prototype tests.
+- This workflow does not import the FishNet Unity package, run the Unity editor/compiler, build a dedicated server, or test FishNet clients. It verifies the existing ASTREA backend and browser prototype only.
