@@ -129,8 +129,8 @@ export function createAstreaHttpServer({ authService, characterService, progress
       if (error.code === 'CHARACTER_NOT_FOUND') return send(response, 404, { error: 'CHARACTER_NOT_FOUND' });
       if (error.code === 'INVALID_CREDENTIALS') return send(response, 401, { error: 'INVALID_CREDENTIALS' });
       if (error.code === 'ACCOUNT_EXISTS') return send(response, 409, { error: 'ACCOUNT_EXISTS' });
-      if (error.status) return send(response, error.status, { error: error.status === 413 ? 'REQUEST_TOO_LARGE' : 'BAD_REQUEST' });
-      if (error instanceof TypeError) return send(response, 400, { error: 'BAD_REQUEST' });
+      if (error.status === 413) return send(response, 413, { error: 'REQUEST_TOO_LARGE' });
+      if (error.status === 400 || error instanceof TypeError) return send(response, 400, { error: 'BAD_REQUEST' });
       // Do not misreport database/service outages as client errors or leak internals.
       return send(response, 500, { error: 'INTERNAL_SERVER_ERROR' });
     }
