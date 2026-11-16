@@ -238,3 +238,23 @@ test('progression and magic combat routes require authentication and use the ses
   assert.equal(calls.find(call => call.action === 'magic-tree').school, 'fire');
   assert.equal(calls.find(call => call.action === 'cast').requestId, 'request-12345678');
 });
+
+
+test('service failures carrying upstream 5xx status remain internal errors', async () => {
+  await withServer(async (base) => {
+    const response = await fetch(base + '/v1/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'a@example.com', password: 'long-password-123' }),
+    });
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { error: 'INTERNAL_SERVER_ERROR' });
+  }, {
+    authService: {
+      async register() { throw Object.assign(new Error('upstream unavailable'), { status: 503 }); },
+      async login() { throw Object.assign(new Error('upstream unavailable'), { status: 503 }); },
+      async authenticate() { return null; },
+      async logout() {},
+    },
+  });
+});
