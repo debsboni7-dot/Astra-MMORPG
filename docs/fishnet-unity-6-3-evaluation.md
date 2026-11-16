@@ -21,7 +21,9 @@ If any term is unclear, stop and request legal review rather than assuming the p
 
 ## Reproducible package gate
 
-- Candidate: FishNet 4.7.4R, reported upstream as originating on Unity 6000.3.17.
+- Candidate release: FishNet 4.7.4R, Git tag `4.7.4`, published 2026-10-16. The release notes state that the package compiles cleanly on Unity 6.6; this is not evidence of a tested Unity 6.3 import.
+- Exact upstream Unity package asset: `FishNetworking.4.7.4R.unitypackage` (2,219,627 bytes), SHA-256 `6f2c1d22df8f4649cc5bc75a579536c15239dc76b9488617fe986f52c6a295b0`, release asset ID `652801763`.
+- The upstream `4.7.4/LICENSE.md` was inspected and matches the custom license summary above. The binary Unity package itself has not been downloaded or unpacked in this evaluation, so its embedded license, third-party notices and contents remain unverified. The release asset checksum pins the upstream archive but does not prove its internal contents.
 - Project editor target: Unity 6000.3.28f1.
 - Record the exact source URL, release/tag or Asset Store version, archive checksum, import date and package contents.
 - Do not use a floating Git branch or an unpinned dependency.
