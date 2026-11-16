@@ -295,3 +295,10 @@ Le test a été exécuté avec PostgreSQL 16 dans GitHub Actions et l'ensemble d
 - Commande : `npm run benchmark:realtime` (20 échantillons par défaut), avec un nombre optionnel jusqu'à 500.
 - Le workflow CI exécute désormais ce microbenchmark avant Chromium. Le workflow `43821310409` a déjà validé l'intégration HTTP→WebSocket, les tests Node, PostgreSQL, sauvegarde/restauration et Chromium desktop/mobile ; l'exécution du nouveau benchmark sur le dernier commit est en attente.
 - Limites : mesure loopback sur runner CI uniquement ; aucun résultat WAN, Android physique, client Unity, perte/gigue simulée ou capacité concurrente n'est démontré. Ne pas choisir le protocole sur ce seul chiffre.
+
+
+### 11.18 Benchmark WebSocket loopback validé en CI
+
+Le workflow GitHub Actions `43821673511` a réussi l'ensemble du job automatisé, dont les tests serveur/gameplay, PostgreSQL, sauvegarde/restauration, benchmark WebSocket et Chromium desktop/mobile. Le benchmark de 20 échanges entre deux clients Node.js sur loopback a mesuré 0,562 ms de moyenne, 0,535 ms p50, 0,682 ms p95 et 0,724 ms p99 ; débit observé 18,84 mises à jour/s ; snapshot moyen 297,9 octets ; CPU processus 15,72 ms ; RSS 62 808 064 octets avant et 64 626 688 octets après.
+
+**Portée :** mesure de microbenchmark sur runner CI uniquement. Cela ne valide ni réseau WAN, ni appareil Android, ni client Unity, ni capacité de production. Aucun protocole final n'est choisi. Les essais comparatifs FishNet et NGO avec deux clients Unity restent requis.
