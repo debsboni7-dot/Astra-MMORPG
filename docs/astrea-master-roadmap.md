@@ -348,3 +348,8 @@ Le rapport [`docs/feasibility-stage-3.md`](feasibility-stage-3.md) rassemble la 
 - [x] Workflow manuel end-to-end ajouté, avec PostgreSQL, API Node, serveur dédié et deux clients Linux.
 - [ ] Exécuter le workflow avec le secret Unity Personal `UNITY_LICENSE`.
 - [ ] Corriger les éventuelles erreurs réelles de résolution/compilation/build et valider le scénario.
+
+
+### Cohérence budget / faisabilité — 16 novembre 2026
+
+Le rapport de faisabilité conserve l'enveloppe de référence de **2 000 000 EUR sur 10 mois pour le prototype**, et non pour le MMORPG complet. La ventilation antérieure est reprise dans `docs/feasibility-stage-3.md`. Les coûts récurrents d'exploitation restent séparés et ne seront estimés qu'après les mesures de concurrence, de zones et de bande passante.
