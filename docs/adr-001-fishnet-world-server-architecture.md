@@ -90,3 +90,19 @@ Le dépôt ne doit pas fusionner cette dépendance dans la branche principale av
 - [ ] Limites et coûts d'hébergement documentés, sans engagement payant.
 
 **Conclusion :** FishNet est le framework choisi pour le prochain essai Unity dédié, mais le protocole de production et la capacité de charge ne sont pas encore déclarés validés.
+
+
+## Mise à jour d'implémentation — tickets de connexion (16 novembre 2026)
+
+Une première tranche backend est maintenant intégrée sur la branche isolée :
+- migration PostgreSQL `004_realtime_join_tickets.sql` ;
+- tickets aléatoires 256 bits, 30 secondes, liés au compte, personnage et serveur ;
+- seul le hash SHA-256 est stocké ;
+- consommation PostgreSQL atomique à usage unique ;
+- route joueur authentifiée `POST /v1/realtime/fishnet/tickets` ;
+- route interne `POST /v1/internal/realtime/fishnet/consume`, protégée par `X-Astrea-Server-Key` avec comparaison en temps constant ;
+- méthode Unity `AstreaApiClient.RequestFishNetJoinTicket`.
+
+Les tests Node couvrent l'émission, l'ownership, le hash au repos, le rejet de rejeu et le secret serveur. Le test PostgreSQL CI couvre la migration et la consommation atomique sur une vraie instance PostgreSQL.
+
+**Non terminé :** le custom Authenticator FishNet qui enverra le ticket au serveur, le client HTTP serveur-à-serveur, l'identification/spawn du joueur et le test deux clients FishNet. Ces éléments nécessitent une compilation Unity réelle et une validation du contrat exact de la version 4.7.4.
