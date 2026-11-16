@@ -205,3 +205,15 @@ Mesures du runner CI, sur 20 échanges entre deux clients Node.js connectés en 
 - RSS du processus : **62 808 064 octets** avant et **64 626 688 octets** après.
 
 Ces valeurs caractérisent uniquement ce runner CI et ce test court de loopback. Elles ne sont pas transposables à un réseau WAN, à Android, à Unity, à un serveur dédié de production ou à une capacité de joueurs simultanés. Elles ne permettent pas de choisir le protocole final. Les essais FishNet et NGO à deux clients Unity restent à effectuer.
+
+
+## Simulation déterministe de conditions réseau (16 novembre 2026)
+
+Un second banc d'essai est ajouté dans `scripts/benchmark-realtime-network-conditions.js`, lancé par `npm run benchmark:realtime:conditions`. Le scénario CI prévu utilise 100 intentions, 25 ms de délai simulé par sens, une gigue déterministe de ±10 ms et la suppression d'un snapshot sur dix.
+
+- Le délai est injecté au niveau applicatif avant l'envoi de l'intention et avant la remise du snapshot au client B.
+- La suppression porte sur la remise applicative d'un snapshot, pas sur des paquets IP. WebSocket/TCP retransmet les paquets ; ce test ne doit donc pas être présenté comme une vraie simulation de perte de paquets.
+- La mesure « intention → observation autre client » inclut désormais le délai simulé montant et descendant.
+- Les résultats ne représentent pas un réseau WAN réel, un appareil Android ou un client Unity. Une future étape devra utiliser un émulateur réseau au niveau système ou des appareils distants pour valider pertes et gigue réseau réelles.
+
+**État :** le script et son intégration CI sont committés. Résultat d'exécution CI à confirmer avant de considérer ce test validé.
