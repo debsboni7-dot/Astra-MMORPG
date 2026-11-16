@@ -24,5 +24,8 @@ realtimeServer.attachTo(server);
 const port = Number(process.env.PORT || 3000);
 server.listen(port, '0.0.0.0', () => process.stdout.write(`ASTREA API listening on :${port}\n`));
 for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.on(signal, () => server.close(async () => { await pool.end(); process.exit(0); }));
+  process.on(signal, () => {
+    realtimeServer.destroyConnections();
+    server.close(async () => { await pool.end(); process.exit(0); });
+  });
 }
