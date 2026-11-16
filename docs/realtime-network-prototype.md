@@ -82,3 +82,13 @@ Cette revue confirme que NGO/Unity Transport et FishNet sont des candidats plaus
 - **Unity Transport :** reste la couche transport à examiner avec NGO ; la compatibilité du couple de versions exactes doit être figée ensemble, et pas choisie indépendamment.
 
 **Conséquence pour ASTREA :** FishNet remonte comme candidat technique à examiner en priorité dans le prototype Unity, notamment en raison de la version Unity 6.3 proche de sa version d'origine et de l'absence annoncée de péage CCU. Ce n'est pas encore une décision d'architecture : son contrat de licence personnalisé, les dépendances tierces, l'exécution serveur dédié et les mesures à deux clients restent des portes obligatoires. Mirror descend en priorité tant que son support explicite de Unity 6.3 n'est pas établi. Aucun package n'a été installé.
+
+
+## Ordre de priorité proposé pour les essais (sans décision finale)
+
+1. **FishNet + transport gratuit compatible** : premier candidat Unity à qualifier, car la fiche actuelle annonce une version conçue pour Unity 6000.3.17, le modèle serveur autoritaire et l'absence de plafond CCU imposé par FishNet. Conditions bloquantes : valider la licence personnalisée du dépôt ou l'EULA exacte du paquet retenu, l'ensemble des notices tierces, la génération d'un serveur dédié, et le comportement sur deux clients.
+2. **Unity NGO + Unity Transport** : candidat de comparaison officiel Unity, pertinent pour un client Unity natif et les plateformes ciblées. Conditions bloquantes : figer des versions de packages compatibles entre elles, confirmer la licence Unity applicable à la version exacte, et vérifier la chaîne de build serveur dédiée.
+3. **WebSocket Node.js** : candidat de référence simple pour mesurer la réplication depuis deux navigateurs et réutiliser le backend Node. Il ne doit pas être choisi uniquement parce que son premier prototype est plus facile : la simulation, la sécurité, l'interpolation et le coût CPU restent à démontrer.
+4. **Mirror** : candidat mis en attente. Sa licence MIT est attractive, mais sa documentation actuelle recommande Unity 2020/2021 LTS et ne garantit pas le support des versions plus récentes. Ne pas le retenir sans une preuve de compatibilité Unity 6.3.
+
+Ce classement définit l'ordre d'investigation, pas un choix de protocole ni une autorisation d'ajouter un paquet. Le test comparatif doit conserver les mêmes règles de validation, le même scénario et les mêmes métriques pour chaque candidat.
