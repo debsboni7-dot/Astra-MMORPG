@@ -277,3 +277,13 @@ Le test d'intégration PostgreSQL utilise maintenant les services réels de prog
 - qu'un autre compte ne peut lire ni progression d'armes, ni progression magique, ni état de combat ;
 - que le dépôt renvoie le même résultat contrôlé `CHARACTER_NOT_FOUND` pour un personnage inexistant ou appartenant à un autre compte, sans révéler son existence.
 Le test a été exécuté avec PostgreSQL 16 dans GitHub Actions et l'ensemble du workflow a réussi (Node.js, intégration PostgreSQL, sauvegarde/restauration, Chromium mobile et desktop). Cela valide l'isolation de ces lectures au niveau des services et du dépôt PostgreSQL ; cela ne constitue pas encore un test de charge ni une validation sur téléphone physique.
+
+
+### 11.16 Pont HTTP vers le ticket temps réel — 16 novembre 2026
+- Le dépôt PostgreSQL expose maintenant une lecture de personnage limitée par `account_id + character_id`, et `CharacterService.get` s'appuie sur cette vérification.
+- `POST /v1/realtime/tickets` exige une session Bearer valide, prend uniquement `characterId` depuis le corps et dérive le compte depuis la session. Il ne fait pas confiance à un `accountId` fourni par le client.
+- `RealtimeTicketService` vérifie la propriété du personnage avant d'émettre un ticket aléatoire à usage unique, valable 30 secondes, lié au compte et au personnage.
+- Le gestionnaire WebSocket peut s'attacher au même serveur HTTP que l'API. Le point d'entrée serveur initialise le service de tickets et le gestionnaire d'upgrade ensemble.
+- Les tests API de ticket, service de ticket et lecture de personnage sont inclus dans CI ; le workflow du commit `4b10c11c204e1bb1569d958fbd1365994aa3d23c` a réussi intégralement (tests Node, PostgreSQL, sauvegarde/restauration et Chromium desktop/mobile).
+- Un test d'intégration supplémentaire vérifie le passage réel HTTP vers WebSocket sur le même port ; son workflow est encore en cours. Les derniers changements de capacité de tickets et de nettoyage des tickets expirés sont également en attente de validation CI.
+- Limites : salle commune de prototype en mémoire, aucun matchmaking/zone, aucune persistance de session temps réel, aucun client Unity, aucun TLS intégré et aucune mesure réseau réelle. Le ticket n'est pas une session de jeu durable.
