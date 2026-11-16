@@ -1,8 +1,8 @@
 import { createServer } from 'node:http';
 
 const MAX_BODY_BYTES = 16 * 1024;
-function send(response, status, body) {
-  response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
+function send(response, status, body, extraHeaders = {}) {
+  response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', ...extraHeaders });
   response.end(status === 204 ? undefined : JSON.stringify(body));
 }
 async function readJson(request) {
@@ -20,11 +20,28 @@ function bearer(request) {
   return match?.[1] || null;
 }
 
-export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null }) {
+export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null, authRateLimitLimit = 10, authRateLimitWindowMs = 60_000 }) {
   if (!authService || !characterService || !progressionService) throw new TypeError('Auth, character and progression services are required');
+  if (!Number.isInteger(authRateLimitLimit) || authRateLimitLimit < 1 || !Number.isInteger(authRateLimitWindowMs) || authRateLimitWindowMs < 1) throw new TypeError('Auth rate-limit settings must be positive integers');
+  const authRateBuckets = new Map();
+  function authRateLimit(request, route) {
+    const now = Date.now();
+    const key = `${request.socket.remoteAddress || 'unknown'}:${route}`;
+    let bucket = authRateBuckets.get(key);
+    if (!bucket || now - bucket.startedAt >= authRateLimitWindowMs) bucket = { startedAt: now, count: 0 };
+    bucket.count += 1;
+    authRateBuckets.delete(key);
+    authRateBuckets.set(key, bucket);
+    if (authRateBuckets.size > 5000) authRateBuckets.delete(authRateBuckets.keys().next().value);
+    return bucket.count > authRateLimitLimit ? Math.max(1, Math.ceil((bucket.startedAt + authRateLimitWindowMs - now) / 1000)) : 0;
+  }
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url, 'http://localhost');
+      if (request.method === 'POST' && (url.pathname === '/v1/auth/register' || url.pathname === '/v1/auth/login')) {
+        const retryAfter = authRateLimit(request, url.pathname);
+        if (retryAfter) return send(response, 429, { error: 'RATE_LIMITED' }, { 'retry-after': String(retryAfter) });
+      }
       if (request.method === 'POST' && url.pathname === '/v1/auth/register') {
         const account = await authService.register(await readJson(request));
         return send(response, 201, { account });
