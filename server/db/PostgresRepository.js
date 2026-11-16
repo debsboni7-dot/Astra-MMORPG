@@ -19,6 +19,13 @@ export function createPostgresRepository(pool) {
       );
       return rows[0];
     },
+    async findCharacterByAccount(accountId, characterId) {
+      const { rows } = await pool.query(
+        `SELECT id,display_name AS "displayName",COALESCE(character_data->>'race','human') AS race FROM characters WHERE account_id=$1 AND id=$2`,
+        [accountId, characterId],
+      );
+      return rows[0] || null;
+    },
     async listCharacters(accountId) {
       const { rows } = await pool.query(
         `SELECT id,display_name AS "displayName",COALESCE(character_data->>'race','human') AS race,created_at AS "createdAt" FROM characters WHERE account_id=$1 ORDER BY created_at,id`,
