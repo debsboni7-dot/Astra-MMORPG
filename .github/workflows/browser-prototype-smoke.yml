@@ -43,6 +43,8 @@ jobs:
         run: npm test
       - name: Verify PostgreSQL backup and restore
         run: bash scripts/test-postgres-backup-restore.sh
+      - name: Benchmark two-client WebSocket loopback
+        run: npm run benchmark:realtime
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Test mobile and desktop browser prototype
