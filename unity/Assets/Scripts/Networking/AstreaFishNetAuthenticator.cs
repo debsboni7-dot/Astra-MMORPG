@@ -188,6 +188,9 @@ namespace Astrea.Networking
 
                 yield return request.SendWebRequest();
 
+                if (!pendingConnections.Contains(connection.ClientId))
+                    yield break;
+
                 if (request.result != UnityWebRequest.Result.Success || request.responseCode != 200)
                 {
                     CompleteAuthentication(connection, false, "INVALID_OR_EXPIRED_TICKET", null);
