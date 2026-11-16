@@ -71,15 +71,41 @@ test('HTTP API rejects malformed JSON and oversized request bodies', async () =>
 });
 
 
-test('registration and login routes enforce a per-IP rate limit with Retry-After', async () => {
+test('registration and login have independent per-IP rate-limit buckets', async () => {
   await withServer(async (base) => {
-    for (let i = 0; i < 2; i += 1) {
-      const response = await fetch(base + '/v1/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'a@example.com', password: 'long-password-123' }) });
-      assert.equal(response.status, 200);
+    const post = (path) => fetch(base + path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'a@example.com', password: 'long-password-123' }),
+    });
+
+    const login = await post('/v1/auth/login');
+    const register = await post('/v1/auth/register');
+    assert.equal(login.status, 200);
+    assert.equal(register.status, 201);
+
+    const limitedLogin = await post('/v1/auth/login');
+    const limitedRegister = await post('/v1/auth/register');
+    for (const response of [limitedLogin, limitedRegister]) {
+      assert.equal(response.status, 429);
+      assert.equal((await response.json()).error, 'RATE_LIMITED');
+      assert.ok(Number(response.headers.get('retry-after')) >= 1);
     }
-    const limited = await fetch(base + '/v1/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'a@example.com', password: 'long-password-123' }) });
-    assert.equal(limited.status, 429);
-    assert.equal((await limited.json()).error, 'RATE_LIMITED');
-    assert.ok(Number(limited.headers.get('retry-after')) >= 1);
-  }, { authRateLimitLimit: 2, authRateLimitWindowMs: 60_000 });
+  }, { authRateLimitLimit: 1, authRateLimitWindowMs: 60_000 });
+});
+
+test('rate-limit settings reject zero, negative and non-integer values', async () => {
+  const services = {
+    authService: {}, characterService: {}, progressionService: {},
+  };
+  for (const options of [
+    { authRateLimitLimit: 0 },
+    { authRateLimitLimit: -1 },
+    { authRateLimitLimit: 1.5 },
+    { authRateLimitWindowMs: 0 },
+    { authRateLimitWindowMs: -10 },
+    { authRateLimitWindowMs: 2.5 },
+  ]) {
+    assert.throws(() => createAstreaHttpServer({ ...services, ...options }), /positive integers/);
+  }
 });
