@@ -179,7 +179,7 @@ Ne jamais passer un élément à « intégré » sur la seule présence d'un doc
 - [ ] Synchroniser positions, animations, combats, projectiles, états et interactions.
 - [ ] Persister personnages, inventaires, quêtes, économie, territoires et monde.
 - [ ] Gérer zones, instances, transferts, reconnexions et déconnexions.
-- [ ] Mettre en place anti-triche, validation serveur, limitation de débit et journalisation.
+- [~] Validation serveur et limitation de débit de prototype présentes sur l'authentification ; anti-triche de gameplay, limites distribuées et journalisation complète restent à développer.
 - [ ] Prévoir sauvegardes, restauration, supervision et reprise après incident.
 
 ### Échelle, sécurité et lancement
