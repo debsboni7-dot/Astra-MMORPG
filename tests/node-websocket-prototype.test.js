@@ -275,6 +275,36 @@ test('reconnect tickets cannot switch character identity inside an existing play
   });
 });
 
+test('pending ticket storage is bounded and expired tickets are pruned', () => {
+  let currentTime = 1000;
+  const realtime = createNodeWebSocketPrototypeServer({ now: () => currentTime });
+  for (let index = 0; index < 5000; index += 1) {
+    realtime.issueTicket({
+      accountId: 'account-capacity',
+      characterId: `character-${index}`,
+      sessionId: 'capacity-room',
+      playerId: `player-${index}`,
+    });
+  }
+  assert.throws(
+    () => realtime.issueTicket({
+      accountId: 'account-capacity',
+      characterId: 'character-overflow',
+      sessionId: 'capacity-room',
+      playerId: 'player-overflow',
+    }),
+    error => error.code === 'REALTIME_CAPACITY',
+  );
+  currentTime += 30_000;
+  assert.doesNotThrow(() => realtime.issueTicket({
+    accountId: 'account-capacity',
+    characterId: 'character-after-expiry',
+    sessionId: 'capacity-room',
+    playerId: 'player-after-expiry',
+  }));
+  realtime.server.close();
+});
+
 test('expired one-use tickets are rejected', async () => {
   let currentTime = 1000;
   await withRealtimeServer(async ({ connect, issueTicket }) => {
