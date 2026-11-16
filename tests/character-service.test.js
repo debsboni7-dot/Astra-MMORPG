@@ -35,3 +35,17 @@ test('character race is validated and passed to persistence', async () => {
   assert.equal(rows[0].race,'elf');
   await assert.rejects(service.create('account-A','Mage','undead'),/Race de personnage invalide/);
 });
+
+
+test('character lookup is scoped to the authenticated account', async () => {
+  const service = createCharacterService({
+    async createCharacter() { return { id: 'character-1' }; },
+    async listCharacters() { return []; },
+    async findCharacterByAccount(accountId, characterId) {
+      return accountId === 'account-A' && characterId === 'character-1' ? { id: characterId } : null;
+    },
+  });
+  assert.deepEqual(await service.get('account-A', 'character-1'), { id: 'character-1' });
+  assert.equal(await service.get('account-B', 'character-1'), null);
+  await assert.rejects(service.get('', 'character-1'), /Authenticated account/);
+});
