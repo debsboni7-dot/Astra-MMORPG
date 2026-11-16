@@ -239,3 +239,8 @@ Ces tests vérifient les routes et leurs contrats avec des dépendances simulée
 - Un test HTTP vérifie les deux premières requêtes acceptées, la troisième refusée et l'en-tête `Retry-After`.
 - Le workflow de validation du changement (run 43817394716) était encore en cours lors de la dernière consultation. Ne pas considérer cette modification comme validée avant son succès.
 - Avant production, remplacer/compléter ce mécanisme par une limitation distribuée au reverse proxy ou API gateway, avec proxy de confiance explicitement configuré et tests multi-instance.
+
+
+### 11.11 Préparation du choix de protocole temps réel
+Le protocole n'est volontairement pas choisi à ce stade. Un cahier comparatif a été ajouté dans `docs/realtime-network-prototype.md`. Il compare WebSocket avec serveur Node.js, Unity Netcode for GameObjects/Unity Transport, FishNet et Mirror selon le coût, l'auto-hébergement, l'intégration Unity, l'autorité serveur, les performances et la maintenance.
+Le scénario commun impose deux clients, un état de déplacement validé par le serveur, le rejet des positions/dégâts falsifiés, puis des mesures de latence p50/p95/p99, trafic, CPU, mémoire, pertes et reconnexion. Aucune dépendance réseau n'a été ajoutée au manifeste Unity et aucune option n'est déclarée gagnante avant exécution comparative. La préparation du protocole ne ferme donc pas le critère de sortie de phase 3.
