@@ -269,3 +269,11 @@ Une couverture supplémentaire a été ajoutée à `tests/server-http-api.test.j
 - Les routes d'équipement de technique et de lancement de sort transmettent au service l'identifiant de compte dérivé de la session authentifiée, jamais celui fourni dans le corps de la requête.
 - Le test vérifie aussi que l'identifiant de personnage et les paramètres d'action arrivent au service attendu.
 Cette couverture utilise des services simulés : elle vérifie le contrat HTTP et l'autorisation à la frontière API, pas le calcul réel du combat ni l'exécution Unity. Le workflow CI de ce commit doit réussir avant de considérer cette couverture comme validée.
+
+
+### 11.15 Isolation des personnages entre comptes — test PostgreSQL réel
+Le test d'intégration PostgreSQL utilise maintenant les services réels de progression d'armes, de progression magique et d'état de combat magique. Il vérifie :
+- que le propriétaire peut lire ses propres données ;
+- qu'un autre compte ne peut lire ni progression d'armes, ni progression magique, ni état de combat ;
+- que le dépôt renvoie le même résultat contrôlé `CHARACTER_NOT_FOUND` pour un personnage inexistant ou appartenant à un autre compte, sans révéler son existence.
+Le test a été exécuté avec PostgreSQL 16 dans GitHub Actions et l'ensemble du workflow a réussi (Node.js, intégration PostgreSQL, sauvegarde/restauration, Chromium mobile et desktop). Cela valide l'isolation de ces lectures au niveau des services et du dépôt PostgreSQL ; cela ne constitue pas encore un test de charge ni une validation sur téléphone physique.
