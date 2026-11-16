@@ -147,6 +147,21 @@ test('duplicate and out-of-order input sequences cannot change player state', as
   });
 });
 
+test('server limits movement input to 20 messages per second', async () => {
+  await withRealtimeServer(async ({ connect, issueTicket }) => {
+    const client = connect(ticket(issueTicket, 'player-rate'));
+    await client.authenticate();
+    for (let sequence = 1; sequence <= 21; sequence += 1) {
+      client.send({ version: 1, type: 'INPUT', sequence, payload: { x: 1, z: 0 } });
+    }
+    const rejected = await client.waitFor(message => message.type === 'REJECT' && message.code === 'INPUT_RATE_LIMITED');
+    assert.equal(rejected.sequence, 21);
+    const latest = [...client.messages].reverse().find(message => message.type === 'SNAPSHOT');
+    assert.equal(latest.serverTick, 20);
+    assert.deepEqual(latest.players[0].position, { x: 4, z: 0 });
+  }, { now: () => 1000 });
+});
+
 test('expired one-use tickets are rejected', async () => {
   let currentTime = 1000;
   await withRealtimeServer(async ({ connect, issueTicket }) => {
