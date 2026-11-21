@@ -1,0 +1,104 @@
+name: ASTREA cloud validation (Android-friendly)
+
+on:
+  push:
+    branches:
+      - spike/fishnet-unity-6-3-evaluation
+    paths:
+      - 'server/**'
+      - 'prototype/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'unity/Assets/Scripts/Networking/**'
+      - 'tests/fishnet-compile-stubs/**'
+      - '.github/workflows/astrea-cloud-validation.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - 'prototype/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'unity/Assets/Scripts/Networking/**'
+      - 'tests/fishnet-compile-stubs/**'
+      - '.github/workflows/astrea-cloud-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astrea-cloud-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cloud-validation:
+    name: Backend, database, browser and networking checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: astrea
+          POSTGRES_PASSWORD: astrea-ci-only
+          POSTGRES_DB: astrea_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U astrea -d astrea_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgres://astrea:astrea-ci-only@127.0.0.1:5432/astrea_test
+    steps:
+      - name: Checkout ASTREA
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install backend and browser-test dependencies
+        run: npm ci
+
+      - name: Install Chromium for cloud browser tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run backend and gameplay tests
+        run: npm test
+
+      - name: Apply PostgreSQL migrations
+        run: node scripts/apply-server-migrations.js
+
+      - name: Verify real PostgreSQL persistence and recovery
+        run: node --test tests/postgres-integration.test.js
+
+      - name: Test ASTREA prototype in mobile and desktop Chromium
+        run: npm run test:browser
+
+      - name: Compile FishNet integration C# against isolated API stubs
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run networking source and security contract checks
+        run: dotnet run --project tests/fishnet-compile-stubs/FishNetCompileStubs.csproj --configuration Release
+
+      - name: Run two-client WebSocket loopback benchmark
+        run: node scripts/benchmark-realtime-websocket.js 20
+
+      - name: Explain test boundary
+        if: always()
+        run: |
+          echo "These checks run in GitHub's cloud runner and require no local PC, Unity account, or Unity license."
+          echo "The two-client benchmark exercises ASTREA's Node WebSocket prototype, not a built Unity/FishNet client."
+          echo "A real Unity Editor build and real FishNet two-client replication test remain separate and are not claimed by this workflow."
