@@ -116,9 +116,9 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
     assert.ok(firstLease);
     assert.equal(firstLease.fencingEpoch, '1');
 
-    const event1 = 'c8a9b6b2-78e6-4f3c-a0a4-4d5a9f70c111';
-    const event2 = 'c8a9b6b2-78e6-4f3c-a0a4-4d5a9f70c112';
-    const event3 = 'c8a9b6b2-78e6-4f3c-a0a4-4d5a9f70c113';
+    const event1 = crypto.randomUUID();
+    const event2 = crypto.randomUUID();
+    const event3 = crypto.randomUUID();
     assert.deepEqual(await zonePersistence.appendEvent({
       zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch,
       eventId: event1, eventType: 'RESOURCE_CREATED', payload: { resourceId: 'oak-001', amount: 3 },
