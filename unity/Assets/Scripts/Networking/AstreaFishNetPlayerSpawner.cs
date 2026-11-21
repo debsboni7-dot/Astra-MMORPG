@@ -35,6 +35,7 @@ namespace Astrea.Networking
         [SerializeField] private Transform spawnPoint;
 
         private readonly HashSet<int> spawnedConnections = new HashSet<int>();
+        private bool serverStateSubscribed;
 
         private void Awake()
         {
@@ -48,16 +49,33 @@ namespace Astrea.Networking
         {
             if (authenticator != null)
                 authenticator.OnClientIdentityAuthenticated += SpawnAuthenticatedPlayer;
-            if (networkManager != null && networkManager.ServerManager != null)
-                networkManager.ServerManager.OnRemoteConnectionState += OnRemoteConnectionState;
+            TrySubscribeServerState();
+        }
+
+        private void Start()
+        {
+            // NetworkManager creates its ServerManager during Awake. Start runs
+            // after every active object's Awake, avoiding component-order races.
+            TrySubscribeServerState();
+        }
+
+        private void TrySubscribeServerState()
+        {
+            if (serverStateSubscribed || networkManager == null || networkManager.ServerManager == null)
+                return;
+            networkManager.ServerManager.OnRemoteConnectionState += OnRemoteConnectionState;
+            serverStateSubscribed = true;
         }
 
         private void OnDisable()
         {
             if (authenticator != null)
                 authenticator.OnClientIdentityAuthenticated -= SpawnAuthenticatedPlayer;
-            if (networkManager != null && networkManager.ServerManager != null)
+            if (serverStateSubscribed && networkManager != null && networkManager.ServerManager != null)
+            {
                 networkManager.ServerManager.OnRemoteConnectionState -= OnRemoteConnectionState;
+                serverStateSubscribed = false;
+            }
         }
 
         private void SpawnAuthenticatedPlayer(
