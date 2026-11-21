@@ -104,7 +104,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 | Prefab NetworkManager et prefab joueur non configurés | Élevée | Spawner source ajouté ; scène et prefab réseau restent à créer/valider |
 | Deux clients FishNet pas encore testés | Élevée | Critère bloquant de sortie |
 | Performance WAN / Android inconnue | Élevée | Tests distants et appareil physique obligatoires |
-| Transport FishNet par défaut non chiffré | Élevée | Tugboat réservé aux tests locaux ; FishyUnityTransport DTLS/TLS à évaluer avant réseau public |
+| Transport FishNet par défaut non chiffré | Élevée | FishyUnityTransport 2.0.0-pre.2 + UTP 2.7.5 ajoutés à la branche isolée ; DTLS configuré en code et scénario CI préparé, résolution/compilation Unity et handshake certifié encore à prouver |
 | Capacité à grande échelle inconnue | Élevée | Ne pas annoncer de CCU avant benchmarks progressifs |
 | Licence FishNet personnalisée | Moyenne | Revue différée selon la décision du créateur, à effectuer avant distribution publique |
 | Consoles et certifications | Élevée | Dépend d'accès éditeur et SDK, hors preuve actuelle |
@@ -117,7 +117,8 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - Benchmark Node loopback et simulation applicative de délai/gigue/suppression de snapshots exécutés en CI. Ces résultats ne simulent pas une perte de paquets IP et ne mesurent pas le WAN.
 - Tickets FishNet : tests d'émission, liaison au personnage, stockage du hash, rejeu, serveur cible, expiration et consommation concurrente atomique testés.
 - Contrôles de source Unity et de métadonnées exécutés dans le workflow Unity Foundation.
-- Compilation .NET des scripts API client, Authenticator, PlayerSpawner, NetworkTestPlayer et NetworkTestClient contre des stubs isolés ; signatures API du tag FishNet 4.7.4 vérifiées par assertions CI.
+- Compilation .NET des scripts API client, Authenticator, configurateur DTLS, PlayerSpawner, NetworkTestPlayer et NetworkTestClient contre des stubs isolés ; signatures API du tag FishNet 4.7.4 vérifiées par assertions CI.
+- Configuration DTLS serveur/client exercée par tests .NET avec fausses clés/certificats ; code FishyUnityTransport 2.0.0-pre.2, méthodes DTLS, licence MIT et branche UTP 2.x vérifiés dans GitHub Actions. Ceci ne remplace pas un vrai handshake Unity.
 - Test exécuté en CI de la validation des URL API : HTTPS distant accepté, HTTP loopback accepté pour le développement, HTTP distant et URL avec identifiants/chemin/query/fragment rejetées. Workflow Unity Foundation réussi le 21 novembre 2026 (run 44887759276).
 - Le workflow d'intégration deux clients s'arrête à la vérification du secret `UNITY_LICENSE` absent ; aucune compilation Unity ni session deux clients n'a donc été exécutée.
 - Le workflow de vérification source peut comparer les API utilisées avec le tag FishNet 4.7.4 exact ; cela ne remplace pas le compilateur Unity.
@@ -133,12 +134,17 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - [x] Adaptateur Unity pour demander le ticket ajouté.
 - [x] Authenticator FishNet et point de spawn serveur ajoutés en code sur branche isolée.
 - [x] Contrat API FishNet 4.7.4 vérifié statiquement dans CI.
+- [x] FishyUnityTransport 2.0.0-pre.2 et Unity Transport 2.7.5 ajoutés au manifeste de la branche isolée uniquement.
+- [x] Composant Unity qui force DTLS et lit certificat/clé serveur depuis l'environnement ajouté.
+- [x] Tests .NET du configurateur DTLS serveur/client exécutés en CI.
+- [x] Workflow deux clients adapté pour générer des certificats de test éphémères et tenter un handshake DTLS.
 - [ ] Résolution réelle UPM et compilation Unity 6000.3.28f1 (bloqué par l'absence des secrets `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` dans GitHub Actions).
 - [ ] Build Linux Dedicated Server réussi (même blocage de licence Unity).
 - [ ] Configuration d'un NetworkManager et d'un prefab NetworkObject de test dans une scène.
 - [ ] Connexion de deux clients Unity, authentification par ticket et spawn réciproquement visible (workflow prêt, non exécuté sans licence).
 - [ ] Mesures FishNet comparables à la référence Node.
-- [ ] Choisir et valider un transport chiffré (candidat FishyUnityTransport DTLS/TLS) avant tout test réseau public.
+- [ ] Résoudre UPM et compiler FishyUnityTransport + Unity Transport 2.7.5 dans Unity 6000.3.28f1.
+- [ ] Réussir le build serveur/client et le handshake DTLS avec validation du certificat dans le workflow deux clients.
 - [ ] Test WAN et au moins un appareil Android physique.
 - [ ] Validation de la stratégie de persistance après arrêt/redémarrage du serveur de zone.
 
@@ -190,7 +196,7 @@ Les coûts d'exploitation ne sont pas chiffrés tant que la cible de joueurs sim
 - Workflow serveur et prototype navigateur : **succès**, run [43832520144](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520144). Il inclut les tests Node, PostgreSQL, sauvegarde/restauration, exécution du runner de migrations, benchmark réseau applicatif et tests Chromium desktop/mobile.
 - Workflow Unity Foundation : **succès**, run [43832520147](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520147). Il vérifie les API du tag FishNet 4.7.4, les valeurs par défaut serveur/transport, les métadonnées et compile les scripts runtime FishNet contre des stubs isolés.
 
-Ces deux runs valident les parties qu'ils exécutent. Aucun des deux n'ouvre Unity Editor. Le workflow end-to-end avec licence Unity reste le seul moyen préparé dans le dépôt pour vérifier résolution UPM, compilation Unity, build Linux server/client et mouvement répliqué entre deux clients.
+Ces deux runs valident les parties qu'ils exécutent. Aucun des deux n'ouvre Unity Editor. Le workflow end-to-end avec licence Unity reste le seul moyen préparé dans le dépôt pour vérifier résolution UPM, compilation Unity, build Linux server/client, handshake DTLS et mouvement répliqué entre deux clients.
 
 
 ## 13. Blocage Unity réel identifié
@@ -203,3 +209,12 @@ Déblocage nécessaire : ajouter le contenu d'un fichier de licence Unity valide
 ## 11. Transport et sécurité réseau
 
 Le ticket à usage unique ne protège pas le trafic UDP contre l'écoute ou la modification. Le prototype Tugboat doit rester limité aux essais locaux contrôlés. La documentation d'architecture identifie FishyUnityTransport (MIT, version 2.0.0-pre.2) comme candidat pour DTLS/TLS ; il n'est pas installé dans le projet et doit passer la résolution UPM, compilation et tests de compatibilité avant décision.
+
+
+## 14. Transport chiffré FishNet — 21 novembre 2026
+
+FishyUnityTransport `2.0.0-pre.2` (MIT) et Unity Transport `2.7.5` sont maintenant épinglés dans le manifeste de la branche isolée. Le configurateur `AstreaFishNetTransportSecurity` force `UseEncryption`, charge le certificat et la clé privée du serveur depuis l'environnement, et configure le nom DNS/CA côté client. Le générateur de scène utilise ce transport au lieu de Tugboat.
+
+Le workflow deux clients génère une CA et un certificat serveur temporaires avec SAN DNS localhost + IP 127.0.0.1, puis les passe au serveur et aux clients. Les secrets sont temporaires au runner et ne sont pas committés. Les tests .NET de configuration DTLS et les contrôles source sont exécutables sans Unity.
+
+**État de preuve :** le transport chiffré est intégré au prototype, mais pas encore validé par Unity. La résolution UPM, la compilation Editor, le build Linux et le handshake DTLS restent bloqués par l'activation Unity Personal manquante. La porte de sortie de l'étape 3 reste donc ouverte.
