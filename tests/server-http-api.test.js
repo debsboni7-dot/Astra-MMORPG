@@ -295,3 +295,89 @@ test('service failures carrying upstream 5xx status remain internal errors', asy
     },
   });
 });
+
+test('internal zone persistence routes require server secret and the configured zone id', async () => {
+  const secret = 's'.repeat(48);
+  const calls = [];
+  const zonePersistenceService = {
+    async acquireLease(input) { calls.push(['acquire', input]); return { ...input, fencingEpoch: '4' }; },
+    async renewLease(input) { calls.push(['renew', input]); return { ...input, fencingEpoch: String(input.fencingEpoch) }; },
+    async appendEvent(input) { calls.push(['event', input]); return { sequence: '1', duplicate: false }; },
+    async saveSnapshot(input) { calls.push(['snapshot', input]); return { zoneId: input.zoneId, lastEventSequence: '1' }; },
+    async loadRecoveryState(input) { calls.push(['recovery', input]); return { snapshot: null, events: [], lastEventSequence: '0' }; },
+  };
+  await withServer(async (base) => {
+    const path = '/v1/internal/zones/zone-1';
+    const request = (suffix, body, key = secret) => fetch(base + path + suffix, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(key ? { 'x-astrea-server-key': key } : {}) },
+      body: JSON.stringify(body),
+    });
+
+    assert.equal((await request('/lease/acquire', { ownerId: 'zone-process-a' }, null)).status, 401);
+    assert.equal((await request('/lease/acquire', { ownerId: 'zone-process-a' }, 'wrong-secret')).status, 401);
+
+    const wrongZone = await fetch(base + '/v1/internal/zones/another-zone/lease/acquire', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-astrea-server-key': secret },
+      body: JSON.stringify({ ownerId: 'zone-process-a' }),
+    });
+    assert.equal(wrongZone.status, 403);
+
+    const acquired = await request('/lease/acquire', { ownerId: 'zone-process-a', leaseMs: 30000 });
+    assert.equal(acquired.status, 201);
+    assert.equal((await acquired.json()).lease.fencingEpoch, '4');
+
+    const renewed = await request('/lease/renew', { ownerId: 'zone-process-a', fencingEpoch: '4', leaseMs: 30000 });
+    assert.equal(renewed.status, 200);
+
+    const event = await request('/events', {
+      ownerId: 'zone-process-a', fencingEpoch: '4',
+      eventId: 'c8a9b6b2-78e6-4f3c-a0a4-4d5a9f70c111',
+      eventType: 'RESOURCE_HARVESTED',
+      payload: { resourceId: 'oak-001', delta: -1 },
+    });
+    assert.equal(event.status, 201);
+
+    const snapshot = await request('/snapshots', {
+      ownerId: 'zone-process-a', fencingEpoch: '4',
+      payload: { resources: { 'oak-001': 3 }, note: 'x'.repeat(20 * 1024) },
+    });
+    assert.equal(snapshot.status, 201);
+
+    const recovery = await request('/recovery', { ownerId: 'zone-process-a', fencingEpoch: '4' });
+    assert.equal(recovery.status, 200);
+    assert.deepEqual(calls.map(call => call[0]), ['acquire', 'renew', 'event', 'snapshot', 'recovery']);
+    assert.ok(calls.find(call => call[0] === 'snapshot')[1].payload.note.length === 20 * 1024);
+  }, {
+    zonePersistenceService,
+    realtimeServerSecret: secret,
+    realtimeServerId: 'zone-1',
+  });
+});
+
+test('internal zone persistence rejects invalid service input and hides lease conflicts', async () => {
+  const secret = 's'.repeat(48);
+  await withServer(async (base) => {
+    const response = await fetch(base + '/v1/internal/zones/zone-1/events', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-astrea-server-key': secret },
+      body: JSON.stringify({
+        ownerId: 'zone-process-a', fencingEpoch: '1',
+        eventId: 'not-a-uuid', eventType: 'RESOURCE_HARVESTED', payload: {},
+      }),
+    });
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: 'BAD_REQUEST' });
+  }, {
+    realtimeServerSecret: secret,
+    realtimeServerId: 'zone-1',
+    zonePersistenceService: {
+      async acquireLease() { return null; },
+      async renewLease() { return null; },
+      async appendEvent() { throw Object.assign(new Error('bad input'), { code: 'INVALID_ZONE_INPUT' }); },
+      async saveSnapshot() { return {}; },
+      async loadRecoveryState() { return {}; },
+    },
+  });
+});
