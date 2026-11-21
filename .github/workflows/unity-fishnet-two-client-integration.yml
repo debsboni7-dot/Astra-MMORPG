@@ -126,11 +126,14 @@ jobs:
         shell: bash
         run: |
           chmod +x unity/Build/ASTREA-FishNet-Server/ASTREA.x86_64
+          DTLS_DIR="${RUNNER_TEMP:-/tmp}/astrea-dtls"
+          SERVER_CERT="$(cat "$DTLS_DIR/server.crt")"
+          SERVER_KEY="$(cat "$DTLS_DIR/server.key")"
           nohup env ASTREA_NETWORK_ROLE=server ASTREA_API_BASE_URL="$ASTREA_API_BASE_URL" \
             REALTIME_SERVER_SECRET="$REALTIME_SERVER_SECRET" \
             REALTIME_SERVER_ID="$REALTIME_SERVER_ID" \
-            ASTREA_DTLS_SERVER_CERT="$ASTREA_DTLS_SERVER_CERT" \
-            ASTREA_DTLS_SERVER_KEY="$ASTREA_DTLS_SERVER_KEY" \
+            ASTREA_DTLS_SERVER_CERT="$SERVER_CERT" \
+            ASTREA_DTLS_SERVER_KEY="$SERVER_KEY" \
             ./unity/Build/ASTREA-FishNet-Server/ASTREA.x86_64 \
             -batchmode -nographics -logFile /tmp/astrea-fishnet-server.log \
             > /tmp/astrea-fishnet-server-console.log 2>&1 &
@@ -141,6 +144,8 @@ jobs:
             cat /tmp/astrea-fishnet-server-console.log || true
             exit 1
           fi
+          rm -f "$DTLS_DIR/ca.key" "$DTLS_DIR/server.key" "$DTLS_DIR/server.csr" "$DTLS_DIR/server.ext" "$DTLS_DIR/ca.srl"
+          unset SERVER_CERT SERVER_KEY
 
       - name: Run two FishNet clients and verify remote movement replication
         shell: bash
