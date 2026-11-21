@@ -42,7 +42,7 @@ export function createFishNetJoinTicketService({
     return { ticket, expiresIn: TICKET_TTL_SECONDS };
   }
 
-  async function consume(ticket, expectedServerId = serverId) {
+  async function consume(ticket, expectedServerId) {
     if (typeof ticket !== 'string' || !TOKEN_PATTERN.test(ticket)
       || expectedServerId !== serverId) return null;
     return repository.consumeRealtimeJoinTicket(hashTicket(ticket), serverId);
