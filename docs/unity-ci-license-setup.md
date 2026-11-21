@@ -5,7 +5,7 @@ Les workflows de compilation utilisent Unity Personal via GameCI. Aucun achat de
 ## 1. Obtenir le fichier de licence
 
 Unity Personal exige une activation manuelle initiale dans Unity Hub selon la procédure actuelle de GameCI :
-1. Emprunter temporairement un ordinateur Windows, macOS ou Linux sur lequel Unity Hub peut être installé.
+1. Emprunter temporairement un ordinateur Windows, macOS ou Linux sur lequel [Unity Hub](https://unity.com/download) peut être installé.
 2. Ouvrir Unity Hub et se connecter au compte Unity qui sera utilisé pour ASTREA.
 3. Ouvrir Preferences / Settings → Licenses → Add → Get a free Personal license.
 4. Vérifier que le fichier `.ulf` a bien été créé. Selon le système, Unity Hub peut l'enregistrer dans son dossier de licences.
@@ -16,8 +16,7 @@ GameCI documente cette activation Personal comme une étape unique locale. L'anc
 
 ## 2. Ajouter les trois secrets sur GitHub depuis le téléphone
 
-Dans le navigateur Android :
-1. Ouvrir le dépôt ASTREA sur GitHub.
+Dans le navigateur Android, ouvrir directement [les secrets Actions du dépôt ASTREA](https://github.com/debsboni7-dot/Astra-MMORPG/settings/secrets/actions) :
 2. Aller dans Settings → Secrets and variables → Actions.
 3. Choisir New repository secret et créer séparément :
    - `UNITY_LICENSE` : contenu complet du fichier `.ulf`.
@@ -30,7 +29,7 @@ GameCI reçoit ces valeurs uniquement comme secrets d'environnement au moment du
 ## 3. Lancer le test réseau
 
 Une fois les trois secrets configurés :
-1. Ouvrir Actions → ASTREA FishNet two-client integration.
+1. Ouvrir [Actions](https://github.com/debsboni7-dot/Astra-MMORPG/actions/workflows/unity-fishnet-two-client-integration.yml) → ASTREA FishNet two-client integration.
 2. Choisir Run workflow.
 3. Sélectionner `yes` pour `confirm_build`.
 4. Le workflow construit le serveur Linux dédié et deux clients, prépare deux comptes de test isolés, puis vérifie l'authentification par ticket et la réplication du déplacement.
