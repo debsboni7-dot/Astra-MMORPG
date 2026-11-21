@@ -48,4 +48,5 @@ test('zone persistence accepts only bounded JSON object payloads', async () => {
   assert.throws(() => service.appendEvent({ ...event, payload: { text: 'x'.repeat(270 * 1024) } }), error => error.code === 'INVALID_ZONE_INPUT');
   const cyclic = {}; cyclic.self = cyclic;
   assert.throws(() => service.saveSnapshot({ ...lease, payload: cyclic }), error => error.code === 'INVALID_ZONE_INPUT');
+  assert.throws(() => service.saveSnapshot({ ...lease, payload: new Date() }), error => error.code === 'INVALID_ZONE_INPUT');
 });
