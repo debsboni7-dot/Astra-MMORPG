@@ -437,3 +437,19 @@ Cette section remplace les états réseau précédents qui indiquaient encore Fi
 - [ ] Valider dans Unity Editor, puis sur un build Linux dédié, avec crash/reprise réelle.
 
 Cette intégration ne remplace pas la validation Unity. Le workflow FishNet à deux clients reste manuel et attend les secrets Unity Personal.
+
+
+### Étape 3 — contrôleur de connexion client et modèle de capacité — 21 novembre 2026
+
+- [x] `AstreaFishNetConnectionController` demande le ticket FishNet à l'API via la session HTTP, le remet à l'Authenticator, démarre le transport et ne confirme la connexion qu'après authentification serveur.
+- [x] La scène de test FishNet génère et relie l'API client, l'Authenticator, le contrôleur client, le bootstrap de zone et le spawner.
+- [x] API interne de zone durcie : type de contenu JSON obligatoire, chemin de zone malformé rejeté, secret comparé en temps constant, taille de corps bornée, zone autorisée limitée à l'ID configuré.
+- [x] Tests de régression Node/PostgreSQL et Chromium desktop/mobile réussis : [run 44891906180](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44891906180).
+- [x] Compilation isolée C# des scripts réseau, validation FishNet/DTLS et scène de test : [run 44892014637](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44892014637).
+- [x] Modèle de concurrence et nombre de processus de zone documenté dans `docs/scale-capacity-assumptions.md`, sans prétendre à une capacité mesurée.
+- [ ] Secrets Unity Personal configurés ; le workflow end-to-end s'était arrêté parce que `UNITY_LICENSE` était absent.
+- [ ] Résolution UPM/compilation Unity Editor, builds Linux/client, handshake DTLS natif, test à deux clients et validation Android/WAN.
+- [ ] Brancher les événements et snapshots aux mutations gameplay réelles, puis valider crash/reprise d'un processus Unity.
+- [ ] Mesurer la charge FishNet et établir les coûts d'exploitation sur des devis datés.
+
+L'étape 3 reste en cours. Les modifications réseau demeurent sur la branche isolée `spike/fishnet-unity-6-3-evaluation` ; la branche principale n'est pas modifiée. L'étape 4 ne démarre pas avant la levée des portes bloquantes de l'étape 3.
