@@ -99,7 +99,7 @@ export function createZonePersistenceService(repository) {
       });
     },
     loadRecoveryState({ zoneId, ownerId, fencingEpoch }) {
-      if (!/^\\d{1,20}$/.test(String(fencingEpoch))) {
+      if (!/^\d{1,20}$/.test(String(fencingEpoch))) {
         throw Object.assign(new TypeError('Invalid fencingEpoch'), { code: 'INVALID_ZONE_INPUT' });
       }
       return repository.loadZoneRecoveryState({
