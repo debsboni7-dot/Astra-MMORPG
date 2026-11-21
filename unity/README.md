@@ -159,3 +159,8 @@ The manual workflow `.github/workflows/unity-fishnet-two-client-integration.yml`
 
 
 **Current external blocker:** the end-to-end workflow [43832992881](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832992881) stopped before Unity setup because repository secret `UNITY_LICENSE` is missing. Add a valid Unity license file as a GitHub Actions repository secret, then rerun the workflow. Do not commit or paste the license into source files or chat.
+
+
+### API endpoint security
+
+`AstreaApiClient.SetBaseUrl` accepts HTTPS endpoints for remote environments and HTTP only for loopback development (`localhost`, `127.0.0.1`, `::1`). It rejects credentials embedded in URLs, paths, query strings and fragments. Do not point Android builds at `127.0.0.1`: that address is the phone itself. Use a trusted HTTPS API hostname for a device build. The default loopback URL is only for local editor/CI development.
