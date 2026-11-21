@@ -271,6 +271,14 @@ jobs:
           assert "AssignToSceneAnimators(controller);" in animator_setup
           assert "CinemachineBrain" in scene_builder and "CinemachineFollow" in scene_builder
 
+          for workflow_name in ["unity-linux-server-build.yml", "unity-fishnet-two-client-integration.yml"]:
+              workflow_text = (Path(".github/workflows") / workflow_name).read_text()
+              for secret_name in ["UNITY_LICENSE", "UNITY_EMAIL", "UNITY_PASSWORD"]:
+                  assert "secrets." + secret_name in workflow_text, (workflow_name, secret_name)
+          fishnet_workflow = (Path(".github/workflows") / "unity-fishnet-two-client-integration.yml").read_text()
+          assert "confirm_build" in fishnet_workflow and "confirm_build == 'yes'" in fishnet_workflow
+          assert "ASTREA_FISHNET_TEST_RESULT=CLIENT_2_OBSERVED_REMOTE_SERVER_MOVEMENT" in fishnet_workflow
+
           importer_workflow = Path(".github/workflows/meshy-import-existing-artifact.yml").read_text()
           assert "actions/download-artifact@v4" in importer_workflow
           assert "ASTREA-Humanoid-Meshy6" in importer_workflow
