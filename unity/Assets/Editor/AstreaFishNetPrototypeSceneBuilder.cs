@@ -87,6 +87,11 @@ namespace Astrea.EditorTools
             Transport unityTransport = managerRoot.AddComponent(unityTransportType) as Transport;
             if (unityTransport == null)
                 throw new InvalidOperationException("Could not create FishyUnityTransport component.");
+            MethodInfo setConnectionData = unityTransport.GetType().GetMethod(
+                "SetConnectionData", new[] { typeof(string), typeof(ushort), typeof(string) });
+            if (setConnectionData == null)
+                throw new InvalidOperationException("FishyUnityTransport SetConnectionData API was not found.");
+            setConnectionData.Invoke(unityTransport, new object[] { "127.0.0.1", (ushort)7770, "0.0.0.0" });
             networkManager.TransportManager.Transport = unityTransport;
 
             AstreaFishNetTransportSecurity transportSecurity =
