@@ -182,7 +182,7 @@ Le modèle de menace détaillé est conservé dans [docs/network-security-threat
 - [x] Migration PostgreSQL 006, journal d'événements, snapshots, bail exclusif et fencing implémentés dans le dépôt.
 - [x] Tests unitaires de validation des commandes de zone ajoutés.
 - [x] Test PostgreSQL réel : récupération snapshot + événements, idempotence, crash simulé, nouvel epoch et rejet de l'ancien processus.
-- [ ] Raccordement du service de persistance au processus Unity FishNet et test de restauration d'un build dédié.
+- [~] API interne de persistance branchée au bootstrap FishNet : bail exclusif acquis, récupération lue avant le démarrage réseau, renouvellement du bail et arrêt si perte/fencing. Événements de gameplay, snapshots périodiques et test de restauration d'un build dédié encore à faire.
 - [x] Implémentation du journal, des snapshots, des baux et du fencing dans PostgreSQL ; scénario de reprise simulé et testé.
 - [ ] Raccordement au processus Unity FishNet, puis test d'arrêt/redémarrage du build dédié.
 
@@ -266,3 +266,12 @@ La migration `006_world_zone_persistence.sql` et le service `ZonePersistenceServ
 Le test PostgreSQL réel simule une interruption après le snapshot 1 et l'événement 2, reconstruit l'état, fait expirer le bail, autorise un processus de remplacement à l'epoch 2, puis vérifie que l'ancien processus ne peut plus écrire. L'événement 3 est ensuite rejoué et un snapshot 3 est créé.
 
 La logique de persistance est donc testée sans Unity. Elle n'est pas encore raccordée au processus FishNet : le redémarrage d'un build Linux dédié et la restauration de son état réel restent à prouver.
+
+
+## 16. Bootstrap FishNet adossé au bail de zone — 21 novembre 2026
+
+Les routes internes Node protégées par `X-Astrea-Server-Key` exposent les opérations de bail, événements, snapshots et récupération. Elles limitent la première topologie au `REALTIME_SERVER_ID` configuré.
+
+Le composant Unity `AstreaFishNetZonePersistence` est maintenant ajouté à la scène générée : le serveur désactive l'auto-start headless, acquiert un bail, lit le snapshot et le journal, puis ouvre FishNet. Il renouvelle le bail toutes les 10 secondes et arrête le serveur en cas d'échec ou de changement d'epoch. Les scripts sont inclus dans le harnais de compilation C# isolé et dans les contrôles CI.
+
+**Portée réelle :** cette intégration connecte le cycle de vie du serveur à l'autorité durable de zone. Elle ne branche pas encore les systèmes de gameplay sur `appendEvent` et `saveSnapshot`, et n'a pas été exécutée dans Unity Editor ni sur un build Linux. Ces preuves restent bloquantes.
