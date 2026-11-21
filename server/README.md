@@ -28,7 +28,7 @@ La migration 001 crée la table `characters` avec identifiant UUID, propriétair
 
 ## État
 
-Routes HTTP : `POST /v1/auth/register`, `POST /v1/auth/login`, `POST /v1/auth/logout`, `GET/POST /v1/characters`, `POST /v1/realtime/tickets`, `POST /v1/realtime/fishnet/tickets`, `POST /v1/internal/realtime/fishnet/consume`, `GET /v1/characters/:id/progression/weapons`, `GET /v1/characters/:id/progression/magic`, `GET /v1/characters/:id/progression/magic/:school`, `POST /v1/characters/:id/progression/magic/equip`, `GET /v1/characters/:id/combat/magic` et `POST /v1/characters/:id/combat/magic/cast`. Les routes de personnage/progression exigent un jeton Bearer. Les points et XP magiques sont attribués uniquement par des événements internes de progression/jeu, jamais par une route client. La progression n'est attribuée qu'en appelant le service depuis le moteur serveur après résolution de combat autoritaire.
+Routes HTTP : `POST /v1/auth/register`, `POST /v1/auth/login`, `POST /v1/auth/logout`, `GET/POST /v1/characters`, `POST /v1/realtime/tickets`, `POST /v1/realtime/fishnet/tickets`, `POST /v1/internal/realtime/fishnet/consume`, `POST /v1/internal/zones/:zoneId/lease/acquire`, `POST /v1/internal/zones/:zoneId/lease/renew`, `POST /v1/internal/zones/:zoneId/events`, `POST /v1/internal/zones/:zoneId/snapshots`, `POST /v1/internal/zones/:zoneId/recovery`, `GET /v1/characters/:id/progression/weapons`, `GET /v1/characters/:id/progression/magic`, `GET /v1/characters/:id/progression/magic/:school`, `POST /v1/characters/:id/progression/magic/equip`, `GET /v1/characters/:id/combat/magic` et `POST /v1/characters/:id/combat/magic/cast`. Les routes de personnage/progression exigent un jeton Bearer. Les points et XP magiques sont attribués uniquement par des événements internes de progression/jeu, jamais par une route client. La progression n'est attribuée qu'en appelant le service depuis le moteur serveur après résolution de combat autoritaire.
 
 La race du personnage est maintenant enregistrée dans `character_data.race`. La ressource de combat magique (PV, mana, recharge et effets temporaires) est persistée séparément dans `magic_combat_state`. Les sorts offensifs nécessitent encore un résolveur de cibles détenu par le serveur de monde : tant qu'il n'est pas branché, le service refuse proprement les cibles offensives au lieu de faire confiance aux dégâts ou aux statistiques envoyés par le client. Cette livraison ne constitue pas encore un serveur de combat temps réel et le prototype navigateur n'est pas encore connecté à ces routes. Les secrets, la chaîne PostgreSQL et le cycle de déploiement doivent être configurés dans l'environnement d'hébergement. Les secrets, la chaîne PostgreSQL et le cycle de déploiement doivent être configurés dans l'environnement d'hébergement.
 
@@ -94,3 +94,17 @@ La migration 006 ajoute :
 Chaque écriture exige un bail non expiré, son propriétaire et son epoch exact. Quand un processus perd le bail et qu'un remplaçant obtient un nouvel epoch, les écritures de l'ancien processus sont refusées. L'API publique ne donne pas au client le droit d'écrire directement ces événements : le service est une brique serveur interne, à appeler depuis le futur processus de zone après validation autoritaire.
 
 Les tests PostgreSQL couvrent la séquence, l'idempotence, le rejeu snapshot + événements après simulation d'un crash, la prise de bail par un nouveau processus et le rejet de l'ancien epoch. Ce socle ne constitue pas encore une intégration avec le processus Unity FishNet ; le raccordement au serveur de zone et le test de restauration d'un build Unity restent à faire.
+
+
+### API interne de persistance des zones
+
+Les routes `/v1/internal/zones/:zoneId/*` sont réservées au serveur dédié. Elles exigent `X-Astrea-Server-Key` comparé en temps constant et refusent toute zone différente de `REALTIME_SERVER_ID` sur cette première topologie mono-zone. Les corps de snapshot peuvent atteindre 300 KiB au niveau HTTP ; le service limite le payload JSON lui-même à 256 KiB.
+
+Le composant Unity `AstreaFishNetZonePersistence` :
+1. acquiert un bail exclusif avec un owner ID aléatoire ;
+2. charge le snapshot et les événements postérieurs avant d'ouvrir le port FishNet ;
+3. démarre le serveur seulement après récupération réussie ;
+4. renouvelle le bail toutes les 10 secondes (TTL initial 30 secondes) ;
+5. arrête le serveur si le renouvellement échoue ou si l'epoch change.
+
+Le composant conserve le JSON de récupération pour les systèmes de zone qui seront raccordés ensuite. Les systèmes de gameplay n'émettent pas encore leurs événements ni snapshots par cette API : le transport de persistance est branché, mais les mutations concrètes du monde doivent encore être raccordées.
