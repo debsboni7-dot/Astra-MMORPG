@@ -180,6 +180,31 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
     assert.equal(checkpointed.snapshot.lastEventSequence, '3');
     assert.equal(checkpointed.events.length, 0);
 
+    // Competing processes cannot both own a zone; concurrent events receive
+    // a contiguous, monotone sequence while one valid fencing lease is held.
+    const concurrentZoneId = `zone-concurrency-${crypto.randomUUID()}`;
+    const competingLeases = await Promise.all([
+      zonePersistence.acquireLease({ zoneId: concurrentZoneId, ownerId: 'competing-process-a' }),
+      zonePersistence.acquireLease({ zoneId: concurrentZoneId, ownerId: 'competing-process-b' }),
+    ]);
+    assert.equal(competingLeases.filter(Boolean).length, 1, 'only one process may acquire an active zone lease');
+    const winningLease = competingLeases.find(Boolean);
+    const concurrentEvents = await Promise.all(Array.from({ length: 24 }, (_, index) =>
+      zonePersistence.appendEvent({
+        zoneId: concurrentZoneId,
+        ownerId: winningLease.ownerId,
+        fencingEpoch: winningLease.fencingEpoch,
+        eventId: crypto.randomUUID(),
+        eventType: 'RESOURCE_DELTA',
+        payload: { resourceId: 'oak-001', delta: 1, requestIndex: index },
+      }),
+    ));
+    assert.deepEqual(
+      concurrentEvents.map(result => Number(result.sequence)).sort((a, b) => a - b),
+      Array.from({ length: 24 }, (_, index) => index + 1),
+      'concurrent durable events must have a gap-free sequence',
+    );
+
     const weaponProgression = createWeaponProgressionService(repository);
     const magicProgression = createMagicProgressionService(repository);
     const magicCombat = createMagicCombatService(repository);
