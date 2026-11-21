@@ -95,7 +95,7 @@ jobs:
               for item in asmdef["versionDefines"]
           ), asmdef
           source = (root / "UnityTransport.cs").read_text()
-          for contract in ["public bool UseEncryption", "SetServerSecrets(", "SetClientSecrets(", "WithSecureServerParameters(", "WithSecureClientParameters("]:
+          for contract in ["public bool UseEncryption", "SetServerSecrets(", "SetClientSecrets(", "SetConnectionData(string ipv4Address, ushort port, string listenAddress = null)", "WithSecureServerParameters(", "WithSecureClientParameters("]:
               assert contract in source, contract
           assert "DTLS for UDP" in source
           assert "m_UseEncryption = false" in source, "Encryption is opt-in and must be explicitly enabled."
@@ -211,6 +211,8 @@ jobs:
           assert "clientAuthority.boolValue = false" in fishnet_scene_builder
           assert "SinglePrefabObjects" in fishnet_scene_builder
           assert "FishyUnityTransport" in fishnet_scene_builder
+          assert "SetConnectionData" in fishnet_scene_builder
+          assert "(ushort)7770" in fishnet_scene_builder
           assert "TransportManager.Transport = unityTransport" in fishnet_scene_builder
           assert "AstreaFishNetTransportSecurity" in fishnet_scene_builder
 
@@ -231,6 +233,7 @@ jobs:
           assert (root.parent / "scripts/apply-server-migrations.js").is_file()
           assert (root.parent / "scripts/prepare-fishnet-integration-test.js").is_file()
           assert (root.parent / "scripts/generate-fishnet-dtls-test-certs.sh").is_file()
+          assert "openssl verify" in (root.parent / "scripts/generate-fishnet-dtls-test-certs.sh").read_text()
 
           api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
           assert "IsAllowedApiBaseUrl(value)" in api_client
