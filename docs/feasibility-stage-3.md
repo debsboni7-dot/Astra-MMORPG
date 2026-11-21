@@ -150,6 +150,8 @@ Le modèle de menace détaillé est conservé dans [docs/network-security-threat
 - Test exécuté en CI de la validation des URL API : HTTPS distant accepté, HTTP loopback accepté pour le développement, HTTP distant et URL avec identifiants/chemin/query/fragment rejetées. Workflow Unity Foundation réussi le 21 novembre 2026 (run 44887759276).
 - Le workflow d'intégration deux clients s'arrête à la vérification du secrets `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` absents ; aucune compilation Unity ni session deux clients n'a donc été exécutée.
 - Suite complète Node/PostgreSQL/backup-restore/benchmarks/Chromium, incluant la migration 005 et la purge des tickets, réussie dans le workflow [44889120732](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889120732).
+- Suite CI complète réussie sur le commit `9de1d4e0d4436ac36ba2051cd2c4c0a839f5af92`, workflow [44890719641](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44890719641) : tests Node, intégration PostgreSQL, migration 006, reprise de zone snapshot + journal, fencing, 24 événements concurrents, sauvegarde/restauration avec données de zone, benchmarks réseau et Chromium desktop/mobile.
+- Les lectures de reprise exigent maintenant le bail actif et l'epoch courant ; les contrôles d'expiration utilisent `clock_timestamp()` pour éviter qu'une transaction ayant attendu un verrou puisse accepter un bail expiré.
 - Le workflow de vérification source peut comparer les API utilisées avec le tag FishNet 4.7.4 exact ; cela ne remplace pas le compilateur Unity.
 
 ## 9. Portes obligatoires avant clôture de l'étape 3
