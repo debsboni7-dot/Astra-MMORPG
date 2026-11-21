@@ -151,6 +151,10 @@ jobs:
               "Assets/Scripts/Networking/AstreaApiClient.cs",
               "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs",
               "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs",
+          security_meta = root / "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs.meta"
+          assert security_meta.is_file(), "DTLS component requires a stable Unity meta file"
+          assert "c41a4e80f1e84f9ba3b55d7c1b6a2f90" in security_meta.read_text()
+
               "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs",
               "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs",
               "Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs",
