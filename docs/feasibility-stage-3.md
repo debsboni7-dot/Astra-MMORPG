@@ -1,7 +1,7 @@
 # ASTREA — rapport de faisabilité technique, étape 3
 
 Date de référence : 21 novembre 2026  
-Statut : **architecture de prototype définie, validation technique Unity encore ouverte**  
+Statut : **architecture et fondation PostgreSQL de reprise de zone implémentées ; validation Unity réelle encore ouverte**  
 Branche d'investigation réseau : `spike/fishnet-unity-6-3-evaluation`
 
 ## 1. Objet de l'étape
@@ -177,7 +177,12 @@ Le modèle de menace détaillé est conservé dans [docs/network-security-threat
 - [ ] Réussir le build serveur/client et le handshake DTLS avec validation du certificat dans le workflow deux clients.
 - [ ] Test WAN et au moins un appareil Android physique.
 - [x] Stratégie de persistance/reprise après crash de zone définie et documentée (journal idempotent, snapshots, lease/fencing).
-- [ ] Implémentation du journal et des snapshots de zone, puis test d'arrêt/redémarrage avec restauration.
+- [x] Migration PostgreSQL 006, journal d'événements, snapshots, bail exclusif et fencing implémentés dans le dépôt.
+- [x] Tests unitaires de validation des commandes de zone ajoutés.
+- [x] Test PostgreSQL réel : récupération snapshot + événements, idempotence, crash simulé, nouvel epoch et rejet de l'ancien processus.
+- [ ] Raccordement du service de persistance au processus Unity FishNet et test de restauration d'un build dédié.
+- [x] Implémentation du journal, des snapshots, des baux et du fencing dans PostgreSQL ; scénario de reprise simulé et testé.
+- [ ] Raccordement au processus Unity FishNet, puis test d'arrêt/redémarrage du build dédié.
 
 ## 10. Conclusion
 
@@ -227,7 +232,7 @@ Les coûts d'exploitation ne sont pas chiffrés tant que la cible de joueurs sim
 - Workflow serveur et prototype navigateur : **succès**, run [43832520144](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520144). Il inclut les tests Node, PostgreSQL, sauvegarde/restauration, exécution du runner de migrations, benchmark réseau applicatif et tests Chromium desktop/mobile.
 - Workflow Unity Foundation : **succès**, run [43832520147](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832520147). Il vérifie les API du tag FishNet 4.7.4, les valeurs par défaut serveur/transport, les métadonnées et compile les scripts runtime FishNet contre des stubs isolés.
 
-Ces deux runs valident les parties qu'ils exécutent. Aucun des deux n'ouvre Unity Editor. Le workflow end-to-end avec licence Unity reste le seul moyen préparé dans le dépôt pour vérifier résolution UPM, compilation Unity, build Linux server/client, handshake DTLS et mouvement répliqué entre deux clients.
+Ces deux runs valident les parties qu'ils exécutent. Aucun des deux n'ouvre Unity Editor. Le workflow end-to-end avec licence Unity reste le seul moyen préparé dans le dépôt pour vérifier résolution UPM, compilation Unity, build Linux server/client, handshake DTLS et mouvement répliqué entre deux clients. La fondation de reprise PostgreSQL est désormais testée séparément dans la CI serveur.
 
 
 ## 13. Blocage Unity réel identifié
@@ -254,3 +259,12 @@ Le workflow deux clients génère une CA et un certificat serveur temporaires av
 ### Rétention des tickets de connexion — 21 novembre 2026
 
 Les tickets ne restent plus indéfiniment dans PostgreSQL. La migration `005_realtime_join_ticket_cleanup.sql` ajoute un index partiel sur les tickets consommés ; le dépôt fournit une purge des tickets consommés ou expirés depuis plus de cinq minutes. Le service déclenche cette purge tous les 100 tickets émis. Les tests Node vérifient le déclenchement et le test PostgreSQL réel vérifie que les anciennes lignes sont supprimées sans toucher aux tickets récents.
+
+
+## 15. Persistance de zone : socle PostgreSQL implémenté — 21 novembre 2026
+
+La migration `006_world_zone_persistence.sql` et le service `ZonePersistenceService` ajoutent le journal d'événements durable, les snapshots, un bail exclusif et un fencing epoch. Les écritures sont transactionnelles, les événements sont idempotents par UUID et les snapshots ne peuvent pas reculer.
+
+Le test PostgreSQL réel simule une interruption après le snapshot 1 et l'événement 2, reconstruit l'état, fait expirer le bail, autorise un processus de remplacement à l'epoch 2, puis vérifie que l'ancien processus ne peut plus écrire. L'événement 3 est ensuite rejoué et un snapshot 3 est créé.
+
+La logique de persistance est donc testée sans Unity. Elle n'est pas encore raccordée au processus FishNet : le redémarrage d'un build Linux dédié et la restauration de son état réel restent à prouver.
