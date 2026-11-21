@@ -104,6 +104,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 | Prefab NetworkManager et prefab joueur non configurés | Élevée | Spawner source ajouté ; scène et prefab réseau restent à créer/valider |
 | Deux clients FishNet pas encore testés | Élevée | Critère bloquant de sortie |
 | Performance WAN / Android inconnue | Élevée | Tests distants et appareil physique obligatoires |
+| Transport FishNet par défaut non chiffré | Élevée | Tugboat réservé aux tests locaux ; FishyUnityTransport DTLS/TLS à évaluer avant réseau public |
 | Capacité à grande échelle inconnue | Élevée | Ne pas annoncer de CCU avant benchmarks progressifs |
 | Licence FishNet personnalisée | Moyenne | Revue différée selon la décision du créateur, à effectuer avant distribution publique |
 | Consoles et certifications | Élevée | Dépend d'accès éditeur et SDK, hors preuve actuelle |
@@ -136,6 +137,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - [ ] Configuration d'un NetworkManager et d'un prefab NetworkObject de test dans une scène.
 - [ ] Connexion de deux clients Unity, authentification par ticket et spawn réciproquement visible (workflow prêt, non exécuté sans licence).
 - [ ] Mesures FishNet comparables à la référence Node.
+- [ ] Choisir et valider un transport chiffré (candidat FishyUnityTransport DTLS/TLS) avant tout test réseau public.
 - [ ] Test WAN et au moins un appareil Android physique.
 - [ ] Validation de la stratégie de persistance après arrêt/redémarrage du serveur de zone.
 
@@ -195,3 +197,8 @@ Ces deux runs valident les parties qu'ils exécutent. Aucun des deux n'ouvre Uni
 Le workflow end-to-end a bien été déclenché : [run 43832992881](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832992881). Il s'est arrêté au contrôle préalable `Check Unity license secret`, car le secret de dépôt `UNITY_LICENSE` est absent. Aucun téléchargement de package Unity, aucune compilation Editor, aucun build Linux et aucun test à deux clients n'ont donc été tentés dans ce run.
 
 Déblocage nécessaire : ajouter le contenu d'un fichier de licence Unity valide au secret GitHub Actions `UNITY_LICENSE` dans les paramètres du dépôt, puis relancer ce run. Ne jamais coller le contenu de la licence dans le code ou dans une conversation. La procédure actuelle d'activation Unity dépend du type de licence et peut nécessiter Unity Hub ; la voie d'activation manuelle Personal n'est pas garantie par Unity/GameCI.
+
+
+## 11. Transport et sécurité réseau
+
+Le ticket à usage unique ne protège pas le trafic UDP contre l'écoute ou la modification. Le prototype Tugboat doit rester limité aux essais locaux contrôlés. La documentation d'architecture identifie FishyUnityTransport (MIT, version 2.0.0-pre.2) comme candidat pour DTLS/TLS ; il n'est pas installé dans le projet et doit passer la résolution UPM, compilation et tests de compatibilité avant décision.
