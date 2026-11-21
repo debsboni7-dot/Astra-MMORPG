@@ -122,14 +122,14 @@ export function createPostgresRepository(pool) {
         if (!lease.rows[0]) throw Object.assign(new Error('Zone lease lost'), { code: 'ZONE_LEASE_LOST' });
 
         const existing = await client.query(
-          'SELECT zone_id AS "zoneId", sequence, event_type AS "eventType", schema_version AS "schemaVersion", payload FROM world_zone_events WHERE event_id=$1',
-          [eventId],
+          'SELECT zone_id AS "zoneId", sequence, event_type AS "eventType", schema_version AS "schemaVersion", payload = $2::jsonb AS "samePayload" FROM world_zone_events WHERE event_id=$1',
+          [eventId, JSON.stringify(payload)],
         );
         if (existing.rows[0]) {
           const row = existing.rows[0];
           const same = row.zoneId === zoneId && row.eventType === eventType
             && row.schemaVersion === schemaVersion
-            && JSON.stringify(row.payload) === JSON.stringify(payload);
+            && row.samePayload === true;
           if (!same) throw Object.assign(new Error('Event id reused with different content'), { code: 'IDEMPOTENCY_CONFLICT' });
           await client.query('COMMIT');
           return { sequence: String(row.sequence), duplicate: true };
