@@ -22,7 +22,7 @@ Statut : contrôles de prototype définis ; validation Unity/DTLS réelle encore
 2. **Client Unity → serveur FishNet :** UDP protégé par DTLS via FishyUnityTransport ; le ticket de connexion est envoyé après le handshake DTLS.
 3. **Serveur FishNet → API Node :** HTTPS, secret serveur distinct du jeton joueur, timeout de 5 secondes.
 4. **API Node → PostgreSQL :** réseau privé, requêtes paramétrées et transactions.
-5. **CI GitHub Actions :** secrets temporaires ou repository secrets ; aucune clé privée de production dans les artefacts ou logs.
+5. **CI GitHub Actions :** secrets temporaires ou repository secrets ; aucune clé privée de production dans les artefacts ou logs. Le test DTLS crée une CA temporaire ; la clé privée de test est injectée uniquement au processus serveur, jamais dans GITHUB_ENV ou les clients. Les clients ne reçoivent que la CA publique et les fichiers privés sont supprimés après le démarrage du serveur.
 
 ## Menaces et contrôles retenus
 
