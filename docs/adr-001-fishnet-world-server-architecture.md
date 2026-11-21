@@ -137,3 +137,10 @@ Le point d'entrée `AstreaCloudBuild.BuildLinuxDedicatedServer` et le workflow m
 Le dépôt dispose désormais d'une scène de test isolée construite par `AstreaFishNetPrototypeSceneBuilder`, d'un proxy réseau temporaire avec `NetworkObject` + `NetworkTransform` serveur-autoritaire, et d'un client de test automatisé. Le client 1 envoie une intention de déplacement via ServerRpc ; le client 2 doit constater le déplacement répliqué par le serveur.
 
 Le workflow manuel `unity-fishnet-two-client-integration.yml` orchestre PostgreSQL, les migrations, l'API Node, deux comptes/personnages, deux tickets à usage unique, le serveur Linux dédié et les deux clients Linux. Il n'a pas encore été exécuté ; sa réussite reste une porte bloquante.
+
+
+## Contrat de consommation de ticket renforcé — 21 novembre 2026
+
+La route interne exige désormais les deux champs `ticket` (43 caractères base64url) et `serverId` explicite. Une valeur serveur absente, mal formée ou différente de la zone configurée est rejetée ; la valeur par défaut JavaScript ne peut donc pas masquer l'absence de cible. Les tests HTTP couvrent le secret absent/incorrect, le serverId absent, le serverId incorrect, le succès et le rejeu.
+
+Le workflow Unity Foundation compile les scripts de réseau contre des stubs isolés .NET et vérifie les signatures de FishNet 4.7.4. Cette vérification attrape les erreurs C# de surface, mais ne remplace pas Unity Editor, la résolution UPM, ni un build player.
