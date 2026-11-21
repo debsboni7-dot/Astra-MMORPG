@@ -108,6 +108,7 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
     // Simulate a zone process crash, recovery from snapshot + event tail,
     // and fencing of the former process after a replacement acquires the lease.
     const zonePersistence = createZonePersistenceService(repository);
+    const zonePersistenceService = zonePersistence;
     const zoneId = `zone-recovery-${crypto.randomUUID()}`;
     const firstLease = await zonePersistence.acquireLease({
       zoneId, ownerId: 'zone-process-a', leaseMs: 5_000,
