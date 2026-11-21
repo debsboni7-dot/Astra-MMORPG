@@ -365,3 +365,11 @@ Le rapport de faisabilité conserve l'enveloppe de référence de **2 000 000 EU
 ### Blocage de validation Unity
 
 Le workflow end-to-end [43832992881](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/43832992881) s'est arrêté avant le build, car le secret GitHub Actions `UNITY_LICENSE` n'est pas configuré. Aucun build Unity n'a été effectué. Ajouter une licence Unity valide dans les secrets du dépôt, puis relancer le workflow, est maintenant la seule action externe bloquante identifiée pour la validation Unity.
+
+
+### Étape 3 — précision sécurité transport (21 novembre 2026)
+
+- La compilation .NET des scripts FishNet ciblés contre stubs isolés et la vérification de l'API 4.7.4 passent dans GitHub Actions.
+- Le workflow complet de deux clients est prêt, mais la tentative s'arrête sur l'absence du secret `UNITY_LICENSE`. Aucun build Unity/Linux ni test réseau Unity n'est donc validé.
+- Tugboat/UDP par défaut n'est pas considéré comme un transport sécurisé. FishyUnityTransport 2.0.0-pre.2 (MIT) est ajouté au registre des candidats, pas au manifest. Sa compatibilité Unity 6.3, DTLS/TLS, Android et consoles doit être vérifiée.
+- Porte bloquante avant clôture de l'étape 3 : vraie compilation Unity, build serveur dédié, test deux clients, et décision vérifiée sur le transport chiffré.
