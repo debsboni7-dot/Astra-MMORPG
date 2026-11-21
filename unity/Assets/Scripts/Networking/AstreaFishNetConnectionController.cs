@@ -47,7 +47,7 @@ namespace Astrea.Networking
                 yield break;
             }
             if (string.IsNullOrWhiteSpace(characterId) || string.IsNullOrWhiteSpace(serverAddress)
-                || serverAddress.Length > 253 || serverAddress.IndexOfAny(new[] { '/', '\\', ' ', '\\t', '\\r', '\\n' }) >= 0
+                || serverAddress.Length > 253 || serverAddress.IndexOfAny(new[] { '/', '\\', ' ', '\t', '\r', '\n' }) >= 0
                 || serverPort == 0 || float.IsNaN(authenticationTimeoutSeconds)
                 || authenticationTimeoutSeconds < 1f || authenticationTimeoutSeconds > 60f)
             {
