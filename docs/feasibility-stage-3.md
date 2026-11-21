@@ -117,7 +117,8 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - Benchmark Node loopback et simulation applicative de délai/gigue/suppression de snapshots exécutés en CI. Ces résultats ne simulent pas une perte de paquets IP et ne mesurent pas le WAN.
 - Tickets FishNet : tests d'émission, liaison au personnage, stockage du hash, rejeu, serveur cible, expiration et consommation concurrente atomique testés.
 - Contrôles de source Unity et de métadonnées exécutés dans le workflow Unity Foundation.
-- Compilation .NET des scripts Authenticator, PlayerSpawner, NetworkTestPlayer et NetworkTestClient contre des stubs isolés ; signatures API du tag FishNet 4.7.4 vérifiées par assertions CI. Ce n'est pas une compilation dans l'éditeur Unity.
+- Compilation .NET des scripts API client, Authenticator, PlayerSpawner, NetworkTestPlayer et NetworkTestClient contre des stubs isolés ; signatures API du tag FishNet 4.7.4 vérifiées par assertions CI.
+- Test exécuté en CI de la validation des URL API : HTTPS distant accepté, HTTP loopback accepté pour le développement, HTTP distant et URL avec identifiants/chemin/query/fragment rejetées. Workflow Unity Foundation réussi le 21 novembre 2026 (run 44887759276).
 - Le workflow d'intégration deux clients s'arrête à la vérification du secret `UNITY_LICENSE` absent ; aucune compilation Unity ni session deux clients n'a donc été exécutée.
 - Le workflow de vérification source peut comparer les API utilisées avec le tag FishNet 4.7.4 exact ; cela ne remplace pas le compilateur Unity.
 
