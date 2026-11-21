@@ -9,6 +9,7 @@ using UnityEngine;
 namespace UnityEngine
 {
     [AttributeUsage(AttributeTargets.Field)] public sealed class SerializeField : Attribute { }
+    [AttributeUsage(AttributeTargets.Class)] public sealed class DefaultExecutionOrderAttribute : Attribute { public DefaultExecutionOrderAttribute(int order) { } }
     public class Object
     {
         public static T[] FindObjectsOfType<T>() where T : Object => Array.Empty<T>();
@@ -20,6 +21,7 @@ namespace UnityEngine
     }
     public class Component : Object
     {
+        public bool enabled { get; set; } = true;
         public GameObject gameObject => new GameObject();
         public T GetComponent<T>() where T : class => null;
         public Transform transform => new Transform();
