@@ -102,6 +102,8 @@ jobs:
           if "spike/fishnet-unity-6-3-evaluation" in __import__("os").environ.get("GITHUB_REF", ""):
               assert deps.get("com.firstgeargames.fishnet") == "https://github.com/FirstGearGames/FishNet.git?path=Assets/FishNet#4.7.4", deps
               assert deps.get("com.unity.nuget.newtonsoft-json") == "3.2.1", deps
+              assert deps.get("com.unity.transport") == "2.7.5", deps
+              assert deps.get("com.alven.fishnet.unitytransport") == "https://github.com/ooonush/FishyUnityTransport.git?path=Assets/FishNet/Plugins/FishyUnityTransport#2.0.0-pre.2", deps
           assert not any(name.startswith("com.unity.services.") for name in deps), deps
 
           version = (root / "ProjectSettings/ProjectVersion.txt").read_text()
@@ -110,6 +112,7 @@ jobs:
           required = [
               "Assets/Scripts/Networking/AstreaApiClient.cs",
               "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs",
+              "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs",
               "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs",
               "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs",
               "Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs",
@@ -162,6 +165,12 @@ jobs:
           assert "uri.Fragment" in fishnet_auth
           assert "IPAddress.IsLoopback" in fishnet_auth
 
+          transport_security = (root / "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs").read_text()
+          for contract in ["UseEncryption", "SetServerSecrets", "SetClientSecrets", "ASTREA_DTLS_SERVER_CERT", "ASTREA_DTLS_SERVER_KEY", "ASTREA_DTLS_SERVER_NAME"]:
+              assert contract in transport_security, contract
+          assert "ASTREA_NETWORK_ROLE" in transport_security
+          assert "privateKey" in transport_security
+          assert "Debug.Log" not in transport_security, "DTLS private material must never be logged"
           fishnet_test_player = (root / "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs").read_text()
           assert "[ServerRpc]" in fishnet_test_player and "Vector2.ClampMagnitude" in fishnet_test_player
           fishnet_test_client = (root / "Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs").read_text()
@@ -172,6 +181,9 @@ jobs:
           assert "ASTREA_FishNet_NetworkTest.unity" in fishnet_scene_builder
           assert "clientAuthority.boolValue = false" in fishnet_scene_builder
           assert "SinglePrefabObjects" in fishnet_scene_builder
+          assert "FishyUnityTransport" in fishnet_scene_builder
+          assert "TransportManager.Transport = unityTransport" in fishnet_scene_builder
+          assert "AstreaFishNetTransportSecurity" in fishnet_scene_builder
 
           fishnet_spawner = (root / "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs").read_text()
           assert "OnClientIdentityAuthenticated" in fishnet_spawner
