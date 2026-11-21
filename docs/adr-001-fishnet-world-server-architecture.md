@@ -144,3 +144,20 @@ Le workflow manuel `unity-fishnet-two-client-integration.yml` orchestre PostgreS
 La route interne exige désormais les deux champs `ticket` (43 caractères base64url) et `serverId` explicite. Une valeur serveur absente, mal formée ou différente de la zone configurée est rejetée ; la valeur par défaut JavaScript ne peut donc pas masquer l'absence de cible. Les tests HTTP couvrent le secret absent/incorrect, le serverId absent, le serverId incorrect, le succès et le rejeu.
 
 Le workflow Unity Foundation compile les scripts de réseau contre des stubs isolés .NET et vérifie les signatures de FishNet 4.7.4. Cette vérification attrape les erreurs C# de surface, mais ne remplace pas Unity Editor, la résolution UPM, ni un build player.
+
+
+## Sécurité du transport temps réel — décision à ne pas escamoter (21 novembre 2026)
+
+Le ticket de connexion est envoyé dans un broadcast FishNet avant authentification. Le ticket est à usage unique et expire après 30 secondes, mais ces deux propriétés ne chiffrent pas le paquet UDP. Le transport par défaut Tugboat ne doit donc pas être considéré comme une protection cryptographique du trafic. Le secret serveur protège l'appel Unity-vers-Node, pas le canal joueur-vers-serveur.
+
+La documentation FishNet présente `TransportManager.IntermediateLayer` comme point d'extension pour modifier les paquets, notamment pour du chiffrement. Le chiffrement maison ne sera pas bricolé avec le chiffre César de l'exemple documentaire : il faudrait une primitive AEAD éprouvée, une gestion sûre des clés, rotation, anti-rejeu et tests multi-plateformes.
+
+**Candidat prioritaire à évaluer : FishyUnityTransport** (MIT, version publiée `2.0.0-pre.2`) au-dessus de Unity Transport. La documentation du transport décrit une option de chiffrement DTLS pour UDP et TLS pour WebSocket, avec support annoncé des plateformes mobiles et consoles. Unity indique Unity Transport `2.7.5` comme version released pour Unity 6000.3. Mais FishyUnityTransport reste une version pré-release tierce : il n'est pas ajouté au manifest ni validé sur le projet. Aucune promesse de compatibilité ASTREA n'est faite avant résolution UPM, compilation et test réel.
+
+Liens de référence :
+- FishNet TransportManager / Intermediate Layer : https://fish-networking.gitbook.io/docs/fishnet-building-blocks/components/managers/transportmanager
+- FishyUnityTransport et options DTLS/TLS : https://fish-networking.gitbook.io/docs/fishnet-building-blocks/transports/fishyunitytransport
+- FishyUnityTransport source et licence MIT : https://github.com/ooonush/FishyUnityTransport
+- Unity Transport 2.7.5 pour Unity 6000.3 : https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/packages-all/pack-safe/com-unity-transport
+
+**Porte sécurité avant bêta publique :** le prototype Tugboat ne peut servir qu'aux tests locaux contrôlés. Le choix d'un transport chiffré ou d'une couche de chiffrement vérifiée est obligatoire avant toute vraie connexion Internet de joueurs.
