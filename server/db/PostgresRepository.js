@@ -50,6 +50,14 @@ export function createPostgresRepository(pool) {
       if (!rows[0]) return null;
       return { ...rows[0], accountId: String(rows[0].accountId) };
     },
+    async cleanupRealtimeJoinTickets() {
+      const { rowCount } = await pool.query(
+        `DELETE FROM realtime_join_tickets
+         WHERE (consumed_at IS NOT NULL AND consumed_at < NOW() - INTERVAL '5 minutes')
+            OR (consumed_at IS NULL AND expires_at < NOW() - INTERVAL '5 minutes')`,
+      );
+      return rowCount;
+    },
     async createSession({ accountId, tokenHash, expiresAt }) {
       await pool.query('INSERT INTO account_sessions (account_id,token_hash,expires_at) VALUES ($1,$2,$3)', [accountId, tokenHash, expiresAt]);
     },
