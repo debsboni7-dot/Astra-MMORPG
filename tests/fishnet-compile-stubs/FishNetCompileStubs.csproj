@@ -15,6 +15,7 @@
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetZonePersistence.cs" />
+    <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetConnectionController.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs" />
