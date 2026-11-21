@@ -187,6 +187,7 @@ jobs:
           assert "/v1/internal/realtime/fishnet/consume" in fishnet_auth
           assert "SetClientTicket" in fishnet_auth
           assert "WaitForSecondsRealtime(10f)" in fishnet_auth
+          assert "request.timeout = 5" in fishnet_auth
           assert "internal static bool IsAllowedApiUrl" in fishnet_auth
           assert "uri.Scheme != Uri.UriSchemeHttp" in fishnet_auth
           assert "uri.UserInfo" in fishnet_auth
