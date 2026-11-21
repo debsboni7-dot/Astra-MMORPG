@@ -317,3 +317,17 @@ L'ADR [ADR-001 — Architecture du serveur de monde et intégration FishNet](adr
 - Un million de comptes inscrits correspond à un royaume logique distribué en zones/instances ; ce n'est pas une cible de concurrence simultanée pour un processus unique.
 
 Cette décision ne signifie pas que FishNet a été résolu ou compilé par Unity. La compilation, le build Linux Dedicated Server, le raccordement d'authentification, le test à deux clients et les mesures comparatives restent des portes bloquantes. La branche principale n'est pas modifiée par l'intégration FishNet.
+
+## 13. Transport DTLS, ticket retention et preuve CI — 21 novembre 2026
+
+Le transport par défaut Tugboat ne chiffre pas le trafic UDP. Le prototype FishNet utilise maintenant FishyUnityTransport 2.0.0-pre.2 (MIT) avec Unity Transport 2.7.5, uniquement sur la branche isolée. Le composant AstreaFishNetTransportSecurity force UseEncryption et configure le certificat/clé du serveur depuis l'environnement. Les clients vérifient le nom DNS et une CA explicite ou le magasin de confiance du système.
+
+Le générateur de scène remplace le transport Tugboat par FishyUnityTransport, configure le port de test 7770 et ajoute le composant de sécurité. Le workflow deux clients prépare une CA et un certificat éphémères avec SAN localhost/127.0.0.1, puis les fournit aux processus serveur et clients. Les certificats temporaires ne sont pas inclus dans les artefacts.
+
+La base PostgreSQL possède maintenant une purge des tickets consommés ou expirés depuis plus de cinq minutes, déclenchée tous les 100 tickets émis. Les tests Node et PostgreSQL couvrent cette rétention.
+
+Preuves CI du 21 novembre :
+- [44889349804](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889349804) : succès, validation API FishNet 4.7.4, API FishyUnityTransport DTLS, compilation .NET contre stubs, tests de configuration DTLS, validation des certificats, vérification du branchement TransportManager.
+- [44889120732](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889120732) : succès, Node, PostgreSQL 16, migration 005, purge des tickets, backup/restore, benchmarks réseau et Chromium desktop/mobile.
+
+Ces contrôles ne lancent pas Unity Editor. La résolution UPM, la compilation Unity, le build Linux Dedicated Server, le vrai handshake DTLS et le scénario FishNet à deux clients restent non validés. Le workflow end-to-end attend les secrets Unity Personal du dépôt. La branche principale reste inchangée.
