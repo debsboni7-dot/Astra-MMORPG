@@ -138,7 +138,7 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       eventId: event2, eventType: 'RESOURCE_HARVESTED', payload: { resourceId: 'oak-001', delta: -2 },
     }), error => error.code === 'IDEMPOTENCY_CONFLICT');
 
-    const recoveredAfterCrash = await zonePersistence.loadRecoveryState(zoneId);
+    const recoveredAfterCrash = await zonePersistence.loadRecoveryState({ zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch });
     assert.equal(recoveredAfterCrash.snapshot.lastEventSequence, '1');
     assert.deepEqual(recoveredAfterCrash.events.map(item => item.sequence), ['2']);
     const restoredCount = recoveredAfterCrash.events.reduce(
@@ -165,7 +165,7 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       zoneId, ownerId: 'zone-process-b', fencingEpoch: secondLease.fencingEpoch,
       eventId: event3, eventType: 'RESOURCE_HARVESTED', payload: { resourceId: 'oak-001', delta: -1 },
     });
-    const recoveredByReplacement = await zonePersistence.loadRecoveryState(zoneId);
+    const recoveredByReplacement = await zonePersistence.loadRecoveryState({ zoneId, ownerId: 'zone-process-b', fencingEpoch: secondLease.fencingEpoch });
     const finalCount = recoveredByReplacement.events.reduce(
       (count, item) => count + Number(item.payload.delta || 0),
       recoveredByReplacement.snapshot.payload.resources['oak-001'],
