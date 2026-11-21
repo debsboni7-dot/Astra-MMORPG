@@ -317,6 +317,20 @@ test('internal zone persistence routes require server secret and the configured 
     assert.equal((await request('/lease/acquire', { ownerId: 'zone-process-a' }, null)).status, 401);
     assert.equal((await request('/lease/acquire', { ownerId: 'zone-process-a' }, 'wrong-secret')).status, 401);
 
+    const unsupportedType = await fetch(base + path + '/lease/acquire', {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain', 'x-astrea-server-key': secret },
+      body: JSON.stringify({ ownerId: 'zone-process-a' }),
+    });
+    assert.equal(unsupportedType.status, 415);
+
+    const malformedZonePath = await fetch(base + '/v1/internal/zones/zone-%E0%A4%A/lease/acquire', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-astrea-server-key': secret },
+      body: JSON.stringify({ ownerId: 'zone-process-a' }),
+    });
+    assert.equal(malformedZonePath.status, 400);
+
     const wrongZone = await fetch(base + '/v1/internal/zones/another-zone/lease/acquire', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-astrea-server-key': secret },
