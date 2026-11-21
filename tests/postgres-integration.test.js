@@ -156,6 +156,10 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
     });
     assert.ok(secondLease);
     assert.equal(secondLease.fencingEpoch, '2');
+    await assert.rejects(
+      zonePersistence.loadRecoveryState({ zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch }),
+      error => error.code === 'ZONE_LEASE_LOST',
+    );
     await assert.rejects(zonePersistence.appendEvent({
       zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch,
       eventId: event3, eventType: 'RESOURCE_HARVESTED', payload: { resourceId: 'oak-001', delta: -1 },
