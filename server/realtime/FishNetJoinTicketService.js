@@ -23,6 +23,7 @@ export function createFishNetJoinTicketService({
   }
 
   let issuedSinceCleanup = 0;
+  let cleanupInFlight = false;
 
   async function issueForCharacter(accountId, characterId) {
     if (!accountId || typeof characterId !== 'string' || characterId.length < 1 || characterId.length > 128) {
@@ -43,9 +44,20 @@ export function createFishNetJoinTicketService({
     });
 
     issuedSinceCleanup += 1;
-    if (issuedSinceCleanup >= 100 && typeof repository.cleanupRealtimeJoinTickets === 'function') {
-      await repository.cleanupRealtimeJoinTickets();
-      issuedSinceCleanup = 0;
+    if (issuedSinceCleanup >= 100
+      && !cleanupInFlight
+      && typeof repository.cleanupRealtimeJoinTickets === 'function') {
+      const batches = Math.floor(issuedSinceCleanup / 100);
+      issuedSinceCleanup -= batches * 100;
+      cleanupInFlight = true;
+      try {
+        await repository.cleanupRealtimeJoinTickets();
+      } catch (error) {
+        issuedSinceCleanup += batches * 100;
+        throw error;
+      } finally {
+        cleanupInFlight = false;
+      }
     }
 
     return { ticket, expiresIn: TICKET_TTL_SECONDS };
