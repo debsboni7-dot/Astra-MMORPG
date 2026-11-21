@@ -3,8 +3,24 @@ name: Browser prototype and server tests
 on:
   push:
     branches: [main, feat/blender-unreal-cloud-pipeline, spike/fishnet-unity-6-3-evaluation]
+    paths:
+      - "server/**"
+      - "scripts/**"
+      - "tests/**"
+      - "prototype/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/browser-prototype-smoke.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "server/**"
+      - "scripts/**"
+      - "tests/**"
+      - "prototype/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/browser-prototype-smoke.yml"
   workflow_dispatch:
 
 permissions:
