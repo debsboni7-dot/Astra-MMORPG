@@ -10,7 +10,7 @@ function fakeRepository() {
     renewZoneLease: async input => { calls.push(['renew', input]); return { ...input, fencingEpoch: input.fencingEpoch }; },
     appendZoneEvent: async input => { calls.push(['event', input]); return { sequence: '1', duplicate: false }; },
     saveZoneSnapshot: async input => { calls.push(['snapshot', input]); return { zoneId: input.zoneId, lastEventSequence: '1' }; },
-    loadZoneRecoveryState: async zoneId => { calls.push(['load', zoneId]); return { snapshot: null, events: [], lastEventSequence: '0' }; },
+    loadZoneRecoveryState: async input => { calls.push(['load', input]); return { snapshot: null, events: [], lastEventSequence: '0' }; },
   };
 }
 
@@ -30,7 +30,7 @@ test('zone persistence validates and forwards lease, event, snapshot and recover
   await service.renewLease(lease);
   assert.deepEqual(await service.appendEvent(event), { sequence: '1', duplicate: false });
   await service.saveSnapshot({ ...lease, payload: { resources: { 'oak-001': 4 } } });
-  assert.equal((await service.loadRecoveryState(lease.zoneId)).lastEventSequence, '0');
+  assert.equal((await service.loadRecoveryState(lease)).lastEventSequence, '0');
   assert.deepEqual(repository.calls.map(call => call[0]), ['acquire', 'renew', 'event', 'snapshot', 'load']);
 });
 
