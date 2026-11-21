@@ -149,6 +149,7 @@ Le modèle de menace détaillé est conservé dans [docs/network-security-threat
 - Configuration DTLS serveur/client exercée par tests .NET avec fausses clés/certificats ; code FishyUnityTransport 2.0.0-pre.2, méthodes DTLS, licence MIT et branche UTP 2.x vérifiés dans GitHub Actions. Ceci ne remplace pas un vrai handshake Unity.
 - Test exécuté en CI de la validation des URL API : HTTPS distant accepté, HTTP loopback accepté pour le développement, HTTP distant et URL avec identifiants/chemin/query/fragment rejetées. Workflow Unity Foundation réussi le 21 novembre 2026 (run 44887759276).
 - Le workflow d'intégration deux clients s'arrête à la vérification du secret `UNITY_LICENSE` absent ; aucune compilation Unity ni session deux clients n'a donc été exécutée.
+- Suite complète Node/PostgreSQL/backup-restore/benchmarks/Chromium, incluant la migration 005 et la purge des tickets, réussie dans le workflow [44889120732](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889120732).
 - Le workflow de vérification source peut comparer les API utilisées avec le tag FishNet 4.7.4 exact ; cela ne remplace pas le compilateur Unity.
 
 ## 9. Portes obligatoires avant clôture de l'étape 3
