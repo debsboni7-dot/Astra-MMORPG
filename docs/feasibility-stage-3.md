@@ -1,6 +1,6 @@
 # ASTREA — rapport de faisabilité technique, étape 3
 
-Date de référence : 16 novembre 2026  
+Date de référence : 21 novembre 2026  
 Statut : **architecture de prototype définie, validation technique Unity encore ouverte**  
 Branche d'investigation réseau : `spike/fishnet-unity-6-3-evaluation`
 
@@ -116,6 +116,8 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - Benchmark Node loopback et simulation applicative de délai/gigue/suppression de snapshots exécutés en CI. Ces résultats ne simulent pas une perte de paquets IP et ne mesurent pas le WAN.
 - Tickets FishNet : tests d'émission, liaison au personnage, stockage du hash, rejeu, serveur cible, expiration et consommation concurrente atomique testés.
 - Contrôles de source Unity et de métadonnées exécutés dans le workflow Unity Foundation.
+- Compilation .NET des scripts Authenticator, PlayerSpawner, NetworkTestPlayer et NetworkTestClient contre des stubs isolés ; signatures API du tag FishNet 4.7.4 vérifiées par assertions CI. Ce n'est pas une compilation dans l'éditeur Unity.
+- Le workflow d'intégration deux clients s'arrête à la vérification du secret `UNITY_LICENSE` absent ; aucune compilation Unity ni session deux clients n'a donc été exécutée.
 - Le workflow de vérification source peut comparer les API utilisées avec le tag FishNet 4.7.4 exact ; cela ne remplace pas le compilateur Unity.
 
 ## 9. Portes obligatoires avant clôture de l'étape 3
@@ -129,10 +131,10 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - [x] Adaptateur Unity pour demander le ticket ajouté.
 - [x] Authenticator FishNet et point de spawn serveur ajoutés en code sur branche isolée.
 - [x] Contrat API FishNet 4.7.4 vérifié statiquement dans CI.
-- [ ] Résolution réelle UPM et compilation Unity 6000.3.28f1.
-- [ ] Build Linux Dedicated Server réussi.
+- [ ] Résolution réelle UPM et compilation Unity 6000.3.28f1 (bloqué par l'absence du secret `UNITY_LICENSE` dans GitHub Actions).
+- [ ] Build Linux Dedicated Server réussi (même blocage de licence Unity).
 - [ ] Configuration d'un NetworkManager et d'un prefab NetworkObject de test dans une scène.
-- [ ] Connexion de deux clients Unity, authentification par ticket et spawn réciproquement visible.
+- [ ] Connexion de deux clients Unity, authentification par ticket et spawn réciproquement visible (workflow prêt, non exécuté sans licence).
 - [ ] Mesures FishNet comparables à la référence Node.
 - [ ] Test WAN et au moins un appareil Android physique.
 - [ ] Validation de la stratégie de persistance après arrêt/redémarrage du serveur de zone.
@@ -141,7 +143,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 
 L'architecture est suffisamment définie pour poursuivre l'intégration, et plusieurs risques backend ont été réduits par des tests réels PostgreSQL/Node. Toutefois, l'étape 3 **n'est pas terminée** : l'intégration FishNet n'a pas encore passé le compilateur Unity, le build serveur dédié et le scénario de deux clients Unity.
 
-La prochaine tâche reste donc une validation technique Unity, pas le démarrage de l'étape 4. Les critères non cochés sont des preuves manquantes, pas des tâches que l'on peut remplacer par davantage de documentation.
+La prochaine tâche reste donc une validation technique Unity, pas le démarrage de l'étape 4. Les critères non cochés sont des preuves manquantes, pas des tâches que l'on peut remplacer par davantage de documentation. Pour débloquer les tests Unity cloud, il faut ajouter au dépôt le fichier de licence Unity Personal sous le secret GitHub `UNITY_LICENSE`, puis relancer le workflow manuel avec confirmation explicite. Sans ce secret, aucune action côté code ne peut produire une compilation Unity authentique.
 
 
 ## Mise à jour build serveur dédié
