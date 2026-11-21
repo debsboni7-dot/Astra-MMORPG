@@ -17,12 +17,11 @@ GameCI documente cette activation Personal comme une étape unique locale. L'anc
 ## 2. Ajouter les trois secrets sur GitHub depuis le téléphone
 
 Dans le navigateur Android, ouvrir directement [les secrets Actions du dépôt ASTREA](https://github.com/debsboni7-dot/Astra-MMORPG/settings/secrets/actions) :
-2. Aller dans Settings → Secrets and variables → Actions.
-3. Choisir New repository secret et créer séparément :
+1. Choisir New repository secret et créer séparément :
    - `UNITY_LICENSE` : contenu complet du fichier `.ulf`.
    - `UNITY_EMAIL` : adresse du compte Unity.
    - `UNITY_PASSWORD` : mot de passe du compte Unity.
-4. Ne jamais publier ces valeurs dans les issues, commits, journaux ou messages.
+2. Ne jamais publier ces valeurs dans les issues, commits, journaux ou messages.
 
 GameCI reçoit ces valeurs uniquement comme secrets d'environnement au moment du build.
 
