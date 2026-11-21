@@ -13,6 +13,7 @@ Exécuter dans l'ordre :
 4. `server/migrations/003_character_magic_combat_state.sql`
 5. `server/migrations/004_realtime_join_tickets.sql`
 6. `server/migrations/005_realtime_join_ticket_cleanup.sql`
+7. `server/migrations/006_world_zone_persistence.sql`
 
 La migration 001 crée la table `characters` avec identifiant UUID, propriétaire `account_id`, nom d'affichage et données JSONB, puis ajoute le bloc de progression. Si une table `characters` existe déjà, vérifier et adapter ses types/colonnes avant migration. Les personnages historiques doivent être rattachés à un compte avant production.
 
@@ -78,3 +79,18 @@ La migration 005 ajoute un index partiel sur les tickets consommés. Le dépôt 
 ### Transport Unity FishNet
 
 Le serveur FishNet utilise un secret API serveur distinct des sessions joueurs et un timeout de 5 secondes pour la consommation du ticket. Le transport client/serveur doit être DTLS (FishyUnityTransport + Unity Transport 2.x) ; les certificats privés du serveur sont chargés par le processus Unity depuis l'environnement. Ne jamais réutiliser le secret API comme clé DTLS. Voir [le modèle de menace réseau](../docs/network-security-threat-model.md).
+
+
+## Persistance et reprise des zones (premier socle)
+
+La migration 006 ajoute :
+- un état de séquence monotone par zone ;
+- un bail exclusif par zone avec epoch de fencing croissant ;
+- un journal d'événements durables avec UUID idempotent, séquence BIGINT et payload JSONB ;
+- un snapshot durable par zone avec version de schéma et séquence de reprise.
+
+`server/realtime/ZonePersistenceService.js` valide les identifiants, versions et payloads (JSON objet, maximum 256 KiB), puis expose l'acquisition/renouvellement du bail, l'ajout idempotent d'événements, la sauvegarde d'un snapshot et le chargement du snapshot suivi des événements à rejouer.
+
+Chaque écriture exige un bail non expiré, son propriétaire et son epoch exact. Quand un processus perd le bail et qu'un remplaçant obtient un nouvel epoch, les écritures de l'ancien processus sont refusées. L'API publique ne donne pas au client le droit d'écrire directement ces événements : le service est une brique serveur interne, à appeler depuis le futur processus de zone après validation autoritaire.
+
+Les tests PostgreSQL couvrent la séquence, l'idempotence, le rejeu snapshot + événements après simulation d'un crash, la prise de bail par un nouveau processus et le rejet de l'ancien epoch. Ce socle ne constitue pas encore une intégration avec le processus Unity FishNet ; le raccordement au serveur de zone et le test de restauration d'un build Unity restent à faire.
