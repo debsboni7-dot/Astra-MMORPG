@@ -212,6 +212,7 @@ jobs:
           for contract in ["UseEncryption", "SetServerSecrets", "SetClientSecrets", "ASTREA_DTLS_SERVER_CERT", "ASTREA_DTLS_SERVER_KEY", "ASTREA_DTLS_SERVER_NAME"]:
               assert contract in transport_security, contract
           assert "ASTREA_NETWORK_ROLE" in transport_security
+          assert "[DefaultExecutionOrder(-10000)]" in transport_security
           assert "must be server or client when supplied" in transport_security
           assert "privateKey" in transport_security
           assert "Debug.Log" not in transport_security, "DTLS private material must never be logged"
