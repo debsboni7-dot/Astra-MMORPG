@@ -8,6 +8,7 @@ const serverSecret = 'server-secret-for-fishnet-tests-1234567890';
 
 function makeHarness() {
   const records = new Map();
+  let cleanupCalls = 0;
   const characterService = {
     async get(accountId, characterId) {
       return accountId === 'account-1' && characterId === 'character-1'
@@ -25,9 +26,13 @@ function makeHarness() {
       record.consumed = true;
       return { accountId: record.accountId, characterId: record.characterId, serverId: record.serverId };
     },
+    async cleanupRealtimeJoinTickets() {
+      cleanupCalls += 1;
+      return 0;
+    },
   };
   const service = createFishNetJoinTicketService({ characterService, repository });
-  return { records, service };
+  return { records, service, get cleanupCalls() { return cleanupCalls; } };
 }
 
 async function withServer(run, service, serverOptions = {}) {
@@ -68,6 +73,16 @@ test('FishNet join tickets are opaque, bound to owned characters, hashed at rest
     serverId: 'astrea-prototype-zone-01',
   });
   assert.equal(await service.consume(issued.ticket, service.serverId), null);
+});
+
+test('FishNet join ticket storage is periodically pruned without affecting fresh tickets', async () => {
+  const harness = makeHarness();
+  for (let index = 0; index < 99; index += 1)
+    await harness.service.issueForCharacter('account-1', 'character-1');
+  assert.equal(harness.cleanupCalls, 0);
+  const hundredth = await harness.service.issueForCharacter('account-1', 'character-1');
+  assert.equal(harness.cleanupCalls, 1);
+  assert.equal(hundredth.expiresIn, 30);
 });
 
 test('FishNet join tickets cannot be issued for another account character or consumed by another server', async () => {
