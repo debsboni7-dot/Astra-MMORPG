@@ -242,10 +242,6 @@ Le workflow end-to-end a bien été déclenché : [run 43832992881](https://gith
 Déblocage nécessaire : ajouter le contenu d'un fichier de licence Unity valide au secret GitHub Actions `UNITY_LICENSE` dans les paramètres du dépôt, puis relancer ce run. Ne jamais coller le contenu de la licence dans le code ou dans une conversation. La procédure actuelle d'activation Unity dépend du type de licence et peut nécessiter Unity Hub ; la voie d'activation manuelle Personal n'est pas garantie par Unity/GameCI.
 
 
-## 11. Transport et sécurité réseau
-
-Le ticket à usage unique ne protège pas le trafic UDP contre l'écoute ou la modification. Le prototype Tugboat doit rester limité aux essais locaux contrôlés. La documentation d'architecture identifie FishyUnityTransport (MIT, version 2.0.0-pre.2) comme candidat pour DTLS/TLS ; il n'est pas installé dans le projet et doit passer la résolution UPM, compilation et tests de compatibilité avant décision.
-
 
 ## 14. Transport chiffré FishNet — 21 novembre 2026
 
