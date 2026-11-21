@@ -169,6 +169,7 @@ namespace Astrea.Networking
             using (var request = new UnityWebRequest(
                 apiBaseUrl.TrimEnd('/') + "/v1/internal/realtime/fishnet/consume", "POST"))
             {
+                request.timeout = 5;
                 request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
                 request.downloadHandler = new DownloadHandlerBuffer();
                 request.SetRequestHeader("Content-Type", "application/json");
