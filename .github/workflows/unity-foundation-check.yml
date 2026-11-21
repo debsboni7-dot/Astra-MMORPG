@@ -198,6 +198,7 @@ jobs:
           for contract in ["UseEncryption", "SetServerSecrets", "SetClientSecrets", "ASTREA_DTLS_SERVER_CERT", "ASTREA_DTLS_SERVER_KEY", "ASTREA_DTLS_SERVER_NAME"]:
               assert contract in transport_security, contract
           assert "ASTREA_NETWORK_ROLE" in transport_security
+          assert "must be server or client when supplied" in transport_security
           assert "privateKey" in transport_security
           assert "Debug.Log" not in transport_security, "DTLS private material must never be logged"
           fishnet_test_player = (root / "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs").read_text()
