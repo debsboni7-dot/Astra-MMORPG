@@ -22,6 +22,7 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       '002_character_magic_progression.sql',
       '003_character_magic_combat_state.sql',
       '004_realtime_join_tickets.sql',
+      '005_realtime_join_ticket_cleanup.sql',
     ]) {
       await pool.query(await readFile(new URL(`../server/migrations/${file}`, import.meta.url), 'utf8'));
     }
@@ -73,6 +74,33 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       expiresAt: new Date(Date.now() - 1_000),
     });
     assert.equal(await repository.consumeRealtimeJoinTicket(expiredTicketHash, 'astrea-integration-zone'), null);
+
+    const staleExpiredHash = createHash('sha256').update(randomBytes(32)).digest('hex');
+    await repository.createRealtimeJoinTicket({
+      tokenHash: staleExpiredHash,
+      accountId: String(account.id),
+      characterId: character.id,
+      serverId: 'astrea-integration-zone',
+      expiresAt: new Date(Date.now() - 6 * 60_000),
+    });
+    const staleConsumedHash = createHash('sha256').update(randomBytes(32)).digest('hex');
+    await repository.createRealtimeJoinTicket({
+      tokenHash: staleConsumedHash,
+      accountId: String(account.id),
+      characterId: character.id,
+      serverId: 'astrea-integration-zone',
+      expiresAt: new Date(Date.now() + 30_000),
+    });
+    await pool.query(
+      'UPDATE realtime_join_tickets SET consumed_at=NOW() - INTERVAL \'6 minutes\' WHERE token_hash=$1',
+      [staleConsumedHash],
+    );
+    assert.equal(await repository.cleanupRealtimeJoinTickets(), 2);
+    const retainedStaleTickets = await pool.query(
+      'SELECT token_hash FROM realtime_join_tickets WHERE token_hash = ANY($1::text[])',
+      [[staleExpiredHash, staleConsumedHash]],
+    );
+    assert.equal(retainedStaleTickets.rowCount, 0);
 
     const weaponProgression = createWeaponProgressionService(repository);
     const magicProgression = createMagicProgressionService(repository);
