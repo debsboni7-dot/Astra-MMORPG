@@ -9,6 +9,7 @@ using FishNet.Component.Transforming;
 using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Object;
+using FishNet.Transporting;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -73,6 +74,27 @@ namespace Astrea.EditorTools
                 throw new InvalidOperationException("FishNet _spawnablePrefabs field was not found.");
             spawnableProperty.objectReferenceValue = spawnablePrefabs;
             networkManagerData.ApplyModifiedPropertiesWithoutUndo();
+
+            // Replace the demo Tugboat transport with the encrypted Unity Transport adapter.
+            foreach (Transport existingTransport in managerRoot.GetComponents<Transport>())
+                UnityEngine.Object.DestroyImmediate(existingTransport);
+
+            Type unityTransportType = Type.GetType(
+                "FishNet.Transporting.UTP.UnityTransport, FishyUnityTransport");
+            if (unityTransportType == null)
+                throw new InvalidOperationException("FishyUnityTransport 2.x was not resolved by Unity Package Manager.");
+
+            Transport unityTransport = managerRoot.AddComponent(unityTransportType) as Transport;
+            if (unityTransport == null)
+                throw new InvalidOperationException("Could not create FishyUnityTransport component.");
+            networkManager.TransportManager.Transport = unityTransport;
+
+            AstreaFishNetTransportSecurity transportSecurity =
+                managerRoot.AddComponent<AstreaFishNetTransportSecurity>();
+            SerializedObject transportSecurityData = new SerializedObject(transportSecurity);
+            transportSecurityData.FindProperty("transportComponent").objectReferenceValue = unityTransport;
+            transportSecurityData.FindProperty("serverCommonName").stringValue = "localhost";
+            transportSecurityData.ApplyModifiedPropertiesWithoutUndo();
 
             AstreaFishNetAuthenticator authenticator =
                 managerRoot.AddComponent<AstreaFishNetAuthenticator>();
