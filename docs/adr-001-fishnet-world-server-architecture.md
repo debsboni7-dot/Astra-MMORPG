@@ -98,6 +98,7 @@ Une première tranche backend est maintenant intégrée sur la branche isolée :
 - migration PostgreSQL `004_realtime_join_tickets.sql` ;
 - tickets aléatoires 256 bits, 30 secondes, liés au compte, personnage et serveur ;
 - seul le hash SHA-256 est stocké ;
+- nettoyage périodique des tickets consommés/expirés (index PostgreSQL dédié et purge tous les 100 tickets émis, avec rétention de 5 minutes) ;
 - consommation PostgreSQL atomique à usage unique ;
 - route joueur authentifiée `POST /v1/realtime/fishnet/tickets` ;
 - route interne `POST /v1/internal/realtime/fishnet/consume`, protégée par `X-Astrea-Server-Key` avec comparaison en temps constant ;
