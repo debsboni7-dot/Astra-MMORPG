@@ -95,7 +95,7 @@ Le dépôt ne doit pas fusionner cette dépendance dans la branche principale av
 ## Mise à jour d'implémentation — tickets de connexion (16 novembre 2026)
 
 Une première tranche backend est maintenant intégrée sur la branche isolée :
-- migration PostgreSQL `004_realtime_join_tickets.sql` ;
+- migrations PostgreSQL `004_realtime_join_tickets.sql` et `005_realtime_join_ticket_cleanup.sql` ;
 - tickets aléatoires 256 bits, 30 secondes, liés au compte, personnage et serveur ;
 - seul le hash SHA-256 est stocké ;
 - nettoyage périodique des tickets consommés/expirés (index PostgreSQL dédié et purge tous les 100 tickets émis, avec rétention de 5 minutes) ;
@@ -104,7 +104,7 @@ Une première tranche backend est maintenant intégrée sur la branche isolée :
 - route interne `POST /v1/internal/realtime/fishnet/consume`, protégée par `X-Astrea-Server-Key` avec comparaison en temps constant ;
 - méthode Unity `AstreaApiClient.RequestFishNetJoinTicket`.
 
-Les tests Node couvrent l'émission, l'ownership, le hash au repos, le rejet de rejeu et le secret serveur. Le test PostgreSQL CI couvre la migration et la consommation atomique sur une vraie instance PostgreSQL.
+Les tests Node couvrent l'émission, l'ownership, le hash au repos, le rejet de rejeu, le secret serveur et le déclenchement de purge périodique. Le test PostgreSQL CI couvre la migration, la consommation atomique et la purge des tickets anciens sur une vraie instance PostgreSQL.
 
 **Non terminé :** le custom Authenticator FishNet qui enverra le ticket au serveur, le client HTTP serveur-à-serveur, l'identification/spawn du joueur et le test deux clients FishNet. Ces éléments nécessitent une compilation Unity réelle et une validation du contrat exact de la version 4.7.4.
 
