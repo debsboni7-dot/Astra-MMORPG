@@ -1,6 +1,6 @@
 # ASTREA — cahier du prototype réseau comparatif
 
-Statut : préparation technique de l'étape 3. Aucun protocole n'est encore choisi et aucun serveur temps réel n'est déclaré opérationnel.
+Statut au 21 novembre 2026 : baseline Node WebSocket à deux clients testée ; FishNet 4.7.4 intégré comme candidat de prototype sur une branche isolée ; scripts réseau compilés contre stubs .NET et API FishNet vérifiée en CI. Aucun build Unity réel ni test deux clients Unity n'a réussi à ce jour. Le protocole de production reste ouvert.
 
 ## Objectif
 
@@ -63,15 +63,18 @@ Aucun protocole n'est choisi sur la seule popularité ou facilité de prise en m
 - **FishNet :** sa documentation déclare Unity 6 LTS entièrement pris en charge. La licence exacte et les dépendances tierces doivent être auditées dans les fichiers de licence du commit retenu avant intégration. Références : [compatibilité Unity](https://fish-networking.gitbook.io/docs/overview/readme/features/unity-compatibility), [dépôt FishNet](https://github.com/FirstGearGames/FishNet).
 - **WebSocket Node.js :** candidat intéressant pour réutiliser l'infrastructure applicative existante et le prototype navigateur, mais la fiabilité, le rythme de simulation, la charge CPU et la latence devront être mesurés ; aucune bibliothèque serveur supplémentaire n'a été choisie.
 
-Cette revue confirme que NGO/Unity Transport et FishNet sont des candidats plausibles sur Unity 6, mais ne valide ni la compatibilité exacte de notre projet Unity 6.3, ni la licence complète de chaque dépendance, ni les performances. Aucun paquet n'a été installé.
+Cette revue documentaire du 16 novembre confirmait que NGO/Unity Transport et FishNet sont des candidats plausibles sur Unity 6, sans prouver la compatibilité complète ni les performances. Depuis, FishNet 4.7.4 a été déclaré comme dépendance UPM sur la branche isolée ; Unity n'a pas encore résolu le paquet.
 
 ## État
 
 - [x] Options candidates et critères d'évaluation documentés.
 - [x] Scénario commun et métriques définis.
-- [~] Compatibilité générale Unity 6 vérifiée pour NGO/Unity Transport, FishNet et Mirror ; compatibilité exacte Unity 6.3, audit complet des licences et dépendances encore à confirmer.
-- [ ] Prototype comparatif à deux clients exécuté.
-- [ ] Rapport de mesures et décision de protocole approuvée.
+- [~] API FishNet 4.7.4 vérifiée dans CI et scripts réseau compilés contre stubs .NET ; résolution UPM et compilation Unity 6000.3.28f1 restent à faire.
+- [x] Baseline Node WebSocket testée à deux clients en CI.
+- [~] Code FishNet de tickets, Authenticator, spawn et test deux clients ajouté sur branche isolée ; exécution Unity réelle bloquée par les secrets de licence absents.
+- [~] Transport chiffré identifié comme exigence ; FishyUnityTransport DTLS/TLS est un candidat non intégré, à vérifier.
+- [ ] Prototype comparatif FishNet à deux clients Unity exécuté.
+- [ ] Rapport de mesures comparables et décision de protocole approuvée.
 
 
 ## Audit complémentaire des licences et versions (16 novembre 2026)
@@ -91,7 +94,7 @@ Cette revue confirme que NGO/Unity Transport et FishNet sont des candidats plaus
 3. **WebSocket Node.js** : candidat de référence simple pour mesurer la réplication depuis deux navigateurs et réutiliser le backend Node. Il ne doit pas être choisi uniquement parce que son premier prototype est plus facile : la simulation, la sécurité, l'interpolation et le coût CPU restent à démontrer.
 4. **Mirror** : candidat mis en attente. Sa licence MIT est attractive, mais sa documentation actuelle recommande Unity 2020/2021 LTS et ne garantit pas le support des versions plus récentes. Ne pas le retenir sans une preuve de compatibilité Unity 6.3.
 
-Ce classement définit l'ordre d'investigation, pas un choix de protocole ni une autorisation d'ajouter un paquet. Le test comparatif doit conserver les mêmes règles de validation, le même scénario et les mêmes métriques pour chaque candidat.
+Ce classement définit l'ordre d'investigation. FishNet 4.7.4 est désormais ajouté uniquement à la branche isolée, conformément à la décision du créateur ; cela ne vaut pas validation de production. Le test comparatif doit conserver les mêmes règles de validation, le même scénario et les mêmes métriques pour chaque candidat.
 
 
 ## Contrat de messages neutre au transport (proposition de test)
@@ -304,3 +307,15 @@ Le test réseau Node déjà réussi ne ferme aucun de ces critères Unity.
 Le pont n'est plus seulement une proposition documentaire : les routes de ticket Node/PostgreSQL, l'adaptateur Unity, l'Authenticator FishNet, le spawner serveur, le proxy de test et le client automatisé sont présents sur la branche isolée. Un workflow manuel construit les deux binaires Linux et tente le scénario réel à deux clients.
 
 Les tests backend et les contrôles de source sont passés. La scène Unity n'a pas encore été ouverte/compilée par Unity Editor et le workflow end-to-end n'a pas été lancé. Le protocole de production et la capacité restent donc non validés.
+
+
+## État révisé — 21 novembre 2026
+
+- FishNet 4.7.4 est épinglé dans `unity/Packages/manifest.json` sur `spike/fishnet-unity-6-3-evaluation` uniquement. La branche principale n'est pas modifiée.
+- L'API du tag FishNet 4.7.4 utilisée par ASTREA est vérifiée en CI ; les scripts réseau et l'adaptateur API client passent une compilation .NET contre stubs isolés. Le test d'URL confirme HTTPS distant et HTTP loopback seulement.
+- Le backend FishNet utilise un ticket opaque de 30 secondes, hashé en base, lié au personnage et au serveur, consommé atomiquement. Le champ `serverId` est obligatoire à la consommation. Tests Node/PostgreSQL réussis.
+- Un Authenticator, un spawner serveur et un banc de test à deux clients sont présents. La scène et les exécutables sont générés au build Unity.
+- Le workflow de deux clients a été tenté, mais s'est arrêté avant le build car les secrets Unity Personal n'étaient pas configurés. La procédure est documentée dans `docs/unity-ci-license-setup.md`.
+- Tugboat est réservé aux tests locaux contrôlés. Un transport chiffré est requis avant tout réseau public ; FishyUnityTransport est étudié, mais pas installé.
+
+**Conclusion :** la baseline Node est mesurée ; l'intégration FishNet est préparée et partiellement vérifiée par CI, mais l'étape de validation Unity réelle demeure ouverte. Aucun résultat deux clients FishNet n'est revendiqué.
