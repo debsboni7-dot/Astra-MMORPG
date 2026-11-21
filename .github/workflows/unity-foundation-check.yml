@@ -77,6 +77,9 @@ jobs:
           assert "public bool IsOwner => _networkObjectCache.IsOwner;" in network_behaviour_qol
           assert "public class ServerRpcAttribute : RpcAttribute" in rpc_attributes
           assert "private bool _startOnHeadless = true;" in server_manager
+          assert "public void SetStartOnHeadless(bool value)" in server_manager
+          assert "public bool StartConnection()" in server_manager
+          assert "public bool StopConnection(bool sendDisconnectMessage)" in server_manager
           assert "private ushort _port = 7770;" in tugboat
           assert "public Transport Transport;" in transport_manager
           assert "public TransportManager TransportManager { get; private set; }" in network_manager_source
@@ -151,6 +154,7 @@ jobs:
               "Assets/Scripts/Networking/AstreaApiClient.cs",
               "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs",
               "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs",
+              "Assets/Scripts/Networking/AstreaFishNetZonePersistence.cs",
               "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs",
               "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs",
               "Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs",
@@ -208,6 +212,13 @@ jobs:
           assert "uri.Fragment" in fishnet_auth
           assert "IPAddress.IsLoopback" in fishnet_auth
 
+          zone_persistence = (root / "Assets/Scripts/Networking/AstreaFishNetZonePersistence.cs").read_text()
+          for contract in ["lease/acquire", "lease/renew", "/recovery", "REALTIME_SERVER_SECRET", "REALTIME_SERVER_ID", "StartConnection()", "StopConnection(true)"]:
+              assert contract in zone_persistence, contract
+          assert "clock" not in zone_persistence.lower() or "lease" in zone_persistence.lower()
+          assert "AstreaFishNetAuthenticator.IsAllowedApiUrl" in zone_persistence
+          assert "RecoveryJson" in zone_persistence
+          assert "LastRecoveredEventSequence" in zone_persistence
           transport_security = (root / "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs").read_text()
           for contract in ["UseEncryption", "SetServerSecrets", "SetClientSecrets", "ASTREA_DTLS_SERVER_CERT", "ASTREA_DTLS_SERVER_KEY", "ASTREA_DTLS_SERVER_NAME"]:
               assert contract in transport_security, contract
@@ -230,6 +241,8 @@ jobs:
           assert "SinglePrefabObjects" in fishnet_scene_builder
           assert "FishyUnityTransport" in fishnet_scene_builder
           assert "SetConnectionData" in fishnet_scene_builder
+          assert "AstreaFishNetZonePersistence" in fishnet_scene_builder
+          assert "SetStartOnHeadless(false)" in fishnet_scene_builder
           assert "(ushort)7770" in fishnet_scene_builder
           assert 'GetProperty("UseEncryption")' in fishnet_scene_builder
           assert "encryptionProperty.SetValue(unityTransport, true, null)" in fishnet_scene_builder
