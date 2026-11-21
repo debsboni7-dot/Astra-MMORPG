@@ -1,7 +1,7 @@
 # ASTREA — persistance et reprise des serveurs de zone
 
 Date : 21 novembre 2026  
-Statut : architecture proposée pour la phase 3 ; non implémentée dans le prototype FishNet
+Statut : socle PostgreSQL implémenté et testé ; raccordement au processus Unity FishNet encore en attente
 
 ## Objectif
 
@@ -81,8 +81,33 @@ Une solution initiale peut s'appuyer sur un verrou advisory PostgreSQL ou une ta
 5. Redémarrer l'API et le serveur de zone séparément, sans perte des données persistantes.
 6. Restaurer PostgreSQL depuis une sauvegarde et reconstruire la zone.
 
+## Implémentation du socle PostgreSQL — 21 novembre 2026
+
+La migration `006_world_zone_persistence.sql` crée les tables `world_zone_state`, `world_zone_leases`, `world_zone_events` et `world_zone_snapshots`.
+
+Le dépôt `PostgresRepository` fournit :
+- acquisition atomique d'un bail exclusif, avec epoch de fencing croissant ;
+- renouvellement uniquement si le propriétaire, l'epoch et l'expiration sont encore valides ;
+- ajout d'événement dans une transaction, avec séquence monotone par zone ;
+- idempotence par UUID global et comparaison JSONB côté PostgreSQL ;
+- snapshot qui ne peut pas reculer la séquence ;
+- chargement du dernier snapshot puis des événements strictement postérieurs, dans l'ordre.
+
+Le service `ZonePersistenceService` valide les identifiants, UUID, types d'événement, versions de schéma et payloads JSON (objet, limite 256 KiB). Les opérations d'écriture refusent les processus sans bail actif ou avec un ancien fencing epoch.
+
+Le test PostgreSQL réel couvre :
+1. création d'un événement et snapshot à la séquence 1 ;
+2. événement 2 non encore inclus dans le snapshot ;
+3. reconstitution de l'état à partir du snapshot + événement 2 après simulation de crash ;
+4. rejet d'une réémission identique avec contenu différent et acceptation idempotente d'un doublon identique ;
+5. expiration du bail et acquisition par un nouveau processus à l'epoch 2 ;
+6. refus d'écriture de l'ancien processus ;
+7. événement 3, relecture et création d'un nouveau snapshot à la séquence 3.
+
+**Limite :** cette preuve valide PostgreSQL et la logique de reprise, pas un processus Unity. Le raccordement au serveur FishNet, le transfert d'état en mémoire et le redémarrage d'un build Linux dédié restent à exécuter après déblocage de la licence Unity.
+
 ## État actuel
 
-Déjà présent : comptes, sessions, personnages, progression et état de combat magique persistés dans PostgreSQL ; tickets de connexion FishNet à usage unique ; sauvegarde/restauration PostgreSQL testée en CI.
+Déjà présent et testé : comptes, sessions, personnages, progression, état de combat magique, tickets FishNet à usage unique, sauvegarde/restauration PostgreSQL, journal de zone, snapshots, idempotence, bail exclusif et fencing.
 
-Non implémenté : journal d'événements de zone, snapshots de monde, lease/fencing, reconstitution d'une zone après crash et test de reprise du serveur FishNet. Cette conception est donc une porte d'architecture définie, pas une preuve d'exécution.
+En attente : consommation du service par le processus Unity FishNet, checkpoint à l'arrêt, restauration après crash d'un serveur Unity dédié et test de deux processus concurrents réels.
