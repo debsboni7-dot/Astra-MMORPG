@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Globalization;
 using System.Text;
 using FishNet.Managing;
 using UnityEngine;
@@ -62,6 +63,7 @@ namespace Astrea.Networking
         private string fencingEpoch;
         private bool serverRole;
         private bool leaseActive;
+        private DateTimeOffset leaseExpiresAtUtc;
 
         public bool LeaseActive => leaseActive;
         public string FencingEpoch => fencingEpoch;
@@ -110,6 +112,19 @@ namespace Astrea.Networking
             StartCoroutine(BootstrapZone());
         }
 
+        private void Update()
+        {
+            // If the main thread was suspended beyond the lease TTL, stop before
+            // the next normal network update can process another authoritative tick.
+            if (serverRole && leaseActive && DateTimeOffset.UtcNow >= leaseExpiresAtUtc)
+            {
+                leaseActive = false;
+                if (networkManager != null && networkManager.ServerManager != null)
+                    networkManager.ServerManager.StopConnection(true);
+                FailClosed("ZONE_LEASE_EXPIRED_LOCAL");
+            }
+        }
+
         private IEnumerator BootstrapZone()
         {
             var leaseRequest = new AstreaZoneLeaseRequest
@@ -129,7 +144,11 @@ namespace Astrea.Networking
 
                 AstreaZoneLeaseResponse response = JsonUtility.FromJson<AstreaZoneLeaseResponse>(request.downloadHandler.text);
                 fencingEpoch = response != null && response.lease != null ? response.lease.fencingEpoch : null;
-                if (string.IsNullOrWhiteSpace(fencingEpoch))
+                if (string.IsNullOrWhiteSpace(fencingEpoch)
+                    || response.lease == null
+                    || !DateTimeOffset.TryParse(response.lease.leaseExpiresAt, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out leaseExpiresAtUtc)
+                    || leaseExpiresAtUtc <= DateTimeOffset.UtcNow)
                 {
                     FailClosed("ZONE_LEASE_RESPONSE_INVALID");
                     yield break;
@@ -201,11 +220,14 @@ namespace Astrea.Networking
                     AstreaZoneLeaseResponse response =
                         JsonUtility.FromJson<AstreaZoneLeaseResponse>(request.downloadHandler.text);
                     if (response == null || response.lease == null
-                        || response.lease.fencingEpoch != fencingEpoch)
+                        || response.lease.fencingEpoch != fencingEpoch
+                        || !DateTimeOffset.TryParse(response.lease.leaseExpiresAt, CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out leaseExpiresAtUtc)
+                        || leaseExpiresAtUtc <= DateTimeOffset.UtcNow)
                     {
                         leaseActive = false;
                         networkManager.ServerManager.StopConnection(true);
-                        FailClosed("ZONE_FENCING_EPOCH_CHANGED");
+                        FailClosed("ZONE_FENCING_EPOCH_CHANGED_OR_EXPIRY_INVALID");
                         yield break;
                     }
                 }
