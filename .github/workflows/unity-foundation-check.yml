@@ -182,10 +182,9 @@ jobs:
           assert (root.parent / "scripts/apply-server-migrations.js").is_file()
           assert (root.parent / "scripts/prepare-fishnet-integration-test.js").is_file()
 
+          api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
           assert "uri.Scheme != Uri.UriSchemeHttps" in api_client
           assert "IPAddress.IsLoopback" in api_client
-          assert "RequestFishNetJoinTicket" in api_client
-          api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
           assert "RequestFishNetJoinTicket" in api_client
           assert "/v1/realtime/fishnet/tickets" in api_client
 
