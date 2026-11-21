@@ -159,9 +159,11 @@ jobs:
         shell: bash
         run: |
           chmod +x unity/Build/ASTREA-FishNet-Server/ASTREA.x86_64
-          nohup env ASTREA_API_BASE_URL="$ASTREA_API_BASE_URL" \
+          nohup env ASTREA_NETWORK_ROLE=server ASTREA_API_BASE_URL="$ASTREA_API_BASE_URL" \
             REALTIME_SERVER_SECRET="$REALTIME_SERVER_SECRET" \
             REALTIME_SERVER_ID="$REALTIME_SERVER_ID" \
+            ASTREA_DTLS_SERVER_CERT="$ASTREA_DTLS_SERVER_CERT" \
+            ASTREA_DTLS_SERVER_KEY="$ASTREA_DTLS_SERVER_KEY" \
             ./unity/Build/ASTREA-FishNet-Server/ASTREA.x86_64 \
             -batchmode -nographics -logFile /tmp/astrea-fishnet-server.log \
             > /tmp/astrea-fishnet-server-console.log 2>&1 &
@@ -178,13 +180,15 @@ jobs:
         run: |
           chmod +x unity/Build/ASTREA-FishNet-Client/ASTREA.x86_64
           set +e
-          timeout 45s env ASTREA_TEST_JOIN_TICKET="$ASTREA_TEST_JOIN_TICKET_1" \
+          timeout 45s env ASTREA_NETWORK_ROLE=client ASTREA_DTLS_SERVER_NAME="$ASTREA_DTLS_SERVER_NAME" \
+            ASTREA_DTLS_CA_CERT="$ASTREA_DTLS_CA_CERT" ASTREA_TEST_JOIN_TICKET="$ASTREA_TEST_JOIN_TICKET_1" \
             ASTREA_TEST_CLIENT_ID=1 ASTREA_TEST_SERVER_ADDRESS=127.0.0.1 ASTREA_TEST_SERVER_PORT=7770 \
             ./unity/Build/ASTREA-FishNet-Client/ASTREA.x86_64 \
             -batchmode -nographics -logFile /tmp/astrea-fishnet-client-1.log \
             > /tmp/astrea-fishnet-client-1-console.log 2>&1 &
           client1=$!
-          timeout 45s env ASTREA_TEST_JOIN_TICKET="$ASTREA_TEST_JOIN_TICKET_2" \
+          timeout 45s env ASTREA_NETWORK_ROLE=client ASTREA_DTLS_SERVER_NAME="$ASTREA_DTLS_SERVER_NAME" \
+            ASTREA_DTLS_CA_CERT="$ASTREA_DTLS_CA_CERT" ASTREA_TEST_JOIN_TICKET="$ASTREA_TEST_JOIN_TICKET_2" \
             ASTREA_TEST_CLIENT_ID=2 ASTREA_TEST_SERVER_ADDRESS=127.0.0.1 ASTREA_TEST_SERVER_PORT=7770 \
             ./unity/Build/ASTREA-FishNet-Client/ASTREA.x86_64 \
             -batchmode -nographics -logFile /tmp/astrea-fishnet-client-2.log \
