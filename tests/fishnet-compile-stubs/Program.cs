@@ -1,4 +1,6 @@
 using System;
+using System.Reflection;
+using FishNet.Transporting.UTP;
 using Astrea.Networking;
 
 internal static class Program
@@ -32,7 +34,47 @@ internal static class Program
         Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("https://api.astrea.example/?ticket=secret"), "FishNet server must reject query strings");
         Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("https://api.astrea.example/#fragment"), "FishNet server must reject fragments");
 
+        VerifyDtlsServerConfiguration();
+        VerifyDtlsClientConfiguration();
+
         Console.WriteLine("ASTREA API URL security contract passed.");
+    }
+
+
+    private static void VerifyDtlsServerConfiguration()
+    {
+        Environment.SetEnvironmentVariable("ASTREA_NETWORK_ROLE", "server");
+        Environment.SetEnvironmentVariable("ASTREA_DTLS_SERVER_CERT", "server-cert-pem");
+        Environment.SetEnvironmentVariable("ASTREA_DTLS_SERVER_KEY", "server-key-pem");
+
+        var transport = new UnityTransport();
+        var security = new AstreaFishNetTransportSecurity();
+        typeof(AstreaFishNetTransportSecurity).GetField("transportComponent", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(security, transport);
+        typeof(AstreaFishNetTransportSecurity).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(security, null);
+
+        Assert(transport.UseEncryption, "DTLS must be enabled on dedicated server");
+        Assert(transport.ServerCertificate == "server-cert-pem", "server certificate must be supplied from environment");
+        Assert(transport.ServerPrivateKey == "server-key-pem", "server private key must be supplied from environment");
+    }
+
+    private static void VerifyDtlsClientConfiguration()
+    {
+        Environment.SetEnvironmentVariable("ASTREA_NETWORK_ROLE", "client");
+        Environment.SetEnvironmentVariable("ASTREA_DTLS_SERVER_NAME", "game.astrea.example");
+        Environment.SetEnvironmentVariable("ASTREA_DTLS_CA_CERT", "trusted-ca-pem");
+
+        var transport = new UnityTransport();
+        var security = new AstreaFishNetTransportSecurity();
+        typeof(AstreaFishNetTransportSecurity).GetField("transportComponent", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(security, transport);
+        typeof(AstreaFishNetTransportSecurity).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(security, null);
+
+        Assert(transport.UseEncryption, "DTLS must be enabled on clients");
+        Assert(transport.ServerCommonName == "game.astrea.example", "client must validate the server common name");
+        Assert(transport.ClientCaCertificate == "trusted-ca-pem", "client must receive the configured trusted CA");
     }
 
     private static void Assert(bool condition, string message)
