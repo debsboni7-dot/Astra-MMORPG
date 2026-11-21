@@ -1,7 +1,7 @@
 # ASTREA — persistance et reprise des serveurs de zone
 
 Date : 21 novembre 2026  
-Statut : socle PostgreSQL implémenté et testé ; raccordement au processus Unity FishNet encore en attente
+Statut : socle PostgreSQL implémenté et testé ; API interne et bootstrap de bail/récupération FishNet ajoutés ; événements gameplay et snapshots réels encore à raccorder
 
 ## Objectif
 
@@ -96,6 +96,8 @@ Le dépôt `PostgresRepository` fournit :
 
 Le service `ZonePersistenceService` valide les identifiants, UUID, types d'événement, versions de schéma et payloads JSON (objet, limite 256 KiB). Les opérations d'écriture refusent les processus sans bail actif ou avec un ancien fencing epoch.
 
+Une API serveur-à-serveur protégée par `X-Astrea-Server-Key` expose acquisition/renouvellement de bail, ajout d'événements, sauvegarde de snapshots et lecture de reprise. Sur la scène de test, `AstreaFishNetZonePersistence` acquiert le bail, charge le JSON de récupération, puis seulement démarre FishNet. Il renouvelle le bail toutes les 10 secondes et arrête le serveur si le bail ou l'epoch n'est plus valide. Le générateur de scène désactive le démarrage headless automatique de FishNet pour empêcher l'ouverture du port avant la récupération.
+
 Le test PostgreSQL réel couvre :
 1. création d'un événement et snapshot à la séquence 1 ;
 2. événement 2 non encore inclus dans le snapshot ;
@@ -109,10 +111,10 @@ Le test PostgreSQL réel couvre :
 
 Le workflow de sauvegarde/restauration vérifie également que le snapshot, l'événement et le bail de zone survivent à un dump PostgreSQL restauré dans une base distincte.
 
-**Limite :** le journal n'a pas encore de politique de compaction/archivage ; il faut définir une rétention qui ne supprime jamais les événements nécessaires à la reprise ou à l'audit. Cette preuve valide PostgreSQL et la logique de reprise, pas un processus Unity. Le raccordement au serveur FishNet, le transfert d'état en mémoire et le redémarrage d'un build Linux dédié restent à exécuter après déblocage de la licence Unity.
+**Limites :** le journal n'a pas encore de politique de compaction/archivage ; il faut définir une rétention qui ne supprime jamais les événements nécessaires à la reprise ou à l'audit. Le bootstrap Unity et les routes HTTP sont écrits et vérifiés par compilation .NET isolée, mais pas encore par Unity Editor. Les systèmes de gameplay n'envoient pas encore leurs événements/snapshots réels, et le redémarrage d'un build Linux dédié reste à exécuter après déblocage de la licence Unity.
 
 ## État actuel
 
 Déjà présent et testé : comptes, sessions, personnages, progression, état de combat magique, tickets FishNet à usage unique, sauvegarde/restauration PostgreSQL, journal de zone, snapshots, idempotence, bail exclusif et fencing.
 
-En attente : consommation du service par le processus Unity FishNet, checkpoint à l'arrêt, restauration après crash d'un serveur Unity dédié et test de deux processus concurrents réels.
+En attente : émission des événements/snapshots par les systèmes de gameplay, checkpoint à l'arrêt, validation Unity réelle, restauration après crash d'un serveur Unity dédié et test de deux processus FishNet réels.
