@@ -274,4 +274,50 @@ Les routes internes Node protégées par `X-Astrea-Server-Key` exposent les opé
 
 Le composant Unity `AstreaFishNetZonePersistence` est maintenant ajouté à la scène générée : le serveur désactive l'auto-start headless, acquiert un bail, lit le snapshot et le journal, puis ouvre FishNet. Il renouvelle le bail toutes les 10 secondes et arrête le serveur en cas d'échec ou de changement d'epoch. Les scripts sont inclus dans le harnais de compilation C# isolé et dans les contrôles CI.
 
-**Portée réelle :** cette intégration connecte le cycle de vie du serveur à l'autorité durable de zone. Elle ne branche pas encore les systèmes de gameplay sur `appendEvent` et `saveSnapshot`, et n'a pas été exécutée dans Unity Editor ni sur un build Linux. Ces preuves restent bloquantes.
+**Portée réelle :** cette intégration connecte le cycle de vie du serveur à l'autorité durable de zone. Le composant expose maintenant `AppendDurableEvent` et `SaveDurableSnapshot` pour les systèmes gameplay, mais les mutations concrètes du monde ne les appellent pas encore. Le code n'a pas été exécuté dans Unity Editor ni sur un build Linux. Ces preuves restent bloquantes.
+
+
+## 17. Flux client FishNet et durcissement de l'API — 21 novembre 2026
+
+Le client dispose maintenant de `AstreaFishNetConnectionController` :
+1. vérifie la présence de la session de compte et de la configuration réseau ;
+2. demande un ticket court et à usage unique via `AstreaApiClient.RequestFishNetJoinTicket` ;
+3. transmet uniquement ce ticket à `AstreaFishNetAuthenticator` ;
+4. démarre la connexion FishNet ;
+5. signale le succès uniquement après l'événement `OnAuthenticated`, sinon ferme la connexion à l'expiration du délai.
+
+La scène de test générée attache maintenant l'API client et le contrôleur de connexion au même NetworkManager. Le client natif ne transmet pas son Bearer token à FishNet.
+
+Les routes internes de persistance exigent maintenant un corps JSON, rejettent les chemins de zone mal encodés, vérifient le secret serveur par comparaison en temps constant, limitent le serveur à la zone configurée et bornent la taille HTTP à 300 KiB (payload métier 256 KiB).
+
+### CI vérifiée
+
+- [x] Tests Node et gameplay : 201 tests passés.
+- [x] Tests PostgreSQL réels, dont la persistance de zone, l'idempotence, le fencing et la reprise.
+- [x] Test ciblé répété de l'intégration PostgreSQL et API, sans collision d'identifiants.
+- [x] Migrations, sauvegarde/restauration PostgreSQL, benchmarks WebSocket et simulation délai/jitter/suppression.
+- [x] Chromium desktop et mobile.
+- [x] Compilation C# isolée des scripts FishNet, y compris contrôleur client et bootstrap de zone ; vérification des contrats FishNet/DTLS et certificats de test.
+
+Runs de référence :
+- Suite serveur/navigateur : [44891906180](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44891906180), succès.
+- Unity Foundation : [44891934416](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44891934416), succès.
+- Unity Foundation après raccordement du contrôleur à la scène de test : [44892014637](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44892014637), succès.
+
+### Modèle de capacité
+
+Le document `docs/scale-capacity-assumptions.md` calcule des scénarios de 10 000 à 100 000 joueurs simultanés, issus d'hypothèses de 1 à 10 % de concurrence sur un million de comptes. Il estime les processus de zone pour 50, 100 ou 150 joueurs/zone, ajoute une marge de 20 % et montre pourquoi l'intérêt spatial est indispensable. Il ne transforme pas les mesures WebSocket de boucle locale en capacité FishNet réelle et ne chiffre pas l'exploitation sans tests et devis.
+
+### Portes qui restent bloquantes
+
+- [ ] Ajouter les secrets Unity Personal `UNITY_LICENSE`, `UNITY_EMAIL`, `UNITY_PASSWORD` dans les secrets Actions du dépôt. La procédure est dans `docs/unity-ci-license-setup.md`. Ne jamais coller ces valeurs dans le chat ou dans Git.
+- [ ] Résoudre les dépendances UPM dans Unity 6000.3.28f1 et compiler le projet complet dans Unity Editor.
+- [ ] Construire le client et le Linux Dedicated Server.
+- [ ] Exécuter le handshake DTLS natif et vérifier le certificat avec deux clients réels.
+- [ ] Exécuter le flux d'authentification par ticket, spawn serveur-autoritaire, mouvement répliqué et reconnexion.
+- [ ] Relier les mutations gameplay réelles aux appels de persistance, puis tester crash/reprise d'un processus Unity.
+- [ ] Tester sur Android physique et WAN.
+- [ ] Faire les paliers de charge FishNet (2, 10, 25, 50, puis davantage) et établir les coûts d'exploitation.
+- [ ] Revoir les licences avant distribution publique, conformément à la décision du créateur de différer ce point.
+
+**Conclusion :** le backend, les contrats réseau, le modèle de capacité et le flux de code sont préparés et testés en CI. L'étape 3 n'est pas terminée tant que la validation Unity réelle et les preuves FishNet/DTLS ne sont pas passées.
