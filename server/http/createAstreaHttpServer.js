@@ -72,7 +72,10 @@ export function createAstreaHttpServer({ authService, characterService, progress
         }
         if (!fishNetJoinTicketService) return send(response, 503, { error: 'REALTIME_UNAVAILABLE' });
         const body = await readJson(request);
-        if (typeof body.ticket !== 'string' || body.ticket.length > 128) throw new TypeError('Invalid ticket');
+        if (typeof body.ticket !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(body.ticket)
+          || typeof body.serverId !== 'string' || body.serverId.length < 1 || body.serverId.length > 96) {
+          throw new TypeError('Invalid ticket or serverId');
+        }
         const identity = await fishNetJoinTicketService.consume(body.ticket, body.serverId);
         if (!identity) return send(response, 401, { error: 'INVALID_OR_EXPIRED_TICKET' });
         return send(response, 200, { identity });
