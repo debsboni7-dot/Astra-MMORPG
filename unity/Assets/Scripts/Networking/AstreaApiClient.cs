@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Text;
+using System.Net;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -26,10 +27,27 @@ namespace Astrea.Networking
         [Serializable] private sealed class CharacterEnvelope { public CharacterRecord character; }
         [Serializable] private sealed class ErrorEnvelope { public string error; }
 
-        public void SetBaseUrl(string value)
+        public bool SetBaseUrl(string value)
         {
-            if (!string.IsNullOrWhiteSpace(value))
-                baseUrl = value.TrimEnd('/');
+            if (!Uri.TryCreate(value, UriKind.Absolute, out Uri uri)
+                || (uri.Scheme != Uri.UriSchemeHttps && !IsLoopbackHttp(uri))
+                || !string.IsNullOrEmpty(uri.UserInfo)
+                || !string.IsNullOrEmpty(uri.Query)
+                || !string.IsNullOrEmpty(uri.Fragment)
+                || (uri.AbsolutePath != "/" && !string.IsNullOrEmpty(uri.AbsolutePath)))
+                return false;
+
+            baseUrl = uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+            return true;
+        }
+
+        private static bool IsLoopbackHttp(Uri uri)
+        {
+            if (uri.Scheme != Uri.UriSchemeHttp)
+                return false;
+            if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return IPAddress.TryParse(uri.Host, out IPAddress address) && IPAddress.IsLoopback(address);
         }
 
         public IEnumerator Register(string email, string password, Action<bool, string> completed)
