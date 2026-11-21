@@ -94,6 +94,8 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - **Monde persistant :** sauvegarde/reprise, versionnement des données et migration sans effacer les royaumes.
 - **Coûts :** aucune infrastructure payante ni facturation automatique sans accord explicite. L'absence de coût du framework ne signifie pas absence de coût d'hébergement.
 
+Le modèle de menace détaillé est conservé dans [docs/network-security-threat-model.md](network-security-threat-model.md). Il sépare les actifs, frontières de confiance, contrôles testés et risques restant à traiter avant exposition Internet.
+
 ## 7. Registre des risques
 
 | Risque | Gravité | État / réponse |
