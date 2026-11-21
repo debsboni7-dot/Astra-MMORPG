@@ -88,10 +88,11 @@ La migration `006_world_zone_persistence.sql` crée les tables `world_zone_state
 Le dépôt `PostgresRepository` fournit :
 - acquisition atomique d'un bail exclusif, avec epoch de fencing croissant ;
 - renouvellement uniquement si le propriétaire, l'epoch et l'expiration sont encore valides ;
+- vérification des échéances avec `clock_timestamp()` (heure réelle de la vérification, pas l'heure figée au début d'une transaction) afin qu'une attente de verrou ne prolonge pas artificiellement un bail expiré ;
 - ajout d'événement dans une transaction, avec séquence monotone par zone ;
 - idempotence par UUID global et comparaison JSONB côté PostgreSQL ;
 - snapshot qui ne peut pas reculer la séquence ;
-- chargement du dernier snapshot puis des événements strictement postérieurs, dans l'ordre.
+- chargement du dernier snapshot puis des événements strictement postérieurs, dans l'ordre, dans une transaction qui exige le bail et l'epoch actifs ;
 
 Le service `ZonePersistenceService` valide les identifiants, UUID, types d'événement, versions de schéma et payloads JSON (objet, limite 256 KiB). Les opérations d'écriture refusent les processus sans bail actif ou avec un ancien fencing epoch.
 
@@ -102,9 +103,13 @@ Le test PostgreSQL réel couvre :
 4. rejet d'une réémission identique avec contenu différent et acceptation idempotente d'un doublon identique ;
 5. expiration du bail et acquisition par un nouveau processus à l'epoch 2 ;
 6. refus d'écriture de l'ancien processus ;
-7. événement 3, relecture et création d'un nouveau snapshot à la séquence 3.
+7. événement 3, relecture et création d'un nouveau snapshot à la séquence 3 ;
+8. acquisition concurrente par deux processus : un seul gagne ; 24 événements parallèles reçoivent des séquences continues ;
+9. tentative de lecture de reprise par l'ancien processus après fencing : refusée.
 
-**Limite :** cette preuve valide PostgreSQL et la logique de reprise, pas un processus Unity. Le raccordement au serveur FishNet, le transfert d'état en mémoire et le redémarrage d'un build Linux dédié restent à exécuter après déblocage de la licence Unity.
+Le workflow de sauvegarde/restauration vérifie également que le snapshot, l'événement et le bail de zone survivent à un dump PostgreSQL restauré dans une base distincte.
+
+**Limite :** le journal n'a pas encore de politique de compaction/archivage ; il faut définir une rétention qui ne supprime jamais les événements nécessaires à la reprise ou à l'audit. Cette preuve valide PostgreSQL et la logique de reprise, pas un processus Unity. Le raccordement au serveur FishNet, le transfert d'état en mémoire et le redémarrage d'un build Linux dédié restent à exécuter après déblocage de la licence Unity.
 
 ## État actuel
 
