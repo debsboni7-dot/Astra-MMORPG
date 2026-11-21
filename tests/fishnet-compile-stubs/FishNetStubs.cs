@@ -31,6 +31,7 @@ namespace UnityEngine
         protected static T Instantiate<T>(T original, Vector3 position, Quaternion rotation) where T : Object => original;
     }
     public sealed class Coroutine { }
+    public sealed class TextAsset : Object { public string text { get; set; } }
     public class Transform : Component
     {
         public Vector3 position;
@@ -193,5 +194,30 @@ namespace FishNet.Authenticating
         public abstract event Action<NetworkConnection, bool> OnAuthenticationResult;
         public virtual void InitializeOnce(NetworkManager networkManager) { NetworkManager = networkManager; }
         public virtual void OnRemoteConnection(NetworkConnection connection) { }
+    }
+}
+
+
+namespace FishNet.Transporting.UTP
+{
+    public sealed class UnityTransport : UnityEngine.Component
+    {
+        public bool UseEncryption { get; set; }
+        public string ServerCertificate { get; private set; }
+        public string ServerPrivateKey { get; private set; }
+        public string ServerCommonName { get; private set; }
+        public string ClientCaCertificate { get; private set; }
+
+        public void SetServerSecrets(string certificate, string privateKey)
+        {
+            ServerCertificate = certificate;
+            ServerPrivateKey = privateKey;
+        }
+
+        public void SetClientSecrets(string commonName, string caCertificate = null)
+        {
+            ServerCommonName = commonName;
+            ClientCaCertificate = caCertificate;
+        }
     }
 }
