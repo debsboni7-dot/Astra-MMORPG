@@ -128,6 +128,15 @@ namespace Astrea.EditorTools
 
             AstreaFishNetAuthenticator authenticator =
                 managerRoot.AddComponent<AstreaFishNetAuthenticator>();
+            AstreaApiClient apiClient = managerRoot.AddComponent<AstreaApiClient>();
+            AstreaFishNetConnectionController connectionController =
+                managerRoot.AddComponent<AstreaFishNetConnectionController>();
+            SerializedObject connectionData = new SerializedObject(connectionController);
+            connectionData.FindProperty("apiClient").objectReferenceValue = apiClient;
+            connectionData.FindProperty("networkManager").objectReferenceValue = networkManager;
+            connectionData.FindProperty("authenticator").objectReferenceValue = authenticator;
+            connectionData.ApplyModifiedPropertiesWithoutUndo();
+
             AstreaFishNetPlayerSpawner playerSpawner =
                 managerRoot.AddComponent<AstreaFishNetPlayerSpawner>();
             AstreaFishNetNetworkTestClient clientHarness =
