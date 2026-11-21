@@ -346,7 +346,7 @@ Le rapport [`docs/feasibility-stage-3.md`](feasibility-stage-3.md) rassemble la 
 - [x] Client harness CI : client 1 envoie un déplacement, client 2 doit observer le déplacement distant.
 - [x] Script de migrations PostgreSQL et préparation de deux comptes/tickets CI.
 - [x] Workflow manuel end-to-end ajouté, avec PostgreSQL, API Node, serveur dédié et deux clients Linux.
-- [ ] Exécuter le workflow avec le secret Unity Personal `UNITY_LICENSE`.
+- [ ] Exécuter le workflow avec le secrets Unity Personal `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD`.
 - [ ] Corriger les éventuelles erreurs réelles de résolution/compilation/build et valider le scénario.
 
 
@@ -370,7 +370,7 @@ Le workflow end-to-end [43832992881](https://github.com/debsboni7-dot/Astra-MMOR
 ### Étape 3 — précision sécurité transport (21 novembre 2026)
 
 - La compilation .NET des scripts FishNet ciblés contre stubs isolés et la vérification de l'API 4.7.4 passent dans GitHub Actions.
-- Le workflow complet de deux clients est prêt, mais la tentative s'arrête sur l'absence du secret `UNITY_LICENSE`. Aucun build Unity/Linux ni test réseau Unity n'est donc validé.
+- Le workflow complet de deux clients est prêt, mais la tentative s'arrête sur l'absence du secrets `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD`. Aucun build Unity/Linux ni test réseau Unity n'est donc validé.
 - Tugboat/UDP par défaut n'est pas considéré comme un transport sécurisé. FishyUnityTransport 2.0.0-pre.2 (MIT) est ajouté au registre des candidats, pas au manifest. Sa compatibilité Unity 6.3, DTLS/TLS, Android et consoles doit être vérifiée.
 - Porte bloquante avant clôture de l'étape 3 : vraie compilation Unity, build serveur dédié, test deux clients, et décision vérifiée sur le transport chiffré.
 
