@@ -56,6 +56,8 @@ jobs:
           server_manager = (root / "Runtime/Managing/Server/ServerManager.cs").read_text(encoding="utf-8-sig")
           tugboat = (root / "Runtime/Transporting/Transports/Tugboat/Tugboat.cs").read_text(encoding="utf-8-sig")
           manager_prefab = (root / "Demos/Prefabs/NetworkManager.prefab").read_text(encoding="utf-8-sig")
+          transport_manager = (root / "Runtime/Managing/Transporting/TransportManager.cs").read_text(encoding="utf-8-sig")
+          network_manager_source = (root / "Runtime/Managing/NetworkManager.cs").read_text(encoding="utf-8-sig")
 
           assert "public abstract event Action<NetworkConnection, bool> OnAuthenticationResult;" in authenticator
           assert "public virtual void OnRemoteConnection(NetworkConnection connection)" in authenticator
@@ -76,6 +78,8 @@ jobs:
           assert "public class ServerRpcAttribute : RpcAttribute" in rpc_attributes
           assert "private bool _startOnHeadless = true;" in server_manager
           assert "private ushort _port = 7770;" in tugboat
+          assert "public Transport Transport;" in transport_manager
+          assert "public TransportManager TransportManager { get; private set; }" in network_manager_source
           assert "_spawnablePrefabs" in manager_prefab
           assert (root / "Demos/Prefabs/NetworkManager.prefab").is_file()
           print("FishNet 4.7.4 package version, authenticator, broadcasts and server spawn API verified.")
