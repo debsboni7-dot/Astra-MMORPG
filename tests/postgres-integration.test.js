@@ -176,7 +176,7 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       zoneId, ownerId: 'zone-process-b', fencingEpoch: secondLease.fencingEpoch,
       payload: { resources: { 'oak-001': finalCount } },
     });
-    const checkpointed = await zonePersistence.loadRecoveryState(zoneId);
+    const checkpointed = await zonePersistence.loadRecoveryState({ zoneId, ownerId: 'zone-process-b', fencingEpoch: secondLease.fencingEpoch });
     assert.equal(checkpointed.snapshot.lastEventSequence, '3');
     assert.equal(checkpointed.events.length, 0);
 
