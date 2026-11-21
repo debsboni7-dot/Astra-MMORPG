@@ -7,7 +7,7 @@ namespace Astrea.Networking
     /// <summary>
     /// Configures FishyUnityTransport 2.x DTLS without hard-coding server private
     /// material in the client or committing it to the Unity project.
-    /// ASTREA_NETWORK_ROLE must be "server" or "client".
+    /// ASTREA_NETWORK_ROLE=server is required for dedicated servers; clients default to client mode.
     /// </summary>
     public sealed class AstreaFishNetTransportSecurity : MonoBehaviour
     {
@@ -44,8 +44,9 @@ namespace Astrea.Networking
                 return;
             }
 
-            if (!string.Equals(role, "client", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("ASTREA_NETWORK_ROLE must explicitly be server or client.");
+            if (!string.IsNullOrWhiteSpace(role)
+                && !string.Equals(role, "client", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("ASTREA_NETWORK_ROLE must be server or client when supplied.");
 
             string commonName = Environment.GetEnvironmentVariable("ASTREA_DTLS_SERVER_NAME");
             if (string.IsNullOrWhiteSpace(commonName))
