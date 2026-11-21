@@ -26,7 +26,7 @@ The prototype scene builder removes the demo Tugboat transport and adds FishyUni
 
 FishyUnityTransport 2.0.0-pre.2 declares UTP 1.3.1 as its minimum package dependency and uses an assembly version define for UTP 2.x. ASTREA directly declares UTP 2.7.5. The actual Unity resolver must still prove that this graph resolves in Unity 6000.3.28f1.
 
-The two-client workflow generates a temporary CA and localhost certificate with DNS and IP SANs, verifies the chain with OpenSSL, then passes the certificate and key to the test processes. The temporary private key is not committed or uploaded as an artifact.
+The two-client workflow generates a temporary CA and localhost certificate with DNS and IP SANs, verifies the chain with OpenSSL, then passes the private key only to the server process; clients receive only the public CA certificate. Private temporary files are deleted after server startup. The temporary private key is not committed or uploaded as an artifact.
 
 ## Why this branch only
 
