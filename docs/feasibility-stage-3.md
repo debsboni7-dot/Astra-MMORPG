@@ -133,7 +133,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - [x] Adaptateur Unity pour demander le ticket ajouté.
 - [x] Authenticator FishNet et point de spawn serveur ajoutés en code sur branche isolée.
 - [x] Contrat API FishNet 4.7.4 vérifié statiquement dans CI.
-- [ ] Résolution réelle UPM et compilation Unity 6000.3.28f1 (bloqué par l'absence du secret `UNITY_LICENSE` dans GitHub Actions).
+- [ ] Résolution réelle UPM et compilation Unity 6000.3.28f1 (bloqué par l'absence des secrets `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` dans GitHub Actions).
 - [ ] Build Linux Dedicated Server réussi (même blocage de licence Unity).
 - [ ] Configuration d'un NetworkManager et d'un prefab NetworkObject de test dans une scène.
 - [ ] Connexion de deux clients Unity, authentification par ticket et spawn réciproquement visible (workflow prêt, non exécuté sans licence).
@@ -146,7 +146,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 
 L'architecture est suffisamment définie pour poursuivre l'intégration, et plusieurs risques backend ont été réduits par des tests réels PostgreSQL/Node. Toutefois, l'étape 3 **n'est pas terminée** : l'intégration FishNet n'a pas encore passé le compilateur Unity, le build serveur dédié et le scénario de deux clients Unity.
 
-La prochaine tâche reste donc une validation technique Unity, pas le démarrage de l'étape 4. Les critères non cochés sont des preuves manquantes, pas des tâches que l'on peut remplacer par davantage de documentation. Pour débloquer les tests Unity cloud, il faut ajouter au dépôt le fichier de licence Unity Personal sous le secret GitHub `UNITY_LICENSE`, puis relancer le workflow manuel avec confirmation explicite. Sans ce secret, aucune action côté code ne peut produire une compilation Unity authentique.
+La prochaine tâche reste donc une validation technique Unity, pas le démarrage de l'étape 4. Les critères non cochés sont des preuves manquantes, pas des tâches que l'on peut remplacer par davantage de documentation. Pour débloquer les tests Unity cloud, il faut activer Unity Personal une fois dans Unity Hub, puis ajouter les trois secrets GitHub `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` comme décrit dans `docs/unity-ci-license-setup.md`, et relancer le workflow manuel avec confirmation explicite. Une machine temporaire empruntée suffit pour l'activation initiale ; les builds suivants se font dans GitHub Actions. Sans ce secret, aucune action côté code ne peut produire une compilation Unity authentique.
 
 
 ## Mise à jour build serveur dédié
