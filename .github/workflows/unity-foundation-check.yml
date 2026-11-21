@@ -231,6 +231,8 @@ jobs:
           assert "using FishNet.Managing.Transporting;" in fishnet_scene_builder
           assert "GetComponent<TransportManager>()" in fishnet_scene_builder
           assert "transportManager.Transport = unityTransport" in fishnet_scene_builder
+          assert "using System.Reflection;" in fishnet_scene_builder
+          assert "networkManager.TransportManager" not in fishnet_scene_builder, "TransportManager is created during NetworkManager initialization, not in the editor prefab instance"
           assert "AstreaFishNetTransportSecurity" in fishnet_scene_builder
 
           fishnet_spawner = (root / "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs").read_text()
