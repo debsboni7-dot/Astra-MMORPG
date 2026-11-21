@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using FishNet.Transporting.UTP;
+using FishNet.Managing;
 using Astrea.Networking;
 
 internal static class Program
@@ -35,6 +36,7 @@ internal static class Program
         Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("https://api.astrea.example/#fragment"), "FishNet server must reject fragments");
 
         VerifyDtlsServerConfiguration();
+        VerifyDtlsFailsClosedWhenServerSecretsAreMissing();
         VerifyDtlsClientConfiguration();
         VerifyDtlsClientDefaultConfiguration();
 
@@ -58,6 +60,26 @@ internal static class Program
         Assert(transport.UseEncryption, "DTLS must be enabled on dedicated server");
         Assert(transport.ServerCertificate == "server-cert-pem", "server certificate must be supplied from environment");
         Assert(transport.ServerPrivateKey == "server-key-pem", "server private key must be supplied from environment");
+    }
+
+
+    private static void VerifyDtlsFailsClosedWhenServerSecretsAreMissing()
+    {
+        Environment.SetEnvironmentVariable("ASTREA_NETWORK_ROLE", "server");
+        Environment.SetEnvironmentVariable("ASTREA_DTLS_SERVER_CERT", "server-cert-pem");
+        Environment.SetEnvironmentVariable("ASTREA_DTLS_SERVER_KEY", null);
+
+        var transport = new UnityTransport();
+        var security = new AstreaFishNetTransportSecurity();
+        var networkManager = new NetworkManager();
+        typeof(AstreaFishNetTransportSecurity).GetField("transportComponent", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(security, transport);
+        security.SetComponentForTests(networkManager);
+        typeof(AstreaFishNetTransportSecurity).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(security, null);
+
+        Assert(transport.UseEncryption, "DTLS must be enabled before validating server secrets");
+        Assert(!networkManager.enabled, "NetworkManager must be disabled if server DTLS secrets are missing");
     }
 
     private static void VerifyDtlsClientConfiguration()
