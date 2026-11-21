@@ -105,6 +105,7 @@ namespace UnityEngine.Networking
     {
         public enum Result { InProgress, Success, ConnectionError, ProtocolError, DataProcessingError }
         public long responseCode { get; set; }
+        public int timeout { get; set; }
         public string error { get; set; }
         public Result result { get; set; }
         public UploadHandler uploadHandler { get; set; }
