@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using UnityEngine;
+using FishNet.Managing;
 
 namespace Astrea.Networking
 {
@@ -9,6 +10,7 @@ namespace Astrea.Networking
     /// material in the client or committing it to the Unity project.
     /// ASTREA_NETWORK_ROLE=server is required for dedicated servers; clients default to client mode.
     /// </summary>
+    [DefaultExecutionOrder(-10000)]
     public sealed class AstreaFishNetTransportSecurity : MonoBehaviour
     {
         [SerializeField] private Component transportComponent;
@@ -16,6 +18,22 @@ namespace Astrea.Networking
         [SerializeField] private TextAsset trustedCaCertificate;
 
         private void Awake()
+        {
+            try
+            {
+                ConfigureTransport();
+            }
+            catch (Exception exception)
+            {
+                NetworkManager networkManager = GetComponent<NetworkManager>();
+                if (networkManager != null)
+                    networkManager.enabled = false;
+                Debug.LogError("ASTREA secure transport initialization failed (" + exception.GetType().Name
+                    + "). NetworkManager disabled; refusing an unencrypted connection.");
+            }
+        }
+
+        private void ConfigureTransport()
         {
             if (transportComponent == null)
                 throw new InvalidOperationException("ASTREA secure transport component reference is missing.");
