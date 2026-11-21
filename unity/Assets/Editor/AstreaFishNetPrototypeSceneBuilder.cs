@@ -73,7 +73,7 @@ namespace Astrea.EditorTools
 
             ServerManager fishNetServerManager = managerRoot.GetComponent<ServerManager>();
             if (fishNetServerManager == null)
-                throw new InvalidOperationException("FishNet ServerManager component is missing.");
+                fishNetServerManager = managerRoot.AddComponent<ServerManager>();
             fishNetServerManager.SetStartOnHeadless(false);
             EditorUtility.SetDirty(fishNetServerManager);
 
