@@ -43,6 +43,32 @@ FishNet 4.7.4 est le framework retenu pour le prochain prototype de serveur Unit
 
 Le prototype Node WebSocket reste une référence de comparaison. Il ne partage pas le même transport ni le même handshake que FishNet.
 
+### Vue logique des flux
+
+```mermaid
+flowchart TB
+    subgraph Clients
+        A[Unity Android / PC / Mac]
+    end
+    subgraph PublicEdge[Frontière publique]
+        HTTPS[HTTPS API]
+        DTLS[DTLS UDP]
+    end
+    subgraph Backend[Services ASTREA]
+        API[Node.js API modulaire]
+        Z1[FishNet zone server 01]
+        ZN[Autres serveurs de zone futurs]
+    end
+    DB[(PostgreSQL)]
+    A -->|Compte, personnage, ticket| HTTPS --> API
+    A -->|Simulation temps réel| DTLS --> Z1
+    Z1 -->|Consommation ticket et opérations durables HTTPS| API
+    API -->|Transactions| DB
+    Z1 -.->|Extension horizontale après benchmarks| ZN
+```
+
+Le serveur Node est l'autorité pour les comptes et les données persistantes ; FishNet est l'autorité pour la simulation d'une zone en temps réel. La connexion client/zone passe par DTLS, l'appel serveur/Node par HTTPS. Le schéma multi-zone est la cible d'architecture, pas une capacité déjà déployée.
+
 ### Persistance
 PostgreSQL stocke les comptes, sessions, personnages et états durables. Les positions et états de simulation très fréquents restent en mémoire sur le serveur de zone. Les sauvegardes persistantes doivent être transactionnelles, idempotentes et restaurables.
 
