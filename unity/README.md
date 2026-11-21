@@ -176,3 +176,10 @@ For the one-time Unity Personal activation and the three GitHub Actions secrets 
 The generated FishNet test scene includes `AstreaFishNetZonePersistence`. For a dedicated server, set `ASTREA_NETWORK_ROLE=server`, `ASTREA_API_BASE_URL`, `REALTIME_SERVER_SECRET` and `REALTIME_SERVER_ID`. The component creates a random process owner ID, acquires the zone lease through the authenticated internal Node API, loads the latest snapshot/event tail, then starts FishNet. It renews the lease every 10 seconds; if the API rejects renewal or the fencing epoch changes, it stops the server and fails closed.
 
 The scene builder disables FishNet's automatic headless startup so a server cannot accept players before it owns and has recovered its zone. Client builds do not acquire a lease. The recovery JSON and last event sequence are exposed by the component for subsequent zone-state reconstruction. Server-side systems can call `AppendDurableEvent(eventId, eventType, payloadJson, callback)` and `SaveDurableSnapshot(payloadJson, callback)`; both methods require an active lease, send JSON objects to the private API and stop the server if a durable write reports lease loss. No gameplay resource system calls these methods yet, so real-world mutations and periodic checkpoint scheduling remain to be wired.
+
+
+### Client connection through one-use FishNet tickets
+
+The generated FishNet test scene now also attaches `AstreaApiClient` and `AstreaFishNetConnectionController`. After login, call the controller's `Connect(characterId, serverAddress, serverPort, completed)` coroutine. It requests a short-lived ticket through the authenticated HTTP API, gives only that ticket to the FishNet Authenticator, starts the client transport, and reports success only after FishNet raises `OnAuthenticated`. A timeout closes the client connection.
+
+Configure `AstreaApiClient` with the public HTTPS API origin using `SetBaseUrl` or its serialized field. Plain HTTP is accepted only for loopback development. On Android, `127.0.0.1` points to the phone itself, so use the actual HTTPS API hostname or a LAN address only for controlled local testing.
