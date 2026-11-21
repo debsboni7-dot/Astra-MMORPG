@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Object;
@@ -21,9 +22,13 @@ namespace UnityEngine
     }
     public class Component : Object
     {
+        private readonly Dictionary<Type, object> testComponents = new Dictionary<Type, object>();
         public bool enabled { get; set; } = true;
         public GameObject gameObject => new GameObject();
-        public T GetComponent<T>() where T : class => null;
+        public T GetComponent<T>() where T : class
+            => testComponents.TryGetValue(typeof(T), out object value) ? value as T : null;
+        public void SetComponentForTests<T>(T component) where T : class
+            => testComponents[typeof(T)] = component;
         public Transform transform => new Transform();
     }
     public class MonoBehaviour : Component
