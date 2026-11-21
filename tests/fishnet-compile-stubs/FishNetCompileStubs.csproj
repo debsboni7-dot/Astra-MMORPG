@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -9,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FishNetStubs.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaApiClient.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs" />
