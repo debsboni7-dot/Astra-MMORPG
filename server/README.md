@@ -108,3 +108,8 @@ Le composant Unity `AstreaFishNetZonePersistence` :
 5. arrête le serveur si le renouvellement échoue ou si l'epoch change.
 
 Le composant conserve le JSON de récupération pour les systèmes de zone qui seront raccordés ensuite. Les systèmes de gameplay n'émettent pas encore leurs événements ni snapshots par cette API : le transport de persistance est branché, mais les mutations concrètes du monde doivent encore être raccordées.
+
+
+## Validation PostgreSQL réelle en CI
+
+Le workflow `.github/workflows/postgres-integration.yml` démarre un PostgreSQL 16 éphémère sur GitHub Actions, applique les migrations et exécute `tests/postgres-integration.test.js` contre cette vraie instance. Il vérifie notamment l'authentification et la propriété des personnages, les tickets à usage unique concurrents, les baux de zone, le séquencement des événements, les snapshots, la récupération après reconnexion et le rejet d'un ancien propriétaire de zone. Cette CI valide la couche PostgreSQL réelle, mais ne remplace pas l'exécution Unity ni le test réseau FishNet à deux clients.
