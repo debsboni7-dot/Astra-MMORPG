@@ -158,7 +158,7 @@ Le ticket de connexion est transmis avant authentification : il doit donc être 
 - Le code Fishy active DTLS sur UDP ou TLS sur WebSocket lorsque `UseEncryption` est explicitement activé. Le réglage par défaut du transport est désactivé.
 - Le serveur doit fournir un certificat PEM et sa clé privée. Le client vérifie le nom commun du serveur et peut utiliser un certificat CA explicite ou le magasin de certificats du système.
 - `AstreaFishNetTransportSecurity` active le chiffrement et charge les éléments privés du serveur depuis les variables d'environnement. Aucun certificat privé ni clé n'est enregistré dans Git.
-- Le générateur de scène de test remplace Tugboat par FishyUnityTransport et attache le configurateur DTLS.
+- Le générateur de scène de test remplace Tugboat par FishyUnityTransport, sérialise UseEncryption=true et attache le configurateur DTLS ; toute erreur de configuration désactive NetworkManager.
 - Le workflow deux clients génère une CA et un certificat serveur éphémères, puis les transmet aux processus serveur/client pour un test DTLS local. Ces certificats ne servent qu'au CI et ne sont pas des certificats de production.
 
 ### Compatibilité et limites à ne pas masquer
