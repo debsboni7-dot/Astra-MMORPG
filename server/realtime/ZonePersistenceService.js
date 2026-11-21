@@ -24,7 +24,8 @@ function requireSchemaVersion(value) {
 }
 
 function requirePayload(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) {
     throw Object.assign(new TypeError('Zone payload must be a JSON object'), { code: 'INVALID_ZONE_INPUT' });
   }
   let encoded;
