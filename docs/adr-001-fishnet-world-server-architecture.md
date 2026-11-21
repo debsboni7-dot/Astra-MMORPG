@@ -146,18 +146,32 @@ La route interne exige désormais les deux champs `ticket` (43 caractères base6
 Le workflow Unity Foundation compile les scripts de réseau contre des stubs isolés .NET et vérifie les signatures de FishNet 4.7.4. Cette vérification attrape les erreurs C# de surface, mais ne remplace pas Unity Editor, la résolution UPM, ni un build player.
 
 
-## Sécurité du transport temps réel — décision à ne pas escamoter (21 novembre 2026)
+## Sécurité du transport temps réel — DTLS ajouté au prototype (21 novembre 2026)
 
-Le ticket de connexion est envoyé dans un broadcast FishNet avant authentification. Le ticket est à usage unique et expire après 30 secondes, mais ces deux propriétés ne chiffrent pas le paquet UDP. Le transport par défaut Tugboat ne doit donc pas être considéré comme une protection cryptographique du trafic. Le secret serveur protège l'appel Unity-vers-Node, pas le canal joueur-vers-serveur.
+Le ticket de connexion est transmis avant authentification : il doit donc être protégé par le transport, et non seulement par son usage unique et son expiration. Tugboat/UDP par défaut n'est pas chiffré et reste réservé aux essais locaux contrôlés.
 
-La documentation FishNet présente `TransportManager.IntermediateLayer` comme point d'extension pour modifier les paquets, notamment pour du chiffrement. Le chiffrement maison ne sera pas bricolé avec le chiffre César de l'exemple documentaire : il faudrait une primitive AEAD éprouvée, une gestion sûre des clés, rotation, anti-rejeu et tests multi-plateformes.
+### Transport candidat désormais intégré à la branche isolée
 
-**Candidat prioritaire à évaluer : FishyUnityTransport** (MIT, version publiée `2.0.0-pre.2`) au-dessus de Unity Transport. La documentation du transport décrit une option de chiffrement DTLS pour UDP et TLS pour WebSocket, avec support annoncé des plateformes mobiles et consoles. Unity indique Unity Transport `2.7.5` comme version released pour Unity 6000.3. Mais FishyUnityTransport reste une version pré-release tierce : il n'est pas ajouté au manifest ni validé sur le projet. Aucune promesse de compatibilité ASTREA n'est faite avant résolution UPM, compilation et test réel.
+- FishyUnityTransport `2.0.0-pre.2`, code sous licence MIT, est maintenant déclaré dans `unity/Packages/manifest.json` uniquement sur `spike/fishnet-unity-6-3-evaluation`.
+- Unity Transport `2.7.5` est explicitement épinglé. Unity publie cette version pour Unity Editor 6000.3.
+- Le code Fishy active DTLS sur UDP ou TLS sur WebSocket lorsque `UseEncryption` est explicitement activé. Le réglage par défaut du transport est désactivé.
+- Le serveur doit fournir un certificat PEM et sa clé privée. Le client vérifie le nom commun du serveur et peut utiliser un certificat CA explicite ou le magasin de certificats du système.
+- `AstreaFishNetTransportSecurity` active le chiffrement et charge les éléments privés du serveur depuis les variables d'environnement. Aucun certificat privé ni clé n'est enregistré dans Git.
+- Le générateur de scène de test remplace Tugboat par FishyUnityTransport et attache le configurateur DTLS.
+- Le workflow deux clients génère une CA et un certificat serveur éphémères, puis les transmet aux processus serveur/client pour un test DTLS local. Ces certificats ne servent qu'au CI et ne sont pas des certificats de production.
 
-Liens de référence :
-- FishNet TransportManager / Intermediate Layer : https://fish-networking.gitbook.io/docs/fishnet-building-blocks/components/managers/transportmanager
-- FishyUnityTransport et options DTLS/TLS : https://fish-networking.gitbook.io/docs/fishnet-building-blocks/transports/fishyunitytransport
-- FishyUnityTransport source et licence MIT : https://github.com/ooonush/FishyUnityTransport
+### Compatibilité et limites à ne pas masquer
+
+Le manifeste du package FishyUnityTransport 2.0.0-pre.2 déclare encore Unity Transport 1.3.1 comme dépendance, tandis que son assembly définit la branche API UTP 2.x à partir de la version `2.0.0-exp`. ASTREA épingle directement UTP 2.7.5 pour utiliser cette branche. Les sources exposent bien `UseEncryption`, `SetServerSecrets`, `SetClientSecrets` et les paramètres DTLS, et la CI vérifie ces contrats. Cela ne prouve pas encore que le solveur UPM de Unity 6000.3.28f1 résout le graphe sans conflit.
+
+FishyUnityTransport reste un transport tiers avec un tag ancien/pré-release. Son intégration dans le manifeste est une expérience isolée, pas un choix de production. Il faut confirmer le package importé, la compilation Editor, le build Linux Dedicated Server et la connexion de deux clients avec validation de certificat avant de lever la porte sécurité.
+
+Aucun service Unity Relay ou Multiplayer Services n'est ajouté. Le test vise une connexion directe client vers serveur dédié, sans facturation de service multijoueur. L'hébergement du serveur et du trafic réseau aura néanmoins un coût réel lors d'une exploitation publique.
+
+Références techniques vérifiées :
+- FishyUnityTransport 2.0.0-pre.2 et code source : https://github.com/ooonush/FishyUnityTransport/tree/2.0.0-pre.2
+- FishyUnityTransport release : https://github.com/ooonush/FishyUnityTransport/releases/tag/2.0.0-pre.2
 - Unity Transport 2.7.5 pour Unity 6000.3 : https://docs.unity.com/en-us/engine/6000.3/manual/packages-list/packages-all/pack-safe/com-unity-transport
+- Unity Transport encrypted communications : https://docs.unity.cn/Packages/com.unity.transport%402.7/manual/client-server-secure.html
 
-**Porte sécurité avant bêta publique :** le prototype Tugboat ne peut servir qu'aux tests locaux contrôlés. Le choix d'un transport chiffré ou d'une couche de chiffrement vérifiée est obligatoire avant toute vraie connexion Internet de joueurs.
+**Porte sécurité avant clôture de l'étape 3 :** confirmer résolution UPM et compilation Unity, puis réussir le scénario deux clients en DTLS avec validation du certificat. Le code source et les tests de configuration .NET ne remplacent pas cette preuve.
