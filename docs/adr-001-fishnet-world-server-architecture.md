@@ -176,3 +176,27 @@ Références techniques vérifiées :
 - Unity Transport encrypted communications : https://docs.unity.cn/Packages/com.unity.transport%402.7/manual/client-server-secure.html
 
 **Porte sécurité avant clôture de l'étape 3 :** confirmer résolution UPM et compilation Unity, puis réussir le scénario deux clients en DTLS avec validation du certificat. Le code source et les tests de configuration .NET ne remplacent pas cette preuve.
+
+
+## Mise à jour d'implémentation — flux client, bail de zone et persistance (21 novembre 2026)
+
+Le code de prototype couvre maintenant davantage le flux prévu par cette ADR :
+
+- `AstreaApiClient.RequestFishNetJoinTicket` demande un ticket à usage unique avec la session HTTP du joueur.
+- `AstreaFishNetConnectionController` enchaîne la demande de ticket, sa remise à l'Authenticator, l'ouverture de la connexion FishNet et la confirmation uniquement après `OnAuthenticated`. Il ne transmet jamais le Bearer token au transport temps réel.
+- Le générateur de scène de test attache l'API client, l'Authenticator et le contrôleur de connexion.
+- Le serveur de zone acquiert un bail PostgreSQL, récupère le snapshot et la queue d'événements avant d'ouvrir FishNet, renouvelle le bail et s'arrête en cas d'expiration/perte d'epoch.
+- Les routes internes de bail, événement, snapshot et reprise sont protégées par le secret serveur, bornent les payloads et limitent le prototype à l'identifiant de zone configuré.
+- Les mutations de gameplay peuvent maintenant appeler `AppendDurableEvent` et `SaveDurableSnapshot` sur le composant de persistance ; les systèmes concrets du monde doivent encore y être raccordés.
+
+### Preuves CI récentes
+
+- Workflow serveur et navigateur [44891906180](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44891906180) : succès. Il inclut tests Node, PostgreSQL, répétition ciblée de l'intégration de persistance/API, migrations, backup/restore, benchmarks réseau et Chromium desktop/mobile.
+- Workflow Unity Foundation [44891934416](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44891934416) : succès. Il compile les scripts réseau, y compris le contrôleur de connexion, contre des stubs .NET, vérifie les contrats de source FishNet/DTLS et génère une chaîne de certificats de test.
+- Workflow Unity Foundation [44892014637](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44892014637) : succès après ajout du contrôleur dans la scène de test.
+
+Ces preuves ne sont pas des builds Unity Editor ni un test réseau FishNet en exécution. La résolution UPM réelle, le build Linux dédié, le handshake DTLS, l'authentification de deux clients et la reprise après crash restent à démontrer.
+
+Le modèle de capacité est maintenant consigné dans `docs/scale-capacity-assumptions.md`. Il distingue les comptes inscrits des joueurs simultanés et calcule des scénarios de 1 à 10 % de concurrence avec 50 à 150 joueurs/zone. Les chiffres sont des hypothèses de dimensionnement, pas des promesses de capacité ni des devis.
+
+**État de décision :** FishNet reste retenu uniquement pour le prototype isolé. Pas de fusion dans la branche principale et pas de validation de production avant les portes Unity, DTLS, Android/WAN, charge et revue juridique différée.
