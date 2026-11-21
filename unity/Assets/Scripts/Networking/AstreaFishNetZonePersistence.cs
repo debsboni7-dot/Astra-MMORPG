@@ -212,6 +212,102 @@ namespace Astrea.Networking
             }
         }
 
+        /// <summary>
+        /// Persist an authoritative gameplay event. Payload must be a JSON object.
+        /// Call only from server-side world systems after LeaseActive is true.
+        /// </summary>
+        public void AppendDurableEvent(string eventId, string eventType, string payloadJson,
+            Action<bool, string> completed = null, int schemaVersion = 1)
+        {
+            if (!leaseActive || !IsJsonObject(payloadJson))
+            {
+                completed?.Invoke(false, "ZONE_LEASE_NOT_ACTIVE_OR_INVALID_PAYLOAD");
+                return;
+            }
+
+            string fields = "\"eventId\":\"" + EscapeJson(eventId) + "\","
+                + "\"eventType\":\"" + EscapeJson(eventType) + "\","
+                + "\"schemaVersion\":" + schemaVersion;
+            string body = BuildPayloadRequest(fields, payloadJson);
+            StartCoroutine(SendDurableMutation("/events", body, completed));
+        }
+
+        /// <summary>Persist a full authoritative zone snapshot as a JSON object.</summary>
+        public void SaveDurableSnapshot(string payloadJson, Action<bool, string> completed = null,
+            int schemaVersion = 1)
+        {
+            if (!leaseActive || !IsJsonObject(payloadJson))
+            {
+                completed?.Invoke(false, "ZONE_LEASE_NOT_ACTIVE_OR_INVALID_PAYLOAD");
+                return;
+            }
+
+            string fields = "\"schemaVersion\":" + schemaVersion;
+            string body = BuildPayloadRequest(fields, payloadJson);
+            StartCoroutine(SendDurableMutation("/snapshots", body, completed));
+        }
+
+        private string BuildPayloadRequest(string fields, string payloadJson)
+        {
+            return "{\"ownerId\":\"" + EscapeJson(ownerId)
+                + "\",\"fencingEpoch\":\"" + EscapeJson(fencingEpoch)
+                + "\"," + fields + ",\"payload\":" + payloadJson + "}";
+        }
+
+        private IEnumerator SendDurableMutation(string route, string body, Action<bool, string> completed)
+        {
+            using (var request = CreateRequest("/v1/internal/zones/" + Uri.EscapeDataString(zoneId) + route, body))
+            {
+                yield return request.SendWebRequest();
+                bool accepted = request.result == UnityWebRequest.Result.Success
+                    && (request.responseCode == 200 || request.responseCode == 201);
+                string responseBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+
+                if (!accepted && request.responseCode == 409 && responseBody.Contains("ZONE_LEASE_LOST"))
+                {
+                    leaseActive = false;
+                    if (networkManager != null && networkManager.ServerManager != null)
+                        networkManager.ServerManager.StopConnection(true);
+                    FailClosed("ZONE_LEASE_LOST_DURING_DURABLE_WRITE");
+                }
+
+                completed?.Invoke(accepted, responseBody);
+            }
+        }
+
+        private static bool IsJsonObject(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)
+                || Encoding.UTF8.GetByteCount(value) > 256 * 1024)
+                return false;
+            string trimmed = value.Trim();
+            return trimmed.Length >= 2 && trimmed[0] == '{' && trimmed[trimmed.Length - 1] == '}';
+        }
+
+        private static string EscapeJson(string value)
+        {
+            if (value == null) return string.Empty;
+            var escaped = new StringBuilder(value.Length + 8);
+            foreach (char character in value)
+            {
+                switch (character)
+                {
+                    case '\\': escaped.Append("\\\\"); break;
+                    case '"': escaped.Append("\\\""); break;
+                    case '\n': escaped.Append("\\n"); break;
+                    case '\r': escaped.Append("\\r"); break;
+                    case '\t': escaped.Append("\\t"); break;
+                    default:
+                        if (character < 32)
+                            escaped.Append("\\u").Append(((int)character).ToString("x4"));
+                        else
+                            escaped.Append(character);
+                        break;
+                }
+            }
+            return escaped.ToString();
+        }
+
         private UnityWebRequest CreateRequest(string route, string json)
         {
             var request = new UnityWebRequest(apiBaseUrl.TrimEnd('/') + route, "POST");
