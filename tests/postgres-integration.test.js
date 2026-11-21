@@ -9,6 +9,7 @@ import { createWeaponProgressionService } from '../server/progression/WeaponProg
 import { createMagicProgressionService } from '../server/progression/MagicProgressionService.js';
 import { createMagicCombatService } from '../server/combat/MagicCombatService.js';
 import { createZonePersistenceService } from '../server/realtime/ZonePersistenceService.js';
+import { createAstreaHttpServer } from '../server/http/createAstreaHttpServer.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -208,6 +209,85 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       Array.from({ length: 24 }, (_, index) => index + 1),
       'concurrent durable events must have a gap-free sequence',
     );
+
+    // Exercise the authenticated internal HTTP boundary against the same
+    // real PostgreSQL repository, including stale fencing rejection.
+    const apiZoneId = `zone-http-${crypto.randomUUID()}`;
+    const apiServerSecret = `zone-http-secret-${crypto.randomUUID()}-extra`;
+    const zoneHttpServer = createAstreaHttpServer({
+      authService: auth,
+      characterService: characters,
+      progressionService: { async getSnapshot() { return {}; } },
+      zonePersistenceService,
+      realtimeServerSecret: apiServerSecret,
+      realtimeServerId: apiZoneId,
+    });
+    await new Promise(resolve => zoneHttpServer.listen(0, '127.0.0.1', resolve));
+    const zoneApiBase = `http://127.0.0.1:${zoneHttpServer.address().port}/v1/internal/zones/${encodeURIComponent(apiZoneId)}`;
+    const zonePost = (path, body, key = apiServerSecret) => fetch(zoneApiBase + path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(key ? { 'x-astrea-server-key': key } : {}) },
+      body: JSON.stringify(body),
+    });
+    try {
+      assert.equal((await zonePost('/lease/acquire', { ownerId: 'http-zone-a' }, null)).status, 401);
+      const wrongZone = await fetch(zoneApiBase.replace(apiZoneId, 'different-zone') + '/lease/acquire', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-astrea-server-key': apiServerSecret },
+        body: JSON.stringify({ ownerId: 'http-zone-a' }),
+      });
+      assert.equal(wrongZone.status, 403);
+
+      const apiLeaseResponse = await zonePost('/lease/acquire', { ownerId: 'http-zone-a', leaseMs: 30000 });
+      assert.equal(apiLeaseResponse.status, 201);
+      const apiLease = (await apiLeaseResponse.json()).lease;
+      const apiEventId = crypto.randomUUID();
+      const apiEvent = {
+        ownerId: 'http-zone-a', fencingEpoch: apiLease.fencingEpoch,
+        eventId: apiEventId, eventType: 'RESOURCE_CREATED',
+        payload: { resourceId: 'stone-001', amount: 2 },
+      };
+      assert.equal((await zonePost('/events', apiEvent)).status, 201);
+      assert.equal((await zonePost('/snapshots', {
+        ownerId: 'http-zone-a', fencingEpoch: apiLease.fencingEpoch,
+        payload: { resources: { 'stone-001': 2 } },
+      })).status, 201);
+      const tailEvent = {
+        ownerId: 'http-zone-a', fencingEpoch: apiLease.fencingEpoch,
+        eventId: crypto.randomUUID(), eventType: 'RESOURCE_HARVESTED',
+        payload: { resourceId: 'stone-001', delta: -1 },
+      };
+      assert.equal((await zonePost('/events', tailEvent)).status, 201);
+      const apiRecoveryResponse = await zonePost('/recovery', {
+        ownerId: 'http-zone-a', fencingEpoch: apiLease.fencingEpoch,
+      });
+      assert.equal(apiRecoveryResponse.status, 200);
+      const apiRecovery = await apiRecoveryResponse.json();
+      assert.equal(apiRecovery.snapshot.lastEventSequence, '1');
+      assert.deepEqual(apiRecovery.events.map(item => item.sequence), ['2']);
+
+      await pool.query(
+        'UPDATE world_zone_leases SET lease_expires_at=clock_timestamp() - INTERVAL \'1 second\' WHERE zone_id=$1',
+        [apiZoneId],
+      );
+      assert.equal((await zonePost('/lease/renew', {
+        ownerId: 'http-zone-a', fencingEpoch: apiLease.fencingEpoch, leaseMs: 30000,
+      })).status, 409);
+      const replacementResponse = await zonePost('/lease/acquire', {
+        ownerId: 'http-zone-b', leaseMs: 30000,
+      });
+      assert.equal(replacementResponse.status, 201);
+      const replacementLease = (await replacementResponse.json()).lease;
+      assert.equal(replacementLease.fencingEpoch, '2');
+      const staleWrite = await zonePost('/events', {
+        ownerId: 'http-zone-a', fencingEpoch: apiLease.fencingEpoch,
+        eventId: crypto.randomUUID(), eventType: 'RESOURCE_HARVESTED',
+        payload: { resourceId: 'stone-001', delta: -1 },
+      });
+      assert.equal(staleWrite.status, 409);
+    } finally {
+      await new Promise(resolve => zoneHttpServer.close(resolve));
+    }
 
     const weaponProgression = createWeaponProgressionService(repository);
     const magicProgression = createMagicProgressionService(repository);
