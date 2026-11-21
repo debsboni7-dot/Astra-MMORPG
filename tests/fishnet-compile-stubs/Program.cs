@@ -39,6 +39,7 @@ internal static class Program
         VerifyDtlsFailsClosedWhenServerSecretsAreMissing();
         VerifyDtlsClientConfiguration();
         VerifyDtlsClientDefaultConfiguration();
+        VerifyZonePersistencePayloadEncoding();
 
         Console.WriteLine("ASTREA API URL security contract passed.");
     }
@@ -119,6 +120,31 @@ internal static class Program
         Assert(transport.UseEncryption, "Android client default must keep DTLS enabled");
         Assert(transport.ServerCommonName == "game.astrea.example", "Android client must use serialized DNS certificate name");
         Assert(transport.ClientCaCertificate == null, "Android client may use the operating system trust store");
+    }
+
+
+    private static void VerifyZonePersistencePayloadEncoding()
+    {
+        var component = new AstreaFishNetZonePersistence();
+        var type = typeof(AstreaFishNetZonePersistence);
+        type.GetField("ownerId", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(component, "owner\\"process");
+        type.GetField("fencingEpoch", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(component, "2");
+
+        string escaped = (string)type.GetMethod("EscapeJson", BindingFlags.Static | BindingFlags.NonPublic)
+            .Invoke(null, new object[] { "a\\"b\\\\c\\n" });
+        Assert(escaped == "a\\\\\\"b\\\\\\\\c\\\\n", "zone persistence must safely escape JSON string fields");
+
+        string body = (string)type.GetMethod("BuildPayloadRequest", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(component, new object[] { "\\"eventId\\":\\"test-id\\"", "{\\"count\\":1}" });
+        Assert(body.Contains("\\"ownerId\\":\\"owner\\\\\\"process\\""), "zone owner ID must be escaped in JSON body");
+        Assert(body.Contains("\\"fencingEpoch\\":\\"2\\""), "fencing epoch must be attached to durable writes");
+        Assert(body.EndsWith("\\"payload\\":{\\"count\\":1}}"), "payload must remain a JSON object, not a quoted string");
+
+        var isJsonObject = type.GetMethod("IsJsonObject", BindingFlags.Static | BindingFlags.NonPublic);
+        Assert((bool)isJsonObject.Invoke(null, new object[] { "{\\"count\\":1}" }), "valid JSON object payload must be accepted");
+        Assert(!(bool)isJsonObject.Invoke(null, new object[] { "[1,2,3]" }), "JSON arrays must be rejected as zone payload roots");
+        Assert(!(bool)isJsonObject.Invoke(null, new object[] { "{\\"data\\":\\"" + new string('x', 270 * 1024) + "\\"}" }),
+            "oversized zone payload must be rejected before network transmission");
     }
 
     private static void Assert(bool condition, string message)
