@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FishNetStubs.cs" />
+    <Compile Include="../../unity/Assets/Scripts/Networking/AstreaApiClient.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs" />
     <Compile Include="../../unity/Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs" />
