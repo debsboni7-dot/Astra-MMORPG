@@ -76,6 +76,32 @@ jobs:
           assert (root / "Demos/Prefabs/NetworkManager.prefab").is_file()
           print("FishNet 4.7.4 package version, authenticator, broadcasts and server spawn API verified.")
           PY
+      - name: Verify FishyUnityTransport DTLS source API
+        run: |
+          git clone --depth 1 --branch 2.0.0-pre.2 https://github.com/ooonush/FishyUnityTransport.git /tmp/fishy-utp
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/fishy-utp/Assets/FishNet/Plugins/FishyUnityTransport")
+          package = json.loads((root / "package.json").read_text())
+          assert package["version"] == "2.0.0-pre.2", package
+          assert package["dependencies"]["com.unity.transport"] == "1.3.1", package
+          asmdef = json.loads((root / "FishyUnityTransport.asmdef").read_text())
+          assert any(
+              item["name"] == "com.unity.transport"
+              and item["expression"] == "2.0.0-exp"
+              and item["define"] == "UTP_TRANSPORT_2_0_ABOVE"
+              for item in asmdef["versionDefines"]
+          ), asmdef
+          source = (root / "UnityTransport.cs").read_text()
+          for contract in ["public bool UseEncryption", "SetServerSecrets(", "SetClientSecrets(", "WithSecureServerParameters(", "WithSecureClientParameters("]:
+              assert contract in source, contract
+          assert "DTLS for UDP" in source
+          assert "m_UseEncryption = false" in source, "Encryption is opt-in and must be explicitly enabled."
+          assert (root / "LICENSE").read_text().startswith("MIT License")
+          print("FishyUnityTransport 2.0.0-pre.2 DTLS API and MIT license verified.")
+          PY
       - name: Compile ASTREA FishNet source against isolated API stubs
         uses: actions/setup-dotnet@v4
         with:
