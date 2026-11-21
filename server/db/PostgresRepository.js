@@ -78,13 +78,13 @@ export function createPostgresRepository(pool) {
         );
         const { rows } = await client.query(
           `INSERT INTO world_zone_leases (zone_id, owner_id, fencing_epoch, lease_expires_at)
-           VALUES ($1, $2, 1, NOW() + ($3::bigint * INTERVAL '1 millisecond'))
+           VALUES ($1, $2, 1, clock_timestamp() + ($3::bigint * INTERVAL '1 millisecond'))
            ON CONFLICT (zone_id) DO UPDATE
              SET owner_id = EXCLUDED.owner_id,
                  fencing_epoch = world_zone_leases.fencing_epoch + 1,
                  lease_expires_at = EXCLUDED.lease_expires_at,
                  updated_at = NOW()
-             WHERE world_zone_leases.lease_expires_at <= NOW()
+             WHERE world_zone_leases.lease_expires_at <= clock_timestamp()
            RETURNING zone_id AS "zoneId", owner_id AS "ownerId",
                      fencing_epoch AS "fencingEpoch", lease_expires_at AS "leaseExpiresAt"`,
           [zoneId, ownerId, leaseMs],
@@ -101,8 +101,8 @@ export function createPostgresRepository(pool) {
     async renewZoneLease({ zoneId, ownerId, fencingEpoch, leaseMs }) {
       const { rows } = await pool.query(
         `UPDATE world_zone_leases
-         SET lease_expires_at = NOW() + ($4::bigint * INTERVAL '1 millisecond'), updated_at = NOW()
-         WHERE zone_id = $1 AND owner_id = $2 AND fencing_epoch = $3 AND lease_expires_at > NOW()
+         SET lease_expires_at = clock_timestamp() + ($4::bigint * INTERVAL '1 millisecond'), updated_at = NOW()
+         WHERE zone_id = $1 AND owner_id = $2 AND fencing_epoch = $3 AND lease_expires_at > clock_timestamp()
          RETURNING zone_id AS "zoneId", owner_id AS "ownerId",
                    fencing_epoch AS "fencingEpoch", lease_expires_at AS "leaseExpiresAt"`,
         [zoneId, ownerId, fencingEpoch, leaseMs],
