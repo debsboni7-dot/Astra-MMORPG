@@ -193,7 +193,7 @@ jobs:
           api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
           assert "IsAllowedApiBaseUrl(value)" in api_client
           assert "internal static bool IsAllowedApiBaseUrl" in api_client
-          assert "uri.Scheme != Uri.UriSchemeHttps" in api_client
+          assert "uri.Scheme != Uri.UriSchemeHttp" in api_client
           assert "IPAddress.IsLoopback" in api_client
           assert "if (!IsAllowedApiBaseUrl(baseUrl))" in api_client
           assert "RequestFishNetJoinTicket" in api_client
