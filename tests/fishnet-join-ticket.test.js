@@ -114,6 +114,20 @@ test('FishNet HTTP ticket issuance requires an authenticated owner and internal 
     });
     assert.equal(wrongSecret.status, 401);
 
+    const missingServer = await fetch(base + '/v1/internal/realtime/fishnet/consume', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-astrea-server-key': serverSecret },
+      body: JSON.stringify({ ticket: issued.ticket }),
+    });
+    assert.equal(missingServer.status, 400);
+
+    const wrongServer = await fetch(base + '/v1/internal/realtime/fishnet/consume', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-astrea-server-key': serverSecret },
+      body: JSON.stringify({ ticket: issued.ticket, serverId: 'astrea-other-zone' }),
+    });
+    assert.equal(wrongServer.status, 401);
+
     const consumed = await fetch(base + '/v1/internal/realtime/fishnet/consume', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-astrea-server-key': serverSecret },
