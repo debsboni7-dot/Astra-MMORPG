@@ -5,7 +5,7 @@ on:
     branches: [feat/blender-unreal-cloud-pipeline, spike/fishnet-unity-6-3-evaluation]
     paths:
       - "unity/**"
-      - ".github/workflows/unity-foundation-check.yml"
+      - ".github/workflows/*.yml"
       - ".github/workflows/meshy-import-existing-artifact.yml"
       - "tests/fishnet-compile-stubs/**"
   pull_request:
@@ -24,6 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate GitHub Actions workflow YAML
+        run: |
+          ruby -e 'require "yaml"; ARGV.each { |path| YAML.load_file(path, aliases: true); puts "Valid YAML: #{path}" }' .github/workflows/*.yml
       - name: Verify FishNet 4.7.4 source API used by ASTREA
         run: |
           git clone --depth 1 --branch 4.7.4 https://github.com/FirstGearGames/FishNet.git /tmp/fishnet
