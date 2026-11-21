@@ -94,6 +94,12 @@ namespace Astrea.EditorTools
             if (setConnectionData == null)
                 throw new InvalidOperationException("FishyUnityTransport SetConnectionData API was not found.");
             setConnectionData.Invoke(unityTransport, new object[] { "127.0.0.1", (ushort)7770, "0.0.0.0" });
+
+            PropertyInfo encryptionProperty = unityTransport.GetType().GetProperty("UseEncryption");
+            if (encryptionProperty == null)
+                throw new InvalidOperationException("FishyUnityTransport encryption API was not found.");
+            encryptionProperty.SetValue(unityTransport, true, null);
+            EditorUtility.SetDirty(unityTransport);
             TransportManager transportManager = managerRoot.GetComponent<TransportManager>();
             if (transportManager == null)
                 transportManager = managerRoot.AddComponent<TransportManager>();
