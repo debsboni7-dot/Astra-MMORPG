@@ -4,7 +4,7 @@ import { timingSafeEqual } from 'node:crypto';
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_ZONE_BODY_BYTES = 300 * 1024;
 function send(response, status, body, extraHeaders = {}) {
-  response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', ...extraHeaders });
+        if (!/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] || '')) {
   response.end(status === 204 ? undefined : JSON.stringify(body));
 }
 async function readJson(request, maxBytes = MAX_BODY_BYTES) {
