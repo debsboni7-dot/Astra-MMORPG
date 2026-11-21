@@ -22,6 +22,8 @@ export function createFishNetJoinTicketService({
     throw new TypeError('A valid realtime server identifier is required');
   }
 
+  let issuedSinceCleanup = 0;
+
   async function issueForCharacter(accountId, characterId) {
     if (!accountId || typeof characterId !== 'string' || characterId.length < 1 || characterId.length > 128) {
       throw new TypeError('Authenticated account and character are required');
@@ -39,6 +41,13 @@ export function createFishNetJoinTicketService({
       serverId,
       expiresAt: new Date(now() + TICKET_TTL_SECONDS * 1000),
     });
+
+    issuedSinceCleanup += 1;
+    if (issuedSinceCleanup >= 100 && typeof repository.cleanupRealtimeJoinTickets === 'function') {
+      await repository.cleanupRealtimeJoinTickets();
+      issuedSinceCleanup = 0;
+    }
+
     return { ticket, expiresIn: TICKET_TTL_SECONDS };
   }
 
