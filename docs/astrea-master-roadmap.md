@@ -373,3 +373,6 @@ Le workflow end-to-end [43832992881](https://github.com/debsboni7-dot/Astra-MMOR
 - Le workflow complet de deux clients est prêt, mais la tentative s'arrête sur l'absence du secret `UNITY_LICENSE`. Aucun build Unity/Linux ni test réseau Unity n'est donc validé.
 - Tugboat/UDP par défaut n'est pas considéré comme un transport sécurisé. FishyUnityTransport 2.0.0-pre.2 (MIT) est ajouté au registre des candidats, pas au manifest. Sa compatibilité Unity 6.3, DTLS/TLS, Android et consoles doit être vérifiée.
 - Porte bloquante avant clôture de l'étape 3 : vraie compilation Unity, build serveur dédié, test deux clients, et décision vérifiée sur le transport chiffré.
+
+
+- Vérification additionnelle réussie : scripts de réseau (API client comprise) compilés contre stubs .NET, et tests exécutés sur les URL API HTTPS/loopback. Run GitHub Actions 44887759276 : succès. Toujours pas de compilation Unity Editor.
