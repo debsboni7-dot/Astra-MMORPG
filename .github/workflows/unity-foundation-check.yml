@@ -155,6 +155,11 @@ jobs:
           assert "/v1/internal/realtime/fishnet/consume" in fishnet_auth
           assert "SetClientTicket" in fishnet_auth
           assert "WaitForSecondsRealtime(10f)" in fishnet_auth
+          assert "internal static bool IsAllowedApiUrl" in fishnet_auth
+          assert "uri.Scheme != Uri.UriSchemeHttps" in fishnet_auth
+          assert "uri.UserInfo" in fishnet_auth
+          assert "uri.Query" in fishnet_auth
+          assert "uri.Fragment" in fishnet_auth
           assert "IPAddress.IsLoopback" in fishnet_auth
 
           fishnet_test_player = (root / "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs").read_text()
@@ -186,8 +191,11 @@ jobs:
           assert (root.parent / "scripts/prepare-fishnet-integration-test.js").is_file()
 
           api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
+          assert "IsAllowedApiBaseUrl(value)" in api_client
+          assert "internal static bool IsAllowedApiBaseUrl" in api_client
           assert "uri.Scheme != Uri.UriSchemeHttps" in api_client
           assert "IPAddress.IsLoopback" in api_client
+          assert "if (!IsAllowedApiBaseUrl(baseUrl))" in api_client
           assert "RequestFishNetJoinTicket" in api_client
           assert "/v1/realtime/fishnet/tickets" in api_client
 
