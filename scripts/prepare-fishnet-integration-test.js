@@ -1,9 +1,9 @@
 const baseUrl = (process.env.ASTREA_API_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '');
 const runId = process.env.GITHUB_RUN_ID || String(Date.now());
 const attempt = process.env.GITHUB_RUN_ATTEMPT || '1';
-const envFile = process.env.GITHUB_ENV;
+const runnerTemp = process.env.RUNNER_TEMP;
 
-if (!envFile) throw new Error('GITHUB_ENV is required for this CI-only ticket preparation script');
+if (!runnerTemp) throw new Error('RUNNER_TEMP is required for this CI-only ticket preparation script');
 
 async function post(path, body, token = null, expectedStatus = 200) {
   const headers = { 'content-type': 'application/json' };
@@ -37,9 +37,12 @@ for (const clientId of [1, 2]) {
   if (typeof ticket.ticket !== 'string' || ticket.expiresIn !== 30)
     throw new Error('ASTREA FishNet ticket contract mismatch');
 
-  outputs.push(`ASTREA_TEST_JOIN_TICKET_${clientId}=${ticket.ticket}`);
+  outputs.push({ clientId, ticket: ticket.ticket });
 }
 
-const { appendFile } = await import('node:fs/promises');
-await appendFile(envFile, outputs.join('\n') + '\n', { mode: 0o600 });
-process.stdout.write('Prepared two isolated ASTREA accounts, characters and short-lived FishNet tickets.\n');
+const { writeFile } = await import('node:fs/promises');
+const { join } = await import('node:path');
+for (const output of outputs) {
+  await writeFile(join(runnerTemp, `astrea-fishnet-ticket-${output.clientId}`), output.ticket + '\\n', { mode: 0o600 });
+}
+process.stdout.write('Prepared two isolated ASTREA accounts, characters and short-lived FishNet tickets in private runner files.\\n');
