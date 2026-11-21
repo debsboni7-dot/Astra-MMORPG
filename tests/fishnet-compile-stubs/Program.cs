@@ -19,6 +19,16 @@ internal static class Program
         Assert(!client.SetBaseUrl("https://api.astrea.example/?token=secret"), "URL query strings must be rejected");
         Assert(!client.SetBaseUrl("https://api.astrea.example/#fragment"), "URL fragments must be rejected");
 
+        Assert(AstreaFishNetAuthenticator.IsAllowedApiUrl("https://api.astrea.example"), "FishNet server must accept HTTPS API root");
+        Assert(AstreaFishNetAuthenticator.IsAllowedApiUrl("http://127.0.0.1:3000"), "FishNet server must accept IPv4 loopback HTTP");
+        Assert(AstreaFishNetAuthenticator.IsAllowedApiUrl("http://localhost:3000"), "FishNet server must accept localhost HTTP");
+        Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("http://api.astrea.example"), "FishNet server must reject remote HTTP");
+        Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("ftp://api.astrea.example"), "FishNet server must reject non-HTTP schemes");
+        Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("https://user:pass@api.astrea.example"), "FishNet server must reject URL credentials");
+        Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("https://api.astrea.example/path"), "FishNet server must reject base paths");
+        Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("https://api.astrea.example/?ticket=secret"), "FishNet server must reject query strings");
+        Assert(!AstreaFishNetAuthenticator.IsAllowedApiUrl("https://api.astrea.example/#fragment"), "FishNet server must reject fragments");
+
         Console.WriteLine("ASTREA API URL security contract passed.");
     }
 
