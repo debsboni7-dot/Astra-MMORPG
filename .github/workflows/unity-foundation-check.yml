@@ -360,6 +360,13 @@ jobs:
           fishnet_workflow = (Path(".github/workflows") / "unity-fishnet-two-client-integration.yml").read_text()
           assert "confirm_build" in fishnet_workflow and "confirm_build == 'yes'" in fishnet_workflow
           assert "ASTREA_FISHNET_TEST_RESULT=CLIENT_2_OBSERVED_REMOTE_SERVER_MOVEMENT" in fishnet_workflow
+          cert_script = Path("scripts/generate-fishnet-dtls-test-certs.sh").read_text()
+          assert "ASTREA_DTLS_SERVER_KEY<<" not in cert_script, "private key must not be exported through GITHUB_ENV"
+          client_step = fishnet_workflow.split("Run two FishNet clients and verify remote movement replication", 1)[1].split("Upload FishNet integration logs", 1)[0]
+          assert "ASTREA_DTLS_SERVER_KEY" not in client_step, "client processes must never receive the server private key"
+          server_step = fishnet_workflow.split("Start FishNet Linux dedicated server", 1)[1].split("Run two FishNet clients", 1)[0]
+          assert 'ASTREA_DTLS_SERVER_KEY="$SERVER_KEY"' in server_step
+          assert "trap 'rm -f" in server_step
 
           importer_workflow = Path(".github/workflows/meshy-import-existing-artifact.yml").read_text()
           assert "actions/download-artifact@v4" in importer_workflow
