@@ -237,6 +237,9 @@ jobs:
 
           fishnet_spawner = (root / "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs").read_text()
           assert "OnClientIdentityAuthenticated" in fishnet_spawner
+          assert "TrySubscribeServerState" in fishnet_spawner
+          assert "private void Start()" in fishnet_spawner
+          assert "serverStateSubscribed" in fishnet_spawner
           assert "connection.IsAuthenticated" in fishnet_spawner
           assert "ServerManager.Spawn(player, connection)" in fishnet_spawner
           assert "AstreaServerPlayerIdentity" in fishnet_spawner
