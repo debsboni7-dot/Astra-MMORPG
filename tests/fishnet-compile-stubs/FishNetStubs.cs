@@ -168,6 +168,9 @@ namespace FishNet.Managing.Server
         public void UnregisterBroadcast<T>(Action<NetworkConnection, T, Channel> handler) where T : struct, FishNet.Broadcast.IBroadcast { }
         public void Broadcast<T>(NetworkConnection connection, T message, bool requireAuthenticated, Channel channel) where T : struct, FishNet.Broadcast.IBroadcast { }
         public void Spawn(NetworkObject networkObject, NetworkConnection ownerConnection) { }
+        public void SetStartOnHeadless(bool value) { }
+        public bool StartConnection() => true;
+        public bool StopConnection(bool sendDisconnectMessage) => true;
     }
 }
 
