@@ -120,7 +120,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - **Monde persistant :** sauvegarde/reprise, versionnement des données et migration sans effacer les royaumes.
 - **Coûts :** aucune infrastructure payante ni facturation automatique sans accord explicite. L'absence de coût du framework ne signifie pas absence de coût d'hébergement.
 
-Le modèle de menace détaillé est conservé dans [docs/network-security-threat-model.md](network-security-threat-model.md). Il sépare les actifs, frontières de confiance, contrôles testés et risques restant à traiter avant exposition Internet.
+Le modèle de menace détaillé est conservé dans [docs/network-security-threat-model.md](network-security-threat-model.md). La stratégie de snapshots, journal durable et reprise après crash est décrite dans [docs/zone-persistence-recovery.md](zone-persistence-recovery.md), mais n'est pas encore implémentée. Il sépare les actifs, frontières de confiance, contrôles testés et risques restant à traiter avant exposition Internet.
 
 ## 7. Registre des risques
 
@@ -176,7 +176,8 @@ Le modèle de menace détaillé est conservé dans [docs/network-security-threat
 - [ ] Résoudre UPM et compiler FishyUnityTransport + Unity Transport 2.7.5 dans Unity 6000.3.28f1.
 - [ ] Réussir le build serveur/client et le handshake DTLS avec validation du certificat dans le workflow deux clients.
 - [ ] Test WAN et au moins un appareil Android physique.
-- [ ] Validation de la stratégie de persistance après arrêt/redémarrage du serveur de zone.
+- [x] Stratégie de persistance/reprise après crash de zone définie et documentée (journal idempotent, snapshots, lease/fencing).
+- [ ] Implémentation du journal et des snapshots de zone, puis test d'arrêt/redémarrage avec restauration.
 
 ## 10. Conclusion
 
