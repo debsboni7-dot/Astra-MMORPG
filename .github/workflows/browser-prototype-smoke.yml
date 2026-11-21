@@ -61,6 +61,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run server and gameplay unit tests
         run: npm test
+      - name: Re-run PostgreSQL zone persistence and authenticated API integration
+        run: node --test tests/postgres-integration.test.js tests/server-http-api.test.js
       - name: Verify ordered server migration runner against PostgreSQL
         run: node scripts/apply-server-migrations.js
       - name: Verify PostgreSQL backup and restore
