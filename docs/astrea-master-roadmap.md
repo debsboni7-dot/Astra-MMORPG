@@ -403,3 +403,24 @@ La CI valide le code source, les contrats API et la configuration DTLS via stubs
 - [x] Suite complète serveur/Node/PostgreSQL 16, migration 005, purge des tickets, backup/restore, benchmarks et Chromium desktop/mobile : [run 44889120732](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889120732), succès.
 - [x] Unity Foundation : API FishNet 4.7.4, source FishyUnityTransport DTLS, compilation C# contre stubs, tests HTTPS/loopback, configuration DTLS serveur/client, génération et validation de certificats, API TransportManager : [run 44889349804](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889349804), succès.
 - [ ] Unity Editor/UPM, build Linux dédié, handshake DTLS natif et test FishNet à deux clients : non exécutés, secrets Unity Personal manquants.
+
+
+### Étape 3 — état consolidé après intégration du journal de zone — 21 novembre 2026
+
+Cette section remplace les états réseau précédents qui indiquaient encore FishyUnityTransport comme simple candidat non installé. Les changements restent isolés sur `spike/fishnet-unity-6-3-evaluation`; aucune modification n'est fusionnée dans la branche principale.
+
+- [x] FishNet 4.7.4, FishyUnityTransport 2.0.0-pre.2 et Unity Transport 2.7.5 déclarés dans le manifeste de la branche d'évaluation.
+- [x] DTLS configuré dans le code : chiffrement forcé, clé/certificat serveur injectés depuis l'environnement, nom de serveur et CA vérifiés côté client.
+- [x] Contrats source FishNet/FishyUnityTransport, API C# et configuration DTLS serveur/client vérifiés dans le workflow Unity Foundation [44888871357](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44888871357), succès. Cela ne constitue pas une compilation Unity Editor.
+- [x] Migration PostgreSQL 006 : état de séquence, baux exclusifs, fencing epoch, journal d'événements et snapshot de zone.
+- [x] Service de persistance : idempotence UUID, séquence monotone, lecture de reprise sous bail actif, payloads JSON bornés et rejet des anciens epochs.
+- [x] Tests PostgreSQL : reprise snapshot + événements, deux acquisitions concurrentes, 24 événements concurrents séquencés, rejet d'un ancien processus et snapshot suivant.
+- [x] Sauvegarde/restauration PostgreSQL vérifiée avec données réelles de zone (snapshot, événement, bail).
+- [x] Suite serveur, PostgreSQL, migration, backup/restore, benchmarks réseau et Chromium desktop/mobile réussie : [44890719641](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44890719641).
+- [ ] Résolution UPM et compilation réelle dans Unity 6000.3.28f1.
+- [ ] Build Linux Dedicated Server et client.
+- [ ] Handshake DTLS natif, validation du certificat, authentification par ticket et réplication à deux clients.
+- [ ] Raccordement du service de persistance au processus Unity FishNet et redémarrage réel d'un serveur de zone.
+- [ ] Test sur un appareil Android physique et réseau distant.
+
+**Action externe restante :** ajouter les trois secrets Unity Personal `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` dans [les secrets Actions du dépôt](https://github.com/debsboni7-dot/Astra-MMORPG/settings/secrets/actions). L'activation initiale de la licence exige un ordinateur avec Unity Hub ; aucun connecteur supplémentaire n'est nécessaire. Tant que cette étape n'est pas faite, Unity ne peut pas résoudre/compilier le projet sur le runner. L'étape 3 reste ouverte et l'étape 4 ne démarre pas.
