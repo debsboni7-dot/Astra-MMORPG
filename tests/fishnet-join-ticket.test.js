@@ -67,7 +67,7 @@ test('FishNet join tickets are opaque, bound to owned characters, hashed at rest
     characterId: 'character-1',
     serverId: 'astrea-prototype-zone-01',
   });
-  assert.equal(await service.consume(issued.ticket), null);
+  assert.equal(await service.consume(issued.ticket, service.serverId), null);
 });
 
 test('FishNet join tickets cannot be issued for another account character or consumed by another server', async () => {
@@ -76,7 +76,7 @@ test('FishNet join tickets cannot be issued for another account character or con
   const issued = await service.issueForCharacter('account-1', 'character-1');
   assert.equal(await service.consume(issued.ticket), null, 'serverId must never be inferred');
   assert.equal(await service.consume(issued.ticket, 'astrea-other-zone'), null);
-  assert.deepEqual(await service.consume(issued.ticket), {
+  assert.deepEqual(await service.consume(issued.ticket, service.serverId), {
     accountId: 'account-1',
     characterId: 'character-1',
     serverId: 'astrea-prototype-zone-01',
