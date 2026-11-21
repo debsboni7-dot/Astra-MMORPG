@@ -148,7 +148,7 @@ Le modèle de menace détaillé est conservé dans [docs/network-security-threat
 - Compilation .NET des scripts API client, Authenticator, configurateur DTLS, PlayerSpawner, NetworkTestPlayer et NetworkTestClient contre des stubs isolés ; signatures API du tag FishNet 4.7.4 vérifiées par assertions CI.
 - Configuration DTLS serveur/client exercée par tests .NET avec fausses clés/certificats ; code FishyUnityTransport 2.0.0-pre.2, méthodes DTLS, licence MIT et branche UTP 2.x vérifiés dans GitHub Actions. Ceci ne remplace pas un vrai handshake Unity.
 - Test exécuté en CI de la validation des URL API : HTTPS distant accepté, HTTP loopback accepté pour le développement, HTTP distant et URL avec identifiants/chemin/query/fragment rejetées. Workflow Unity Foundation réussi le 21 novembre 2026 (run 44887759276).
-- Le workflow d'intégration deux clients s'arrête à la vérification du secret `UNITY_LICENSE` absent ; aucune compilation Unity ni session deux clients n'a donc été exécutée.
+- Le workflow d'intégration deux clients s'arrête à la vérification du secrets `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` absents ; aucune compilation Unity ni session deux clients n'a donc été exécutée.
 - Suite complète Node/PostgreSQL/backup-restore/benchmarks/Chromium, incluant la migration 005 et la purge des tickets, réussie dans le workflow [44889120732](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889120732).
 - Le workflow de vérification source peut comparer les API utilisées avec le tag FishNet 4.7.4 exact ; cela ne remplace pas le compilateur Unity.
 
@@ -188,7 +188,7 @@ La prochaine tâche reste donc une validation technique Unity, pas le démarrage
 
 ## Mise à jour build serveur dédié
 
-Le projet contient maintenant un point d'entrée Unity Editor `AstreaCloudBuild.BuildLinuxDedicatedServer` qui demande explicitement le sous-cible `StandaloneBuildSubtarget.Server`, ainsi qu'un workflow manuel `.github/workflows/unity-linux-server-build.yml`. Le workflow exige `confirm_build=yes` et le secret `UNITY_LICENSE`, puis produit un artefact Linux Dedicated Server.
+Le projet contient maintenant un point d'entrée Unity Editor `AstreaCloudBuild.BuildLinuxDedicatedServer` qui demande explicitement le sous-cible `StandaloneBuildSubtarget.Server`, ainsi qu'un workflow manuel `.github/workflows/unity-linux-server-build.yml`. Le workflow exige `confirm_build=yes` et le secrets `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD`, puis produit un artefact Linux Dedicated Server.
 
 Le workflow est préparé, pas exécuté. Le dépôt ne prétend donc pas encore que le projet compile ou qu'un build serveur a réussi. La documentation Unity 6.3 confirme que le sous-cible Dedicated Server se sélectionne via `BuildPlayerOptions.subtarget = (int)StandaloneBuildSubtarget.Server`.
 
@@ -197,7 +197,7 @@ Le workflow est préparé, pas exécuté. Le dépôt ne prétend donc pas encore
 
 Un générateur de scène Unity Editor crée une scène de test séparée du jeu, avec le prefab NetworkManager FishNet 4.7.4, un prefab proxy de test (cube temporaire), un NetworkTransform configuré serveur-autoritaire, la collection de prefabs spawnables, l'Authenticator, le spawner et un client harness automatisé. Un workflow manuel construit le serveur Linux dédié et deux clients Linux, démarre PostgreSQL et Node, génère deux tickets, puis vérifie que le client 2 observe le mouvement envoyé par le client 1 et validé par le serveur.
 
-Le workflow exige le secret Unity Personal `UNITY_LICENSE` et une confirmation manuelle. Il n'a pas été lancé. La scène et le test automatisé sont donc préparés, pas validés.
+Le workflow exige le secrets Unity Personal `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` et une confirmation manuelle. Il n'a pas été lancé. La scène et le test automatisé sont donc préparés, pas validés.
 
 
 ## 11. Cohérence budgétaire avec la référence de production
