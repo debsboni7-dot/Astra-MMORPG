@@ -81,7 +81,7 @@ export function createAstreaHttpServer({ authService, characterService, progress
         if (!identity) return send(response, 401, { error: 'INVALID_OR_EXPIRED_TICKET' });
         return send(response, 200, { identity });
       }
-      const internalZoneMatch = /^\\/v1\\/internal\\/zones\\/([^/]+)\\/(lease\\/acquire|lease\\/renew|events|snapshots|recovery)$/.exec(url.pathname);
+      const internalZoneMatch = /^\/v1\/internal\/zones\/([^/]+)\/(lease\/acquire|lease\/renew|events|snapshots|recovery)$/.exec(url.pathname);
       if (internalZoneMatch) {
         if (request.method !== 'POST') return send(response, 405, { error: 'METHOD_NOT_ALLOWED' });
         const supplied = request.headers['x-astrea-server-key'];
