@@ -124,11 +124,13 @@ The starter scene builder now creates a SPRINT hold button at the upper-right co
 
 ## FishNet networking dependency (evaluation branch only)
 
-The isolated `spike/fishnet-unity-6-3-evaluation` branch pins FishNet 4.7.4 through Unity Package Manager using the Git URL in `Packages/manifest.json`. Newtonsoft JSON 3.2.1 is declared to match FishNet's package dependency. This does not modify the main development branch.
+The isolated `spike/fishnet-unity-6-3-evaluation` branch pins FishNet 4.7.4 through Unity Package Manager. It also declares Unity Transport 2.7.5 and FishyUnityTransport 2.0.0-pre.2 (MIT) so the test NetworkManager can use DTLS over UDP instead of unencrypted Tugboat. Newtonsoft JSON 3.2.1 is declared to match FishNet's package dependency. None of these additions modify the main development branch.
 
-On first opening this branch in Unity 6.3, allow Package Manager to resolve dependencies and generate `Packages/packages-lock.json`. Confirm that the resolved FishNet version is 4.7.4 and inspect compiler output before adding FishNet components to scenes. See [the integration checklist](../docs/fishnet-integration.md).
+`AstreaFishNetTransportSecurity` forces transport encryption. A dedicated server must receive `ASTREA_NETWORK_ROLE=server`, `ASTREA_DTLS_SERVER_CERT` and `ASTREA_DTLS_SERVER_KEY` through its process environment. A client must receive `ASTREA_NETWORK_ROLE=client` and `ASTREA_DTLS_SERVER_NAME`; it can use `ASTREA_DTLS_CA_CERT` or the operating system certificate trust store. Never put the private server key in a client build, Unity asset, scene, prefab or Git commit. The two-client CI workflow generates ephemeral CA/server certificates and passes them only to its test processes.
 
-No Unity import, compilation, dedicated-server build or FishNet multiplayer test has yet been executed. The current Node.js/WebSocket backend remains unchanged and is not yet bridged to FishNet.
+On first opening this branch in Unity 6.3, allow Package Manager to resolve dependencies and generate `Packages/packages-lock.json`. Confirm that FishNet 4.7.4, Unity Transport 2.7.5 and FishyUnityTransport 2.0.0-pre.2 resolve without conflicts. The Fishy package metadata still declares UTP 1.3.1 while its assembly enables the UTP 2.x API via a version define; ASTREA pins UTP 2.7.5 directly. This graph must be validated by the actual Unity resolver, not inferred from source checks. See [the integration checklist](../docs/fishnet-integration.md) and [the architecture decision](../docs/adr-001-fishnet-world-server-architecture.md).
+
+The .NET source harness and GitHub Actions metadata checks pass, including tests that verify DTLS configuration for both server and client roles. No Unity import, Unity Editor compilation, dedicated-server build or real DTLS handshake has yet been executed. The current Node.js/WebSocket backend remains the identity and persistence API; FishNet handles zone simulation.
 
 
 ### FishNet account handoff (prototype)
