@@ -8,6 +8,7 @@ import { createCharacterService } from '../server/characters/CharacterService.js
 import { createWeaponProgressionService } from '../server/progression/WeaponProgressionService.js';
 import { createMagicProgressionService } from '../server/progression/MagicProgressionService.js';
 import { createMagicCombatService } from '../server/combat/MagicCombatService.js';
+import { createZonePersistenceService } from '../server/realtime/ZonePersistenceService.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -23,6 +24,7 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       '003_character_magic_combat_state.sql',
       '004_realtime_join_tickets.sql',
       '005_realtime_join_ticket_cleanup.sql',
+      '006_world_zone_persistence.sql',
     ]) {
       await pool.query(await readFile(new URL(`../server/migrations/${file}`, import.meta.url), 'utf8'));
     }
@@ -101,6 +103,82 @@ test('real PostgreSQL migrations, account ownership and character persistence', 
       [[staleExpiredHash, staleConsumedHash]],
     );
     assert.equal(retainedStaleTickets.rowCount, 0);
+
+    // Simulate a zone process crash, recovery from snapshot + event tail,
+    // and fencing of the former process after a replacement acquires the lease.
+    const zonePersistence = createZonePersistenceService(repository);
+    const zoneId = `zone-recovery-${crypto.randomUUID()}`;
+    const firstLease = await zonePersistence.acquireLease({
+      zoneId, ownerId: 'zone-process-a', leaseMs: 5_000,
+    });
+    assert.ok(firstLease);
+    assert.equal(firstLease.fencingEpoch, '1');
+
+    const event1 = 'c8a9b6b2-78e6-4f3c-a0a4-4d5a9f70c111';
+    const event2 = 'c8a9b6b2-78e6-4f3c-a0a4-4d5a9f70c112';
+    const event3 = 'c8a9b6b2-78e6-4f3c-a0a4-4d5a9f70c113';
+    assert.deepEqual(await zonePersistence.appendEvent({
+      zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch,
+      eventId: event1, eventType: 'RESOURCE_CREATED', payload: { resourceId: 'oak-001', amount: 3 },
+    }), { sequence: '1', duplicate: false });
+    await zonePersistence.saveSnapshot({
+      zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch,
+      payload: { resources: { 'oak-001': 3 } },
+    });
+    assert.deepEqual(await zonePersistence.appendEvent({
+      zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch,
+      eventId: event2, eventType: 'RESOURCE_HARVESTED', payload: { resourceId: 'oak-001', delta: -1 },
+    }), { sequence: '2', duplicate: false });
+    assert.deepEqual(await zonePersistence.appendEvent({
+      zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch,
+      eventId: event2, eventType: 'RESOURCE_HARVESTED', payload: { resourceId: 'oak-001', delta: -1 },
+    }), { sequence: '2', duplicate: true });
+    await assert.rejects(zonePersistence.appendEvent({
+      zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch,
+      eventId: event2, eventType: 'RESOURCE_HARVESTED', payload: { resourceId: 'oak-001', delta: -2 },
+    }), error => error.code === 'IDEMPOTENCY_CONFLICT');
+
+    const recoveredAfterCrash = await zonePersistence.loadRecoveryState(zoneId);
+    assert.equal(recoveredAfterCrash.snapshot.lastEventSequence, '1');
+    assert.deepEqual(recoveredAfterCrash.events.map(item => item.sequence), ['2']);
+    const restoredCount = recoveredAfterCrash.events.reduce(
+      (count, item) => count + Number(item.payload.delta || 0),
+      recoveredAfterCrash.snapshot.payload.resources['oak-001'],
+    );
+    assert.equal(restoredCount, 2);
+
+    await pool.query(
+      'UPDATE world_zone_leases SET lease_expires_at=NOW() - INTERVAL \'1 second\' WHERE zone_id=$1',
+      [zoneId],
+    );
+    const secondLease = await zonePersistence.acquireLease({
+      zoneId, ownerId: 'zone-process-b', leaseMs: 30_000,
+    });
+    assert.ok(secondLease);
+    assert.equal(secondLease.fencingEpoch, '2');
+    await assert.rejects(zonePersistence.appendEvent({
+      zoneId, ownerId: 'zone-process-a', fencingEpoch: firstLease.fencingEpoch,
+      eventId: event3, eventType: 'RESOURCE_HARVESTED', payload: { resourceId: 'oak-001', delta: -1 },
+    }), error => error.code === 'ZONE_LEASE_LOST');
+
+    await zonePersistence.appendEvent({
+      zoneId, ownerId: 'zone-process-b', fencingEpoch: secondLease.fencingEpoch,
+      eventId: event3, eventType: 'RESOURCE_HARVESTED', payload: { resourceId: 'oak-001', delta: -1 },
+    });
+    const recoveredByReplacement = await zonePersistence.loadRecoveryState(zoneId);
+    const finalCount = recoveredByReplacement.events.reduce(
+      (count, item) => count + Number(item.payload.delta || 0),
+      recoveredByReplacement.snapshot.payload.resources['oak-001'],
+    );
+    assert.equal(finalCount, 1);
+    assert.deepEqual(recoveredByReplacement.events.map(item => item.sequence), ['2', '3']);
+    await zonePersistence.saveSnapshot({
+      zoneId, ownerId: 'zone-process-b', fencingEpoch: secondLease.fencingEpoch,
+      payload: { resources: { 'oak-001': finalCount } },
+    });
+    const checkpointed = await zonePersistence.loadRecoveryState(zoneId);
+    assert.equal(checkpointed.snapshot.lastEventSequence, '3');
+    assert.equal(checkpointed.events.length, 0);
 
     const weaponProgression = createWeaponProgressionService(repository);
     const magicProgression = createMagicProgressionService(repository);
