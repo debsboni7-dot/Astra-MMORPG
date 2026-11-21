@@ -199,10 +199,15 @@ namespace Astrea.Networking
             }
         }
 
-        private static bool IsAllowedApiUrl(string value)
+        internal static bool IsAllowedApiUrl(string value)
         {
-            if (!Uri.TryCreate(value, UriKind.Absolute, out Uri uri))
+            if (!Uri.TryCreate(value, UriKind.Absolute, out Uri uri)
+                || !string.IsNullOrEmpty(uri.UserInfo)
+                || !string.IsNullOrEmpty(uri.Query)
+                || !string.IsNullOrEmpty(uri.Fragment)
+                || (uri.AbsolutePath != "/" && !string.IsNullOrEmpty(uri.AbsolutePath)))
                 return false;
+
             if (uri.Scheme == Uri.UriSchemeHttps)
                 return true;
             if (uri.Scheme != Uri.UriSchemeHttp)
