@@ -154,6 +154,7 @@ namespace Astrea.Networking
 
             using (var request = new UnityWebRequest(baseUrl + path, method))
             {
+                request.timeout = 10;
                 if (json != null)
                 {
                     request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
