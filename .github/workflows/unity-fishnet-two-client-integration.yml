@@ -116,6 +116,42 @@ jobs:
           allowDirtyBuild: true
           customParameters: -batchmode -nographics
 
+      - name: Generate ephemeral CA and DTLS server certificate
+        shell: bash
+        run: |
+          mkdir -p /tmp/astrea-dtls
+          openssl genrsa -out /tmp/astrea-dtls/ca.key 2048
+          openssl req -x509 -new -nodes -key /tmp/astrea-dtls/ca.key -sha256 -days 2 \\
+            -subj "/CN=ASTREA CI Test CA" \\
+            -addext "basicConstraints=critical,CA:TRUE" \\
+            -addext "keyUsage=critical,keyCertSign,cRLSign" \\
+            -out /tmp/astrea-dtls/ca.crt
+          openssl genrsa -out /tmp/astrea-dtls/server.key 2048
+          openssl req -new -key /tmp/astrea-dtls/server.key \\
+            -subj "/CN=localhost" -out /tmp/astrea-dtls/server.csr
+          cat > /tmp/astrea-dtls/server.ext <<'EOF'
+          basicConstraints=critical,CA:FALSE
+          keyUsage=critical,digitalSignature,keyEncipherment
+          extendedKeyUsage=serverAuth
+          subjectAltName=DNS:localhost,IP:127.0.0.1
+          EOF
+          openssl x509 -req -in /tmp/astrea-dtls/server.csr \\
+            -CA /tmp/astrea-dtls/ca.crt -CAkey /tmp/astrea-dtls/ca.key \\
+            -CAcreateserial -out /tmp/astrea-dtls/server.crt -days 2 -sha256 \\
+            -extfile /tmp/astrea-dtls/server.ext
+          {
+            echo "ASTREA_DTLS_SERVER_CERT<<ASTREA_CERT_EOF"
+            cat /tmp/astrea-dtls/server.crt
+            echo "ASTREA_CERT_EOF"
+            echo "ASTREA_DTLS_SERVER_KEY<<ASTREA_KEY_EOF"
+            cat /tmp/astrea-dtls/server.key
+            echo "ASTREA_KEY_EOF"
+            echo "ASTREA_DTLS_CA_CERT<<ASTREA_CA_EOF"
+            cat /tmp/astrea-dtls/ca.crt
+            echo "ASTREA_CA_EOF"
+            echo "ASTREA_DTLS_SERVER_NAME=localhost"
+          } >> "$GITHUB_ENV"
+
       - name: Prepare two isolated accounts and one-use tickets
         run: node scripts/prepare-fishnet-integration-test.js
 
