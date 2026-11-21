@@ -4,7 +4,7 @@ import { timingSafeEqual } from 'node:crypto';
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_ZONE_BODY_BYTES = 300 * 1024;
 function send(response, status, body, extraHeaders = {}) {
-        if (!/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] || '')) {
+  response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', ...extraHeaders });
   response.end(status === 204 ? undefined : JSON.stringify(body));
 }
 async function readJson(request, maxBytes = MAX_BODY_BYTES) {
@@ -84,7 +84,7 @@ export function createAstreaHttpServer({ authService, characterService, progress
       const internalZoneMatch = /^\/v1\/internal\/zones\/([^/]+)\/(lease\/acquire|lease\/renew|events|snapshots|recovery)$/.exec(url.pathname);
       if (internalZoneMatch) {
         if (request.method !== 'POST') return send(response, 405, { error: 'METHOD_NOT_ALLOWED' });
-        if (!/^application\\/json(?:\\s*;|$)/i.test(request.headers['content-type'] || '')) {
+        if (!/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] || '')) {
           return send(response, 415, { error: 'UNSUPPORTED_MEDIA_TYPE' });
         }
         const supplied = request.headers['x-astrea-server-key'];
