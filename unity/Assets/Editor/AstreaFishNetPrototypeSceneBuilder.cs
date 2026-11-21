@@ -9,6 +9,7 @@ using FishNet.Component.Spawning;
 using FishNet.Component.Transforming;
 using FishNet.Managing;
 using FishNet.Managing.Object;
+using FishNet.Managing.Transporting;
 using FishNet.Object;
 using FishNet.Transporting;
 using UnityEditor;
@@ -93,7 +94,10 @@ namespace Astrea.EditorTools
             if (setConnectionData == null)
                 throw new InvalidOperationException("FishyUnityTransport SetConnectionData API was not found.");
             setConnectionData.Invoke(unityTransport, new object[] { "127.0.0.1", (ushort)7770, "0.0.0.0" });
-            networkManager.TransportManager.Transport = unityTransport;
+            TransportManager transportManager = managerRoot.GetComponent<TransportManager>();
+            if (transportManager == null)
+                transportManager = managerRoot.AddComponent<TransportManager>();
+            transportManager.Transport = unityTransport;
 
             AstreaFishNetTransportSecurity transportSecurity =
                 managerRoot.AddComponent<AstreaFishNetTransportSecurity>();
