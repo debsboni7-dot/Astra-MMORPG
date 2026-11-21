@@ -115,7 +115,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - Tests serveur, gameplay, HTTP, PostgreSQL 16, sauvegarde/restauration et Chromium desktop/mobile réussis dans GitHub Actions.
 - Prototype Node WebSocket à deux clients avec état de déplacement autoritaire et rejet d'entrées invalides.
 - Benchmark Node loopback et simulation applicative de délai/gigue/suppression de snapshots exécutés en CI. Ces résultats ne simulent pas une perte de paquets IP et ne mesurent pas le WAN.
-- Tickets FishNet : tests d'émission, liaison au personnage, stockage du hash, rejeu, serveur cible, expiration et consommation concurrente atomique testés.
+- Tickets FishNet : tests d'émission, liaison au personnage, stockage du hash, rejeu, serveur cible, expiration, consommation concurrente atomique et purge de rétention testés.
 - Contrôles de source Unity et de métadonnées exécutés dans le workflow Unity Foundation.
 - Compilation .NET des scripts API client, Authenticator, configurateur DTLS, PlayerSpawner, NetworkTestPlayer et NetworkTestClient contre des stubs isolés ; signatures API du tag FishNet 4.7.4 vérifiées par assertions CI.
 - Configuration DTLS serveur/client exercée par tests .NET avec fausses clés/certificats ; code FishyUnityTransport 2.0.0-pre.2, méthodes DTLS, licence MIT et branche UTP 2.x vérifiés dans GitHub Actions. Ceci ne remplace pas un vrai handshake Unity.
@@ -131,6 +131,7 @@ Ces règles devront être reflétées dans les schémas, sérialiseurs réseau, 
 - [x] Politique de coûts sans dépense automatique documentée.
 - [x] Prototype Node WebSocket à deux clients testé.
 - [x] Tickets FishNet durables, à usage unique et liés au serveur testés côté Node/PostgreSQL.
+- [x] Purge périodique des tickets consommés/expirés ajoutée, avec index PostgreSQL et tests Node/PostgreSQL.
 - [x] Adaptateur Unity pour demander le ticket ajouté.
 - [x] Authenticator FishNet et point de spawn serveur ajoutés en code sur branche isolée.
 - [x] Contrat API FishNet 4.7.4 vérifié statiquement dans CI.
@@ -218,3 +219,8 @@ FishyUnityTransport `2.0.0-pre.2` (MIT) et Unity Transport `2.7.5` sont maintena
 Le workflow deux clients génère une CA et un certificat serveur temporaires avec SAN DNS localhost + IP 127.0.0.1, puis les passe au serveur et aux clients. Les secrets sont temporaires au runner et ne sont pas committés. Les tests .NET de configuration DTLS et les contrôles source sont exécutables sans Unity.
 
 **État de preuve :** le transport chiffré est intégré au prototype, mais pas encore validé par Unity. La résolution UPM, la compilation Editor, le build Linux et le handshake DTLS restent bloqués par l'activation Unity Personal manquante. La porte de sortie de l'étape 3 reste donc ouverte.
+
+
+### Rétention des tickets de connexion — 21 novembre 2026
+
+Les tickets ne restent plus indéfiniment dans PostgreSQL. La migration `005_realtime_join_ticket_cleanup.sql` ajoute un index partiel sur les tickets consommés ; le dépôt fournit une purge des tickets consommés ou expirés depuis plus de cinq minutes. Le service déclenche cette purge tous les 100 tickets émis. Les tests Node vérifient le déclenchement et le test PostgreSQL réel vérifie que les anciennes lignes sont supprimées sans toucher aux tickets récents.
