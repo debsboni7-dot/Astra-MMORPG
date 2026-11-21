@@ -213,7 +213,7 @@ jobs:
           assert "IPAddress.IsLoopback" in fishnet_auth
 
           zone_persistence = (root / "Assets/Scripts/Networking/AstreaFishNetZonePersistence.cs").read_text()
-          for contract in ["lease/acquire", "lease/renew", "/recovery", "/events", "/snapshots", "REALTIME_SERVER_SECRET", "REALTIME_SERVER_ID", "StartConnection()", "StopConnection(true)", "AppendDurableEvent(", "SaveDurableSnapshot(", "leaseDurationMs = 30000", "renewIntervalSeconds = 10"]:
+          for contract in ["lease/acquire", "lease/renew", "/recovery", "/events", "/snapshots", "REALTIME_SERVER_SECRET", "REALTIME_SERVER_ID", "StartConnection()", "StopConnection(true)", "AppendDurableEvent(", "SaveDurableSnapshot(", "leaseDurationMs = 30000", "renewIntervalSeconds = 10", "leaseExpiresAt", "DateTimeOffset.UtcNow", "ZONE_LEASE_EXPIRED_LOCAL"]:
               assert contract in zone_persistence, contract
           assert "clock" not in zone_persistence.lower() or "lease" in zone_persistence.lower()
           assert "AstreaFishNetAuthenticator.IsAllowedApiUrl" in zone_persistence
