@@ -36,6 +36,7 @@ internal static class Program
 
         VerifyDtlsServerConfiguration();
         VerifyDtlsClientConfiguration();
+        VerifyDtlsClientDefaultConfiguration();
 
         Console.WriteLine("ASTREA API URL security contract passed.");
     }
@@ -75,6 +76,27 @@ internal static class Program
         Assert(transport.UseEncryption, "DTLS must be enabled on clients");
         Assert(transport.ServerCommonName == "game.astrea.example", "client must validate the server common name");
         Assert(transport.ClientCaCertificate == "trusted-ca-pem", "client must receive the configured trusted CA");
+    }
+
+
+    private static void VerifyDtlsClientDefaultConfiguration()
+    {
+        Environment.SetEnvironmentVariable("ASTREA_NETWORK_ROLE", null);
+        Environment.SetEnvironmentVariable("ASTREA_DTLS_SERVER_NAME", null);
+        Environment.SetEnvironmentVariable("ASTREA_DTLS_CA_CERT", null);
+
+        var transport = new UnityTransport();
+        var security = new AstreaFishNetTransportSecurity();
+        typeof(AstreaFishNetTransportSecurity).GetField("transportComponent", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(security, transport);
+        typeof(AstreaFishNetTransportSecurity).GetField("serverCommonName", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(security, "game.astrea.example");
+        typeof(AstreaFishNetTransportSecurity).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(security, null);
+
+        Assert(transport.UseEncryption, "Android client default must keep DTLS enabled");
+        Assert(transport.ServerCommonName == "game.astrea.example", "Android client must use serialized DNS certificate name");
+        Assert(transport.ClientCaCertificate == null, "Android client may use the operating system trust store");
     }
 
     private static void Assert(bool condition, string message)
