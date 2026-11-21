@@ -29,20 +29,25 @@ namespace Astrea.Networking
 
         public bool SetBaseUrl(string value)
         {
+            if (!IsAllowedApiBaseUrl(value))
+                return false;
+
+            Uri uri = new Uri(value, UriKind.Absolute);
+            baseUrl = uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
+            return true;
+        }
+
+        internal static bool IsAllowedApiBaseUrl(string value)
+        {
             if (!Uri.TryCreate(value, UriKind.Absolute, out Uri uri)
-                || (uri.Scheme != Uri.UriSchemeHttps && !IsLoopbackHttp(uri))
                 || !string.IsNullOrEmpty(uri.UserInfo)
                 || !string.IsNullOrEmpty(uri.Query)
                 || !string.IsNullOrEmpty(uri.Fragment)
                 || (uri.AbsolutePath != "/" && !string.IsNullOrEmpty(uri.AbsolutePath)))
                 return false;
 
-            baseUrl = uri.GetLeftPart(UriPartial.Authority).TrimEnd('/');
-            return true;
-        }
-
-        private static bool IsLoopbackHttp(Uri uri)
-        {
+            if (uri.Scheme == Uri.UriSchemeHttps)
+                return true;
             if (uri.Scheme != Uri.UriSchemeHttp)
                 return false;
             if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
@@ -141,6 +146,12 @@ namespace Astrea.Networking
 
         private IEnumerator Send(string method, string path, string json, bool authenticated, Action<UnityWebRequest, string> completed)
         {
+            if (!IsAllowedApiBaseUrl(baseUrl))
+            {
+                completed?.Invoke(null, "API_REQUIRES_HTTPS_OR_LOOPBACK");
+                yield break;
+            }
+
             using (var request = new UnityWebRequest(baseUrl + path, method))
             {
                 if (json != null)
