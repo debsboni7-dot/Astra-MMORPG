@@ -97,8 +97,15 @@ export function createZonePersistenceService(repository) {
         payload: requirePayload(payload),
       });
     },
-    loadRecoveryState(zoneId) {
-      return repository.loadZoneRecoveryState(requireId(zoneId, 'zoneId'));
+    loadRecoveryState({ zoneId, ownerId, fencingEpoch }) {
+      if (!/^\\d{1,20}$/.test(String(fencingEpoch))) {
+        throw Object.assign(new TypeError('Invalid fencingEpoch'), { code: 'INVALID_ZONE_INPUT' });
+      }
+      return repository.loadZoneRecoveryState({
+        zoneId: requireId(zoneId, 'zoneId'),
+        ownerId: requireId(ownerId, 'ownerId'),
+        fencingEpoch: String(fencingEpoch),
+      });
     },
   };
 }
