@@ -164,3 +164,6 @@ The manual workflow `.github/workflows/unity-fishnet-two-client-integration.yml`
 ### API endpoint security
 
 `AstreaApiClient.SetBaseUrl` accepts HTTPS endpoints for remote environments and HTTP only for loopback development (`localhost`, `127.0.0.1`, `::1`). It rejects credentials embedded in URLs, paths, query strings and fragments. Do not point Android builds at `127.0.0.1`: that address is the phone itself. Use a trusted HTTPS API hostname for a device build. The default loopback URL is only for local editor/CI development.
+
+
+For the one-time Unity Personal activation and the three GitHub Actions secrets needed for cloud builds, see [Unity CI license setup](../docs/unity-ci-license-setup.md). Do not commit or share the `.ulf` file or Unity credentials.
