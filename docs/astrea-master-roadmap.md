@@ -381,3 +381,18 @@ Le workflow end-to-end [43832992881](https://github.com/debsboni7-dot/Astra-MMOR
 ### Déblocage de la compilation Unity sans PC personnel
 
 Le dépôt contient maintenant `docs/unity-ci-license-setup.md` : procédure officielle GameCI pour activer Unity Personal une seule fois dans Unity Hub, puis enregistrer `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` dans les secrets GitHub depuis le téléphone. Aucun achat de licence n'est prévu. Il faut toutefois emprunter un ordinateur pour cette activation initiale ; les builds ultérieurs tournent sur GitHub Actions.
+
+
+### Étape 3 — transport DTLS et CI — 21 novembre 2026
+
+- [x] FishyUnityTransport 2.0.0-pre.2 (MIT) ajouté au manifeste sur la branche isolée.
+- [x] Unity Transport 2.7.5 épinglé pour l'API UTP 2.x et le DTLS.
+- [x] Scène FishNet de test configurée pour remplacer Tugboat par FishyUnityTransport.
+- [x] `AstreaFishNetTransportSecurity` active DTLS, charge le certificat/clé privée du serveur depuis l'environnement et configure le nom/CA côté client.
+- [x] Tests .NET de configuration DTLS serveur et client exécutés dans le workflow Unity Foundation.
+- [x] Workflow deux clients adapté pour générer une CA et un certificat de test éphémères, puis les transmettre aux processus FishNet.
+- [ ] Résolution UPM réelle sous Unity 6000.3.28f1.
+- [ ] Compilation Unity Editor et build serveur/client Linux.
+- [ ] Handshake DTLS réel, validation du certificat, authentification ticket et réplication à deux clients.
+
+La CI valide le code source, les contrats API et la configuration DTLS via stubs .NET. Elle ne valide pas encore la résolution UPM ni la pile DTLS native de Unity. Le workflow end-to-end attend toujours les secrets de licence Unity Personal. Aucun connecteur supplémentaire n'est nécessaire : le connecteur GitHub déjà connecté permet de modifier le dépôt et de suivre ses Actions.
