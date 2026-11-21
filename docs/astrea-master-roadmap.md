@@ -424,3 +424,16 @@ Cette section remplace les états réseau précédents qui indiquaient encore Fi
 - [ ] Test sur un appareil Android physique et réseau distant.
 
 **Action externe restante :** ajouter les trois secrets Unity Personal `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` dans [les secrets Actions du dépôt](https://github.com/debsboni7-dot/Astra-MMORPG/settings/secrets/actions). L'activation initiale de la licence exige un ordinateur avec Unity Hub ; aucun connecteur supplémentaire n'est nécessaire. Tant que cette étape n'est pas faite, Unity ne peut pas résoudre/compilier le projet sur le runner. L'étape 3 reste ouverte et l'étape 4 ne démarre pas.
+
+
+### Étape 3 — bootstrap de zone relié à FishNet — 21 novembre 2026
+
+- [x] Routes Node internes de bail, renouvellement, événements, snapshots et récupération, protégées par le secret serveur et limitées au `REALTIME_SERVER_ID` de ce prototype mono-zone.
+- [x] Composant Unity `AstreaFishNetZonePersistence` : acquisition du bail et lecture de la récupération avant ouverture du serveur FishNet.
+- [x] Renouvellement automatique du bail toutes les 10 secondes ; arrêt du serveur si le bail ou l'epoch est perdu.
+- [x] Auto-start headless FishNet désactivé dans la scène de test ; le serveur ne commence qu'après récupération.
+- [x] Scripts inclus dans le harnais C# isolé et vérifications CI.
+- [ ] Raccorder les systèmes de gameplay aux routes d'événements et de snapshots.
+- [ ] Valider dans Unity Editor, puis sur un build Linux dédié, avec crash/reprise réelle.
+
+Cette intégration ne remplace pas la validation Unity. Le workflow FishNet à deux clients reste manuel et attend les secrets Unity Personal.
