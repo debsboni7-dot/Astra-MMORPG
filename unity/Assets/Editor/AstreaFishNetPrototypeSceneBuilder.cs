@@ -10,6 +10,7 @@ using FishNet.Component.Transforming;
 using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Managing.Transporting;
+using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Transporting;
 using UnityEditor;
@@ -70,6 +71,12 @@ namespace Astrea.EditorTools
             if (networkManager == null)
                 throw new InvalidOperationException("FishNet NetworkManager component is missing.");
 
+            ServerManager fishNetServerManager = managerRoot.GetComponent<ServerManager>();
+            if (fishNetServerManager == null)
+                throw new InvalidOperationException("FishNet ServerManager component is missing.");
+            fishNetServerManager.SetStartOnHeadless(false);
+            EditorUtility.SetDirty(fishNetServerManager);
+
             SerializedObject networkManagerData = new SerializedObject(networkManager);
             SerializedProperty spawnableProperty = networkManagerData.FindProperty("_spawnablePrefabs");
             if (spawnableProperty == null)
@@ -111,6 +118,13 @@ namespace Astrea.EditorTools
             transportSecurityData.FindProperty("transportComponent").objectReferenceValue = unityTransport;
             transportSecurityData.FindProperty("serverCommonName").stringValue = "localhost";
             transportSecurityData.ApplyModifiedPropertiesWithoutUndo();
+
+            AstreaFishNetZonePersistence zonePersistence =
+                managerRoot.AddComponent<AstreaFishNetZonePersistence>();
+            SerializedObject zonePersistenceData = new SerializedObject(zonePersistence);
+            zonePersistenceData.FindProperty("networkManager").objectReferenceValue = networkManager;
+            zonePersistenceData.FindProperty("zoneId").stringValue = "astrea-prototype-zone-01";
+            zonePersistenceData.ApplyModifiedPropertiesWithoutUndo();
 
             AstreaFishNetAuthenticator authenticator =
                 managerRoot.AddComponent<AstreaFishNetAuthenticator>();
