@@ -12,6 +12,7 @@ Exécuter dans l'ordre :
 3. `server/migrations/002_character_magic_progression.sql`
 4. `server/migrations/003_character_magic_combat_state.sql`
 5. `server/migrations/004_realtime_join_tickets.sql`
+6. `server/migrations/005_realtime_join_ticket_cleanup.sql`
 
 La migration 001 crée la table `characters` avec identifiant UUID, propriétaire `account_id`, nom d'affichage et données JSONB, puis ajoute le bloc de progression. Si une table `characters` existe déjà, vérifier et adapter ses types/colonnes avant migration. Les personnages historiques doivent être rattachés à un compte avant production.
 
@@ -68,3 +69,12 @@ L'adaptateur Unity `AstreaApiClient.RequestFishNetJoinTicket` demande le ticket.
 
 
 La route interne de consommation FishNet exige maintenant un `serverId` explicite correspondant exactement à `REALTIME_SERVER_ID`. Un ticket ne peut pas être consommé en omettant la zone cible.
+
+
+### Rétention des tickets FishNet
+
+La migration 005 ajoute un index partiel sur les tickets consommés. Le dépôt PostgreSQL supprime les tickets consommés ou expirés depuis plus de cinq minutes ; le service déclenche la purge tous les 100 tickets émis. Les tests Node et PostgreSQL vérifient le déclenchement et la suppression des lignes anciennes.
+
+### Transport Unity FishNet
+
+Le serveur FishNet utilise un secret API serveur distinct des sessions joueurs et un timeout de 5 secondes pour la consommation du ticket. Le transport client/serveur doit être DTLS (FishyUnityTransport + Unity Transport 2.x) ; les certificats privés du serveur sont chargés par le processus Unity depuis l'environnement. Ne jamais réutiliser le secret API comme clé DTLS. Voir [le modèle de menace réseau](../docs/network-security-threat-model.md).
