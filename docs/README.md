@@ -27,5 +27,6 @@ Les documents distinguent les décisions confirmées, les propositions à valide
 - [ADR-001 — Serveur de monde FishNet](adr-001-fishnet-world-server-architecture.md)
 - [Cahier du prototype réseau comparatif](realtime-network-prototype.md)
 - [Modèle de menace réseau](network-security-threat-model.md)
+- [Persistance et reprise des zones](zone-persistence-recovery.md)
 - [Intégration FishNet et transport DTLS](fishnet-integration.md)
 - [Activation Unity Personal pour CI](unity-ci-license-setup.md)
