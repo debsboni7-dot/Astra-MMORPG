@@ -396,3 +396,10 @@ Le dépôt contient maintenant `docs/unity-ci-license-setup.md` : procédure off
 - [ ] Handshake DTLS réel, validation du certificat, authentification ticket et réplication à deux clients.
 
 La CI valide le code source, les contrats API et la configuration DTLS via stubs .NET. Elle ne valide pas encore la résolution UPM ni la pile DTLS native de Unity. Le workflow end-to-end attend toujours les secrets de licence Unity Personal. Aucun connecteur supplémentaire n'est nécessaire : le connecteur GitHub déjà connecté permet de modifier le dépôt et de suivre ses Actions.
+
+
+### Preuves CI actualisées — 21 novembre 2026
+
+- [x] Suite complète serveur/Node/PostgreSQL 16, migration 005, purge des tickets, backup/restore, benchmarks et Chromium desktop/mobile : [run 44889120732](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889120732), succès.
+- [x] Unity Foundation : API FishNet 4.7.4, source FishyUnityTransport DTLS, compilation C# contre stubs, tests HTTPS/loopback, configuration DTLS serveur/client, génération et validation de certificats, API TransportManager : [run 44889349804](https://github.com/debsboni7-dot/Astra-MMORPG/actions/runs/44889349804), succès.
+- [ ] Unity Editor/UPM, build Linux dédié, handshake DTLS natif et test FishNet à deux clients : non exécutés, secrets Unity Personal manquants.
