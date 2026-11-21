@@ -107,6 +107,9 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Generate and verify ephemeral DTLS certificate chain
+        run: bash scripts/generate-fishnet-dtls-test-certs.sh --verify-only
+
       - name: Compile ASTREA networking sources and run API URL contract tests
         run: dotnet run --project tests/fishnet-compile-stubs/FishNetCompileStubs.csproj --configuration Release
 
@@ -227,6 +230,7 @@ jobs:
           assert (root.parent / ".github/workflows/unity-fishnet-two-client-integration.yml").is_file()
           assert (root.parent / "scripts/apply-server-migrations.js").is_file()
           assert (root.parent / "scripts/prepare-fishnet-integration-test.js").is_file()
+          assert (root.parent / "scripts/generate-fishnet-dtls-test-certs.sh").is_file()
 
           api_client = (root / "Assets/Scripts/Networking/AstreaApiClient.cs").read_text()
           assert "IsAllowedApiBaseUrl(value)" in api_client
