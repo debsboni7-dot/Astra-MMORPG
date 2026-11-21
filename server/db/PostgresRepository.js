@@ -198,29 +198,48 @@ export function createPostgresRepository(pool) {
         client.release();
       }
     },
-    async loadZoneRecoveryState(zoneId) {
-      const snapshotResult = await pool.query(
-        'SELECT zone_id AS "zoneId", last_event_sequence AS "lastEventSequence", schema_version AS "schemaVersion", payload, created_at AS "createdAt" FROM world_zone_snapshots WHERE zone_id=$1',
-        [zoneId],
-      );
-      const snapshot = snapshotResult.rows[0]
-        ? { ...snapshotResult.rows[0], lastEventSequence: String(snapshotResult.rows[0].lastEventSequence) }
-        : null;
-      const sequence = snapshot?.lastEventSequence || '0';
-      const eventsResult = await pool.query(
-        `SELECT event_id AS "eventId", sequence, event_type AS "eventType",
-                schema_version AS "schemaVersion", payload, created_at AS "createdAt"
-         FROM world_zone_events WHERE zone_id=$1 AND sequence>$2
-         ORDER BY sequence ASC`,
-        [zoneId, sequence],
-      );
-      return {
-        snapshot,
-        events: eventsResult.rows.map(row => ({ ...row, sequence: String(row.sequence) })),
-        lastEventSequence: eventsResult.rows.length
-          ? String(eventsResult.rows[eventsResult.rows.length - 1].sequence)
-          : sequence,
-      };
+    async loadZoneRecoveryState({ zoneId, ownerId, fencingEpoch }) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const lease = await client.query(
+          `SELECT 1 FROM world_zone_leases
+           WHERE zone_id=$1 AND owner_id=$2 AND fencing_epoch=$3 AND lease_expires_at>NOW()
+           FOR SHARE`,
+          [zoneId, ownerId, fencingEpoch],
+        );
+        if (!lease.rows[0]) throw Object.assign(new Error('Zone lease lost'), { code: 'ZONE_LEASE_LOST' });
+
+        const snapshotResult = await client.query(
+          'SELECT zone_id AS "zoneId", last_event_sequence AS "lastEventSequence", schema_version AS "schemaVersion", payload, created_at AS "createdAt" FROM world_zone_snapshots WHERE zone_id=$1',
+          [zoneId],
+        );
+        const snapshot = snapshotResult.rows[0]
+          ? { ...snapshotResult.rows[0], lastEventSequence: String(snapshotResult.rows[0].lastEventSequence) }
+          : null;
+        const sequence = snapshot?.lastEventSequence || '0';
+        const eventsResult = await client.query(
+          `SELECT event_id AS "eventId", sequence, event_type AS "eventType",
+                  schema_version AS "schemaVersion", payload, created_at AS "createdAt"
+           FROM world_zone_events WHERE zone_id=$1 AND sequence>$2
+           ORDER BY sequence ASC`,
+          [zoneId, sequence],
+        );
+        const result = {
+          snapshot,
+          events: eventsResult.rows.map(row => ({ ...row, sequence: String(row.sequence) })),
+          lastEventSequence: eventsResult.rows.length
+            ? String(eventsResult.rows[eventsResult.rows.length - 1].sequence)
+            : sequence,
+        };
+        await client.query('COMMIT');
+        return result;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     },
     async withCharacterTransaction(accountId, characterId, callback) {
       const client = await pool.connect();
