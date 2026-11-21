@@ -12,6 +12,9 @@ internal static class Program
         Assert(client.SetBaseUrl("http://localhost:3000"), "localhost HTTP should be accepted for local development");
         Assert(client.SetBaseUrl("http://[::1]:3000"), "IPv6 loopback HTTP should be accepted for local development");
 
+        Assert(AstreaApiClient.IsAllowedApiBaseUrl("https://api.astrea.example"), "remote HTTPS must be allowed");
+        Assert(AstreaApiClient.IsAllowedApiBaseUrl("http://127.0.0.1:3000"), "loopback HTTP must be allowed");
+        Assert(!AstreaApiClient.IsAllowedApiBaseUrl("http://api.astrea.example"), "remote HTTP must be rejected even if set in Inspector");
         Assert(!client.SetBaseUrl("http://api.astrea.example"), "remote HTTP must be rejected");
         Assert(!client.SetBaseUrl("ftp://api.astrea.example"), "non-HTTP schemes must be rejected");
         Assert(!client.SetBaseUrl("https://user:password@api.astrea.example"), "URL userinfo must be rejected");
