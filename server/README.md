@@ -65,3 +65,6 @@ La demande de tickets FishNet est limitée à 10 requêtes par IP et par fenêtr
 Le hash SHA-256 du ticket est stocké dans PostgreSQL ; le ticket brut n'est retourné qu'une seule fois au client. La consommation utilise un UPDATE conditionnel atomique, ce qui empêche deux serveurs de valider simultanément le même ticket. Configurer `REALTIME_SERVER_SECRET` (au moins 32 caractères aléatoires) et `REALTIME_SERVER_ID` dans l'environnement serveur, jamais dans le dépôt. Le secret ne doit être connu que de l'API et du processus Unity dédié.
 
 L'adaptateur Unity `AstreaApiClient.RequestFishNetJoinTicket` demande le ticket. `AstreaFishNetAuthenticator` consomme le ticket côté serveur Unity, et `AstreaFishNetPlayerSpawner` crée le joueur après authentification. Le tout est encore en attente de compilation Unity et de test à deux clients. La route de ticket WebSocket historique reste inchangée.
+
+
+La route interne de consommation FishNet exige maintenant un `serverId` explicite correspondant exactement à `REALTIME_SERVER_ID`. Un ticket ne peut pas être consommé en omettant la zone cible.
