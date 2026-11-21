@@ -96,7 +96,7 @@ Le dépôt `PostgresRepository` fournit :
 
 Le service `ZonePersistenceService` valide les identifiants, UUID, types d'événement, versions de schéma et payloads JSON (objet, limite 256 KiB). Les opérations d'écriture refusent les processus sans bail actif ou avec un ancien fencing epoch.
 
-Une API serveur-à-serveur protégée par `X-Astrea-Server-Key` expose acquisition/renouvellement de bail, ajout d'événements, sauvegarde de snapshots et lecture de reprise. Sur la scène de test, `AstreaFishNetZonePersistence` acquiert le bail, charge le JSON de récupération, puis seulement démarre FishNet. Il renouvelle le bail toutes les 10 secondes et arrête le serveur si le bail ou l'epoch n'est plus valide. Le générateur de scène désactive le démarrage headless automatique de FishNet pour empêcher l'ouverture du port avant la récupération.
+Une API serveur-à-serveur protégée par `X-Astrea-Server-Key` expose acquisition/renouvellement de bail, ajout d'événements, sauvegarde de snapshots et lecture de reprise. Sur la scène de test, `AstreaFishNetZonePersistence` acquiert le bail, charge le JSON de récupération, puis seulement démarre FishNet. Il renouvelle le bail toutes les 10 secondes et arrête le serveur si le bail ou l'epoch n'est plus valide. Le générateur de scène désactive le démarrage headless automatique de FishNet pour empêcher l'ouverture du port avant la récupération. Le composant expose aussi `AppendDurableEvent` et `SaveDurableSnapshot` pour les systèmes de gameplay : ils exigent un bail actif, transmettent un objet JSON et arrêtent le serveur si l'API signale une perte du bail. Ces méthodes ne sont pas encore appelées par les systèmes de jeu.
 
 Le test PostgreSQL réel couvre :
 1. création d'un événement et snapshot à la séquence 1 ;
