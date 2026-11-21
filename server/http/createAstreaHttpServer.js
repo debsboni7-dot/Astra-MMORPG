@@ -2,15 +2,16 @@ import { createServer } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 
 const MAX_BODY_BYTES = 16 * 1024;
+const MAX_ZONE_BODY_BYTES = 300 * 1024;
 function send(response, status, body, extraHeaders = {}) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', ...extraHeaders });
   response.end(status === 204 ? undefined : JSON.stringify(body));
 }
-async function readJson(request) {
+async function readJson(request, maxBytes = MAX_BODY_BYTES) {
   let raw = '';
   for await (const chunk of request) {
     raw += chunk;
-    if (Buffer.byteLength(raw) > MAX_BODY_BYTES) throw Object.assign(new Error('Corps de requête trop volumineux'), { status: 413 });
+    if (Buffer.byteLength(raw) > maxBytes) throw Object.assign(new Error('Corps de requête trop volumineux'), { status: 413 });
   }
   try { return raw ? JSON.parse(raw) : {}; }
   catch { throw Object.assign(new Error('JSON invalide'), { status: 400 }); }
@@ -21,7 +22,7 @@ function bearer(request) {
   return match?.[1] || null;
 }
 
-export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null, realtimeTicketService = null, fishNetJoinTicketService = null, realtimeServerSecret = null, authRateLimitLimit = 10, authRateLimitWindowMs = 60_000 }) {
+export function createAstreaHttpServer({ authService, characterService, progressionService, magicProgressionService = null, magicCombatService = null, realtimeTicketService = null, fishNetJoinTicketService = null, zonePersistenceService = null, realtimeServerSecret = null, realtimeServerId = null, authRateLimitLimit = 10, authRateLimitWindowMs = 60_000 }) {
   if (!authService || !characterService || !progressionService) throw new TypeError('Auth, character and progression services are required');
   if (!Number.isInteger(authRateLimitLimit) || authRateLimitLimit < 1 || !Number.isInteger(authRateLimitWindowMs) || authRateLimitWindowMs < 1) throw new TypeError('Auth rate-limit settings must be positive integers');
   const authRateBuckets = new Map();
@@ -79,6 +80,46 @@ export function createAstreaHttpServer({ authService, characterService, progress
         const identity = await fishNetJoinTicketService.consume(body.ticket, body.serverId);
         if (!identity) return send(response, 401, { error: 'INVALID_OR_EXPIRED_TICKET' });
         return send(response, 200, { identity });
+      }
+      const internalZoneMatch = /^\\/v1\\/internal\\/zones\\/([^/]+)\\/(lease\\/acquire|lease\\/renew|events|snapshots|recovery)$/.exec(url.pathname);
+      if (internalZoneMatch) {
+        if (request.method !== 'POST') return send(response, 405, { error: 'METHOD_NOT_ALLOWED' });
+        const supplied = request.headers['x-astrea-server-key'];
+        if (typeof realtimeServerSecret !== 'string' || realtimeServerSecret.length < 32
+          || typeof supplied !== 'string'
+          || Buffer.byteLength(supplied) !== Buffer.byteLength(realtimeServerSecret)
+          || !timingSafeEqual(Buffer.from(supplied), Buffer.from(realtimeServerSecret))) {
+          return send(response, 401, { error: 'UNAUTHENTICATED' });
+        }
+        if (!zonePersistenceService) return send(response, 503, { error: 'ZONE_PERSISTENCE_UNAVAILABLE' });
+        const zoneId = decodeURIComponent(internalZoneMatch[1]);
+        if (typeof realtimeServerId !== 'string' || !realtimeServerId || zoneId !== realtimeServerId) {
+          return send(response, 403, { error: 'ZONE_NOT_AUTHORIZED' });
+        }
+        const body = await readJson(request, MAX_ZONE_BODY_BYTES);
+        const operation = internalZoneMatch[2];
+        if (operation === 'lease/acquire') {
+          const lease = await zonePersistenceService.acquireLease({ ...body, zoneId });
+          return lease
+            ? send(response, 201, { lease })
+            : send(response, 409, { error: 'ZONE_ALREADY_LEASED' });
+        }
+        if (operation === 'lease/renew') {
+          const lease = await zonePersistenceService.renewLease({ ...body, zoneId });
+          return lease
+            ? send(response, 200, { lease })
+            : send(response, 409, { error: 'ZONE_LEASE_LOST' });
+        }
+        if (operation === 'events') {
+          const result = await zonePersistenceService.appendEvent({ ...body, zoneId });
+          return send(response, result.duplicate ? 200 : 201, result);
+        }
+        if (operation === 'snapshots') {
+          return send(response, 201, await zonePersistenceService.saveSnapshot({ ...body, zoneId }));
+        }
+        if (operation === 'recovery') {
+          return send(response, 200, await zonePersistenceService.loadRecoveryState({ ...body, zoneId }));
+        }
       }
       if (request.method === 'POST' && url.pathname === '/v1/realtime/tickets') {
         const account = await authService.authenticate(bearer(request));
@@ -171,6 +212,11 @@ export function createAstreaHttpServer({ authService, characterService, progress
       if (error.code === 'INVALID_CREDENTIALS') return send(response, 401, { error: 'INVALID_CREDENTIALS' });
       if (error.code === 'ACCOUNT_EXISTS') return send(response, 409, { error: 'ACCOUNT_EXISTS' });
       if (error.code === 'REALTIME_CAPACITY') return send(response, 503, { error: 'REALTIME_CAPACITY' });
+      if (error.code === 'ZONE_LEASE_LOST') return send(response, 409, { error: 'ZONE_LEASE_LOST' });
+      if (error.code === 'ZONE_STATE_NOT_FOUND') return send(response, 404, { error: 'ZONE_STATE_NOT_FOUND' });
+      if (error.code === 'IDEMPOTENCY_CONFLICT') return send(response, 409, { error: 'IDEMPOTENCY_CONFLICT' });
+      if (error.code === 'SNAPSHOT_NOT_ADVANCED') return send(response, 409, { error: 'SNAPSHOT_NOT_ADVANCED' });
+      if (error.code === 'INVALID_ZONE_INPUT') return send(response, 400, { error: 'BAD_REQUEST' });
       if (error.status === 413) return send(response, 413, { error: 'REQUEST_TOO_LARGE' });
       if (error.status === 400 || error instanceof TypeError) return send(response, 400, { error: 'BAD_REQUEST' });
       // Do not misreport database/service outages as client errors or leak internals.
