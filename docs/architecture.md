@@ -322,7 +322,7 @@ Cette décision ne signifie pas que FishNet a été résolu ou compilé par Unit
 
 Le transport par défaut Tugboat ne chiffre pas le trafic UDP. Le prototype FishNet utilise maintenant FishyUnityTransport 2.0.0-pre.2 (MIT) avec Unity Transport 2.7.5, uniquement sur la branche isolée. Le composant AstreaFishNetTransportSecurity force UseEncryption et configure le certificat/clé du serveur depuis l'environnement. Les clients vérifient le nom DNS et une CA explicite ou le magasin de confiance du système.
 
-Le générateur de scène remplace le transport Tugboat par FishyUnityTransport, configure le port de test 7770 et ajoute le composant de sécurité. Le workflow deux clients prépare une CA et un certificat éphémères avec SAN localhost/127.0.0.1, puis les fournit aux processus serveur et clients. Les certificats temporaires ne sont pas inclus dans les artefacts.
+Le générateur de scène remplace le transport Tugboat par FishyUnityTransport, configure le port de test 7770 et ajoute le composant de sécurité. Le workflow deux clients prépare une CA et un certificat éphémères avec SAN localhost/127.0.0.1, puis transmet la clé privée uniquement au processus serveur et la CA publique aux clients. Les certificats temporaires ne sont pas inclus dans les artefacts.
 
 La base PostgreSQL possède maintenant une purge des tickets consommés ou expirés depuis plus de cinq minutes, déclenchée tous les 100 tickets émis. Les tests Node et PostgreSQL couvrent cette rétention.
 
