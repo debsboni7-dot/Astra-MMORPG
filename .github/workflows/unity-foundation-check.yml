@@ -215,6 +215,8 @@ jobs:
           assert "must be server or client when supplied" in transport_security
           assert "privateKey" in transport_security
           assert "Debug.Log" not in transport_security, "DTLS private material must never be logged"
+          assert "networkManager.enabled = false" in transport_security
+          assert "refusing an unencrypted connection" in transport_security
           fishnet_test_player = (root / "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs").read_text()
           assert "[ServerRpc]" in fishnet_test_player and "Vector2.ClampMagnitude" in fishnet_test_player
           fishnet_test_client = (root / "Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs").read_text()
@@ -228,6 +230,9 @@ jobs:
           assert "FishyUnityTransport" in fishnet_scene_builder
           assert "SetConnectionData" in fishnet_scene_builder
           assert "(ushort)7770" in fishnet_scene_builder
+          assert 'GetProperty("UseEncryption")' in fishnet_scene_builder
+          assert "encryptionProperty.SetValue(unityTransport, true, null)" in fishnet_scene_builder
+          assert "EditorUtility.SetDirty(unityTransport)" in fishnet_scene_builder
           assert "using FishNet.Managing.Transporting;" in fishnet_scene_builder
           assert "GetComponent<TransportManager>()" in fishnet_scene_builder
           assert "transportManager.Transport = unityTransport" in fishnet_scene_builder
