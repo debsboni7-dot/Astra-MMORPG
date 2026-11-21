@@ -182,6 +182,7 @@ namespace FishNet.Managing.Client
         public event Action OnAuthenticated;
         public event Action<ClientConnectionStateArgs> OnClientConnectionState;
         public bool StartConnection(string address, ushort port) => true;
+        public bool StopConnection() => true;
         public void RegisterBroadcast<T>(Action<T, Channel> handler) where T : struct, FishNet.Broadcast.IBroadcast { }
         public void UnregisterBroadcast<T>(Action<T, Channel> handler) where T : struct, FishNet.Broadcast.IBroadcast { }
         public void Broadcast<T>(T message, Channel channel) where T : struct, FishNet.Broadcast.IBroadcast { }
