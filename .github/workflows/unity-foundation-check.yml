@@ -156,7 +156,7 @@ jobs:
           assert "SetClientTicket" in fishnet_auth
           assert "WaitForSecondsRealtime(10f)" in fishnet_auth
           assert "internal static bool IsAllowedApiUrl" in fishnet_auth
-          assert "uri.Scheme != Uri.UriSchemeHttps" in fishnet_auth
+          assert "uri.Scheme != Uri.UriSchemeHttp" in fishnet_auth
           assert "uri.UserInfo" in fishnet_auth
           assert "uri.Query" in fishnet_auth
           assert "uri.Fragment" in fishnet_auth
