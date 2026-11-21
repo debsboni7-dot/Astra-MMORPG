@@ -78,7 +78,7 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Compile FishNet authenticator and player spawner source
+      - name: Compile ASTREA networking sources and run API URL contract tests
         run: dotnet run --project tests/fishnet-compile-stubs/FishNetCompileStubs.csproj --configuration Release
 
       - name: Validate Unity project metadata and zero-billing package policy
