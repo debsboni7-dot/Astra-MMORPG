@@ -261,6 +261,7 @@ jobs:
           assert "IPAddress.IsLoopback" in api_client
           assert "if (!IsAllowedApiBaseUrl(baseUrl))" in api_client
           assert "RequestFishNetJoinTicket" in api_client
+          assert "request.timeout = 10" in api_client
           assert "/v1/realtime/fishnet/tickets" in api_client
 
           combat = (root / "Assets/Scripts/Combat/AstreaCombatController.cs").read_text()
