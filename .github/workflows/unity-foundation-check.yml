@@ -155,6 +155,7 @@ jobs:
               "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs",
               "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs",
               "Assets/Scripts/Networking/AstreaFishNetZonePersistence.cs",
+              "Assets/Scripts/Networking/AstreaFishNetConnectionController.cs",
               "Assets/Scripts/Networking/AstreaFishNetPlayerSpawner.cs",
               "Assets/Scripts/Networking/AstreaFishNetNetworkTestPlayer.cs",
               "Assets/Scripts/Networking/AstreaFishNetNetworkTestClient.cs",
@@ -189,6 +190,10 @@ jobs:
               path = root / relative
               assert path.is_file() and path.stat().st_size > 0, relative
 
+          connection_meta = root / "Assets/Scripts/Networking/AstreaFishNetConnectionController.cs.meta"
+          assert connection_meta.is_file(), "FishNet connection controller requires a stable Unity meta file"
+          assert "7a9d2e4f6b1c43a8b5d0e7f9c2a61483" in connection_meta.read_text()
+
           security_meta = root / "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs.meta"
           assert security_meta.is_file(), "DTLS component requires a stable Unity meta file"
           assert "c41a4e80f1e84f9ba3b55d7c1b6a2f90" in security_meta.read_text()
@@ -197,6 +202,11 @@ jobs:
               source = path.read_text()
               assert source.count("{") == source.count("}"), f"Unbalanced braces: {path}"
 
+          connection_controller = (root / "Assets/Scripts/Networking/AstreaFishNetConnectionController.cs").read_text()
+          for contract in ["RequestFishNetJoinTicket", "SetClientTicket", "ClientManager.StartConnection", "OnAuthenticated", "ClientManager.StopConnection", "FISHNET_AUTHENTICATION_TIMEOUT"]:
+              assert contract in connection_controller, contract
+          assert "SessionToken" in connection_controller
+          assert "authenticationTimeoutSeconds" in connection_controller
           fishnet_auth = (root / "Assets/Scripts/Networking/AstreaFishNetAuthenticator.cs").read_text()
           assert ": Authenticator" in fishnet_auth
           assert "RegisterBroadcast<AstreaJoinTicketBroadcast>(OnJoinTicketBroadcast, false)" in fishnet_auth
