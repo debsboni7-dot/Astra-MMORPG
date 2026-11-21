@@ -213,12 +213,14 @@ jobs:
           assert "IPAddress.IsLoopback" in fishnet_auth
 
           zone_persistence = (root / "Assets/Scripts/Networking/AstreaFishNetZonePersistence.cs").read_text()
-          for contract in ["lease/acquire", "lease/renew", "/recovery", "REALTIME_SERVER_SECRET", "REALTIME_SERVER_ID", "StartConnection()", "StopConnection(true)"]:
+          for contract in ["lease/acquire", "lease/renew", "/recovery", "/events", "/snapshots", "REALTIME_SERVER_SECRET", "REALTIME_SERVER_ID", "StartConnection()", "StopConnection(true)", "AppendDurableEvent(", "SaveDurableSnapshot(", "leaseDurationMs = 30000", "renewIntervalSeconds = 10"]:
               assert contract in zone_persistence, contract
           assert "clock" not in zone_persistence.lower() or "lease" in zone_persistence.lower()
           assert "AstreaFishNetAuthenticator.IsAllowedApiUrl" in zone_persistence
           assert "RecoveryJson" in zone_persistence
           assert "LastRecoveredEventSequence" in zone_persistence
+          assert "Debug.Log(serverSecret)" not in zone_persistence
+          assert "Debug.Log(payloadJson)" not in zone_persistence
           transport_security = (root / "Assets/Scripts/Networking/AstreaFishNetTransportSecurity.cs").read_text()
           for contract in ["UseEncryption", "SetServerSecrets", "SetClientSecrets", "ASTREA_DTLS_SERVER_CERT", "ASTREA_DTLS_SERVER_KEY", "ASTREA_DTLS_SERVER_NAME"]:
               assert contract in transport_security, contract
