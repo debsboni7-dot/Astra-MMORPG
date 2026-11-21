@@ -36,16 +36,16 @@ test('zone persistence validates and forwards lease, event, snapshot and recover
 
 test('zone persistence rejects invalid identifiers, fencing epochs and event types', async () => {
   const service = createZonePersistenceService(fakeRepository());
-  await assert.rejects(service.acquireLease({ zoneId: '../zone', ownerId: 'process-a' }), error => error.code === 'INVALID_ZONE_INPUT');
-  await assert.rejects(service.renewLease({ ...lease, fencingEpoch: '1; DROP TABLE' }), error => error.code === 'INVALID_ZONE_INPUT');
-  await assert.rejects(service.appendEvent({ ...event, eventType: 'resource harvested' }), error => error.code === 'INVALID_ZONE_INPUT');
-  await assert.rejects(service.appendEvent({ ...event, eventId: 'not-a-uuid' }), error => error.code === 'INVALID_ZONE_INPUT');
+  assert.throws(() => service.acquireLease({ zoneId: '../zone', ownerId: 'process-a' }), error => error.code === 'INVALID_ZONE_INPUT');
+  assert.throws(() => service.renewLease({ ...lease, fencingEpoch: '1; DROP TABLE' }), error => error.code === 'INVALID_ZONE_INPUT');
+  assert.throws(() => service.appendEvent({ ...event, eventType: 'resource harvested' }), error => error.code === 'INVALID_ZONE_INPUT');
+  assert.throws(() => service.appendEvent({ ...event, eventId: 'not-a-uuid' }), error => error.code === 'INVALID_ZONE_INPUT');
 });
 
 test('zone persistence accepts only bounded JSON object payloads', async () => {
   const service = createZonePersistenceService(fakeRepository());
-  await assert.rejects(service.appendEvent({ ...event, payload: [] }), error => error.code === 'INVALID_ZONE_INPUT');
-  await assert.rejects(service.appendEvent({ ...event, payload: { text: 'x'.repeat(270 * 1024) } }), error => error.code === 'INVALID_ZONE_INPUT');
+  assert.throws(() => service.appendEvent({ ...event, payload: [] }), error => error.code === 'INVALID_ZONE_INPUT');
+  assert.throws(() => service.appendEvent({ ...event, payload: { text: 'x'.repeat(270 * 1024) } }), error => error.code === 'INVALID_ZONE_INPUT');
   const cyclic = {}; cyclic.self = cyclic;
-  await assert.rejects(service.saveSnapshot({ ...lease, payload: cyclic }), error => error.code === 'INVALID_ZONE_INPUT');
+  assert.throws(() => service.saveSnapshot({ ...lease, payload: cyclic }), error => error.code === 'INVALID_ZONE_INPUT');
 });
