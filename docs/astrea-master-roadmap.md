@@ -376,3 +376,8 @@ Le workflow end-to-end [43832992881](https://github.com/debsboni7-dot/Astra-MMOR
 
 
 - Vérification additionnelle réussie : scripts de réseau (API client comprise) compilés contre stubs .NET, et tests exécutés sur les URL API HTTPS/loopback. Run GitHub Actions 44887759276 : succès. Toujours pas de compilation Unity Editor.
+
+
+### Déblocage de la compilation Unity sans PC personnel
+
+Le dépôt contient maintenant `docs/unity-ci-license-setup.md` : procédure officielle GameCI pour activer Unity Personal une seule fois dans Unity Hub, puis enregistrer `UNITY_LICENSE`, `UNITY_EMAIL` et `UNITY_PASSWORD` dans les secrets GitHub depuis le téléphone. Aucun achat de licence n'est prévu. Il faut toutefois emprunter un ordinateur pour cette activation initiale ; les builds ultérieurs tournent sur GitHub Actions.
