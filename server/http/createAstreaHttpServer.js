@@ -84,6 +84,9 @@ export function createAstreaHttpServer({ authService, characterService, progress
       const internalZoneMatch = /^\/v1\/internal\/zones\/([^/]+)\/(lease\/acquire|lease\/renew|events|snapshots|recovery)$/.exec(url.pathname);
       if (internalZoneMatch) {
         if (request.method !== 'POST') return send(response, 405, { error: 'METHOD_NOT_ALLOWED' });
+        if (!/^application\\/json(?:\\s*;|$)/i.test(request.headers['content-type'] || '')) {
+          return send(response, 415, { error: 'UNSUPPORTED_MEDIA_TYPE' });
+        }
         const supplied = request.headers['x-astrea-server-key'];
         if (typeof realtimeServerSecret !== 'string' || realtimeServerSecret.length < 32
           || typeof supplied !== 'string'
@@ -92,7 +95,9 @@ export function createAstreaHttpServer({ authService, characterService, progress
           return send(response, 401, { error: 'UNAUTHENTICATED' });
         }
         if (!zonePersistenceService) return send(response, 503, { error: 'ZONE_PERSISTENCE_UNAVAILABLE' });
-        const zoneId = decodeURIComponent(internalZoneMatch[1]);
+        let zoneId;
+        try { zoneId = decodeURIComponent(internalZoneMatch[1]); }
+        catch { return send(response, 400, { error: 'BAD_REQUEST' }); }
         if (typeof realtimeServerId !== 'string' || !realtimeServerId || zoneId !== realtimeServerId) {
           return send(response, 403, { error: 'ZONE_NOT_AUTHORIZED' });
         }
