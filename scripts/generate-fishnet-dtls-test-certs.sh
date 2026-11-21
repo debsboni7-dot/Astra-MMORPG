@@ -38,12 +38,6 @@ if [[ "${1:-}" != "--verify-only" ]]; then
     exit 2
   fi
   {
-    echo "ASTREA_DTLS_SERVER_CERT<<ASTREA_CERT_EOF"
-    cat "$out_dir/server.crt"
-    echo "ASTREA_CERT_EOF"
-    echo "ASTREA_DTLS_SERVER_KEY<<ASTREA_KEY_EOF"
-    cat "$out_dir/server.key"
-    echo "ASTREA_KEY_EOF"
     echo "ASTREA_DTLS_CA_CERT<<ASTREA_CA_EOF"
     cat "$out_dir/ca.crt"
     echo "ASTREA_CA_EOF"
